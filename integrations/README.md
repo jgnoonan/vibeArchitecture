@@ -42,13 +42,25 @@ If your tool uses a different configuration file, the content is the same — ad
 
 Each template tells the AI agent to:
 
-1. Read `vibeArchitecture/ARCHITECT.md` at the start of every session
-2. Run the intake questionnaire if the project profile hasn't been completed
-3. Load and enforce the appropriate rules based on the project's tier
-4. Communicate in plain language with the user
-5. Consult the detailed guides when deeper explanation is needed
+1. Add `vibeArchitecture/` to the project's `.gitignore` (first-time setup)
+2. Read `vibeArchitecture/ARCHITECT.md` at the start of every session
+3. Run the intake questionnaire if the project profile hasn't been completed
+4. Save `PROJECT_PROFILE.md` to the **project root** (not inside `vibeArchitecture/`)
+5. Load and enforce the appropriate rules based on the project's tier
+6. Communicate in plain language with the user
+7. Consult the detailed guides when deeper explanation is needed
 
 The templates are intentionally short. All the logic lives in `ARCHITECT.md` and the framework modules — the integration file just points the AI there.
+
+## Why vibeArchitecture Is Gitignored
+
+The framework is a development tool, not part of your project's source code. By adding `vibeArchitecture/` to `.gitignore`:
+
+- Your project's repository stays clean — no framework files mixed in
+- Updates to the framework don't create noise in your project's git history
+- The framework can be updated independently (re-clone or update submodule)
+
+Your `PROJECT_PROFILE.md` is saved at the project root (outside `vibeArchitecture/`) so it IS committed to your project's repository — it's project-specific data that the AI needs on every session.
 
 ## Customizing
 

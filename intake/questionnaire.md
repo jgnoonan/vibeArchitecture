@@ -185,15 +185,17 @@ Then check for upgrades (tier can only go UP):
 
 ## After Determining the Tier
 
-1. **Tell the user their tier and what it means.** Read from `tier-definitions.md`. Be encouraging, not intimidating. Example: *"Based on your answers, this is a Public-tier project. That means we'll apply security and data protection rules appropriate for an app that strangers on the internet will use. Nothing scary — just smart defaults."*
+1. **Add `vibeArchitecture/` to the project's `.gitignore`.** The framework is a development tool — it should not be committed to the project's repository. Add a `vibeArchitecture/` line to the project's root `.gitignore` file. Create the file if it doesn't exist.
 
-2. **Flag warnings where needed:**
+2. **Tell the user their tier and what it means.** Read from `tier-definitions.md`. Be encouraging, not intimidating. Example: *"Based on your answers, this is a Public-tier project. That means we'll apply security and data protection rules appropriate for an app that strangers on the internet will use. Nothing scary — just smart defaults."*
+
+3. **Flag warnings where needed:**
    - Storing personal data at any tier: *"Since you're storing personal information, you'll likely need a privacy policy. I can't write legal documents, but it's worth looking into a template or getting professional advice."*
    - Health/financial data: *"This type of data has legal requirements around storage and handling. I'll apply the right architectural rules, but you should also consult someone who knows [HIPAA/PCI-DSS] requirements."*
    - Budget mismatch: *"Based on what you've described, hosting typically costs [range]. Your budget of [amount] might be tight. We can discuss options to work within it."*
 
-3. **Fill in PROJECT_PROFILE.md** with answers and tier. Use the template in the project root.
+4. **Generate PROJECT_PROFILE.md in the project root.** Save the completed profile in the project's root directory (next to the `vibeArchitecture/` folder), NOT inside `vibeArchitecture/`. The profile is project-specific data that should be committed to the project's repository. Use the template from `vibeArchitecture/PROJECT_PROFILE.md`.
 
-4. **Confirm with the user:** *"Here's what I've captured. Does this look right? We can adjust anything."*
+5. **Confirm with the user:** *"Here's what I've captured. Does this look right? We can adjust anything."*
 
-5. **Load the rules** from `rules/_index.md` for the determined tier and begin building.
+6. **Load the rules** from `rules/_index.md` for the determined tier and begin building.

@@ -2,18 +2,25 @@
 
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 
-## Step 1: Check for a Project Profile
+## Step 1: Project Setup
 
-Look for `PROJECT_PROFILE.md` in this directory.
+If this is the first session, ensure the project is configured correctly:
 
-- **If it has NOT been filled in** (still contains `[To be filled in]` placeholders): STOP. Do not write any code. Read `intake/questionnaire.md` and conduct the intake conversation with the user first. The conversation will produce a completed `PROJECT_PROFILE.md`.
-- **If it HAS been filled in**: Proceed to Step 2.
+- **Add `vibeArchitecture/` to the project's `.gitignore`.** The framework is a development tool, not part of the project's codebase. Add a line with `vibeArchitecture/` to the project's root `.gitignore` file (create the file if it doesn't exist). Do this before any other work.
+- **The project profile lives at the project root.** When generated, `PROJECT_PROFILE.md` is saved in the project root directory (next to `vibeArchitecture/`), NOT inside the `vibeArchitecture/` folder. This way the profile is committed to the project's repository while the framework itself is not.
 
-## Step 2: Load the Appropriate Rules
+## Step 2: Check for a Project Profile
+
+Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `vibeArchitecture/`).
+
+- **If it does not exist or has not been filled in** (still contains `[To be filled in]` placeholders): STOP. Do not write any code. Read `intake/questionnaire.md` and conduct the intake conversation with the user first. The conversation will produce a completed `PROJECT_PROFILE.md` in the project root.
+- **If it HAS been filled in**: Proceed to Step 3.
+
+## Step 3: Load the Appropriate Rules
 
 Read `rules/_index.md` to determine which rule files apply based on the project's tier (recorded in `PROJECT_PROFILE.md`). Load those rule files. They are compact and designed to fit within context limits — load all that apply for the tier.
 
-## Step 3: Build with the Rules Active
+## Step 4: Build with the Rules Active
 
 As you help the user build their project:
 
@@ -24,7 +31,7 @@ As you help the user build their project:
   - `checklists/before-you-build.md` when starting a new project
   - `checklists/before-you-deploy.md` when deployment or "going live" is discussed
 
-## Step 4: Explain When Asked
+## Step 5: Explain When Asked
 
 If the user or you need deeper context on any rule, consult the detailed guide in `guides/` for that topic. These contain full reasoning, tradeoffs, and alternatives. Only load them when needed — not preemptively.
 

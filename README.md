@@ -14,19 +14,25 @@ You don't need a computer science degree. You don't need to understand "microser
 
 ## Quick Start
 
-### Step 1: Add vibeArchitecture to your project
+### Step 1: Get vibeArchitecture
 
-**Option A — Copy:**
-Download or clone this repository and copy the `vibeArchitecture/` folder into your project root.
+**Easiest — Download the ZIP (no git knowledge needed):**
+1. Click the green **"Code"** button at the top of this page
+2. Click **"Download ZIP"**
+3. Unzip the downloaded file
+4. Copy the resulting folder into your project's main folder (the top-level folder where your code lives)
+5. Rename it to `vibeArchitecture` if it has a different name after unzipping
 
-**Option B — Git submodule (stays updatable):**
+**With git — Clone or submodule:**
+
+If you're comfortable with git, you can clone this repository and copy the folder in, or add it as a submodule so it's easy to update later:
 ```bash
 git submodule add https://github.com/jgnoonan/vibeArchitecture.git vibeArchitecture
 ```
 
 ### Step 2: Set up your AI tool
 
-Copy the integration file for your tool into your **project root**:
+Copy the integration file for your tool into your **project root** (the same folder that contains the `vibeArchitecture/` folder):
 
 | Tool | Command |
 |------|---------|
@@ -35,9 +41,67 @@ Copy the integration file for your tool into your **project root**:
 | **GitHub Copilot / Codex** | `cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md` |
 | **Other tools** | Tell the agent: "Read vibeArchitecture/ARCHITECT.md before we start" |
 
+Not sure how to run these commands? Just ask your AI agent: *"Copy the vibeArchitecture integration file for [your tool name] into the project root."* It will do it for you.
+
 ### Step 3: Start building
 
-That's it. The AI will walk you through a short conversation about your project, then apply the right level of guidance as you build.
+That's it. On first run, the AI will automatically add `vibeArchitecture/` to your project's `.gitignore` (the framework is a tool, not part of your codebase), walk you through a short conversation about your project, and then apply the right level of guidance as you build. Your project profile is saved at the project root so it stays in your repository.
+
+## New to GitHub and Git?
+
+If terms like "repository," "clone," and "git" are unfamiliar, here's what you need to know.
+
+### What is GitHub?
+
+GitHub is a website where developers store and share code. Think of it like Google Drive for code — it keeps a copy of your project online, tracks every change you've ever made, and lets you undo mistakes. This vibeArchitecture project is stored on GitHub, which is how you found this page.
+
+### What is Git?
+
+Git is a tool that runs on your computer and tracks changes to your files. Every time you save a meaningful change, git records what changed and when. If you break something, you can go back to any previous version. GitHub is the online service; git is the tool on your computer that talks to it.
+
+### Do I Need Git?
+
+**For using vibeArchitecture:** No. You can download the ZIP file (Step 1 above) and skip git entirely.
+
+**For building your project:** Strongly recommended. Git protects you from losing work and is required if you want to deploy your app to most hosting platforms. The good news: your AI coding agent can set it up for you.
+
+### Setting Up Git (When You're Ready)
+
+Ask your AI agent: *"Help me set up git for this project."* It will walk you through it. But if you want to do it yourself:
+
+1. **Install git:**
+   - **Mac:** Open Terminal and type `git --version`. If it's not installed, your Mac will prompt you to install it.
+   - **Windows:** Download from [git-scm.com](https://git-scm.com/download/win) and run the installer. Use the default settings.
+   - **Linux:** Run `sudo apt install git` (Ubuntu/Debian) or `sudo dnf install git` (Fedora).
+
+2. **Set your name and email** (git uses this to label your changes):
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "your@email.com"
+   ```
+
+3. **Initialize git in your project** (do this once, in your project's main folder):
+   ```bash
+   git init
+   ```
+
+4. **Save your first snapshot:**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   ```
+
+That's the basics. From here, your AI agent can handle git for you — it knows how to commit changes, create branches, and push to GitHub.
+
+### Setting Up a GitHub Account (When You're Ready)
+
+If you want to store your project online (recommended — it's a backup and lets you deploy):
+
+1. Go to [github.com](https://github.com) and sign up for a free account
+2. Create a new repository (GitHub will walk you through it)
+3. Ask your AI agent: *"Help me push this project to my GitHub repository at [your repo URL]"*
+
+You don't need a GitHub account to start building. You can set this up later when you're ready to deploy or want an online backup.
 
 ## What Happens
 
