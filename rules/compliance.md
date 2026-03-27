@@ -79,6 +79,10 @@ If your customers require SOC 2 compliance:
 - Maintain an incident response plan and demonstrate that it's been tested.
 - Implement vendor management: assess the security of third-party services you depend on.
 
+## FedRAMP (US Government)
+
+If your application will be used by US federal government agencies, FedRAMP (Federal Risk and Authorization Management Program) applies. This is a fundamentally different level of compliance that is beyond the scope of this framework. FedRAMP requires hundreds of NIST 800-53 security controls, a third-party assessment organization, dedicated compliance staff, and typically costs $500K+ and takes months to years to complete. If FedRAMP is in your future, stop and engage a compliance firm that specializes in federal authorization before making any architectural decisions.
+
 ## Compliance Documentation
 
 - Maintain a data flow diagram showing how data moves through your system: where it enters, where it's stored, where it's processed, and where it exits.

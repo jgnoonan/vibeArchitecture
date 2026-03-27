@@ -157,10 +157,109 @@ If their budget doesn't match typical costs for their tier, flag it honestly but
 ### Q10: New project or existing code?
 
 *Ask:* "Are we starting from scratch, or adding to an existing project?"
-- **Starting from scratch**
-- **Adding to existing code**
+- **Starting from scratch** — proceed to Tier Determination Logic below.
+- **Adding to existing code** — proceed to Existing Project Analysis below, then Tier Determination.
 
-If existing code: note in the profile that the AI should review the current codebase against the tier's rules and flag areas of concern before adding new features.
+---
+
+## Existing Project Analysis
+
+When the user has an existing codebase, analyze it BEFORE completing the questionnaire. Many answers can be detected automatically, saving the user from answering questions the code already answers. Ask the user only for information that can't be determined from the codebase.
+
+### What to Analyze
+
+Scan the project and look for the following. Summarize findings for the user in plain language.
+
+**Tech stack and dependencies:**
+- Package manifests (`package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `go.mod`, `pom.xml`, etc.) — identify the language, framework, and key libraries
+- Lock files — are they present? (They should be)
+
+**Secrets and configuration:**
+- `.gitignore` — does it exist? Does it include `.env`?
+- `.env` files — do they exist? Are they in `.gitignore`?
+- Scan source code for patterns that look like hardcoded secrets (API keys, connection strings, tokens). Flag any found as **critical**.
+- `.env.example` — does one exist?
+
+**Database:**
+- Database configuration or ORM setup — what database is used?
+- Migration files — are migrations being used?
+- Schema files — are foreign keys, constraints, and indexes defined?
+
+**Authentication and authorization:**
+- Auth libraries or services in use (Auth0, Clerk, Firebase Auth, Passport, NextAuth, Devise, etc.)
+- Session or JWT configuration
+- Password hashing approach (if handling passwords directly)
+- Role/permission patterns
+
+**API design:**
+- API routes or endpoints — REST, GraphQL, or other
+- Error handling patterns — consistent error format?
+- Input validation — present at API boundaries?
+- Rate limiting — configured?
+- CORS configuration
+
+**Security:**
+- HTTPS configuration
+- Security headers
+- Dependency vulnerability status (run `npm audit`, `pip-audit`, or equivalent if possible)
+
+**Infrastructure and deployment:**
+- Deployment configuration (`Dockerfile`, `docker-compose.yml`, `fly.toml`, `vercel.json`, `railway.json`, `Procfile`, CI/CD config files)
+- Environment separation (separate configs for dev/staging/production)
+- IaC files (Terraform, Pulumi, CDK, CloudFormation)
+
+**Observability:**
+- Logging setup — structured? What library?
+- Monitoring or error tracking (Sentry, Datadog, etc.)
+- Health check endpoints
+
+**Testing:**
+- Test files and test runner configuration
+- Test coverage (if measurable)
+- Types of tests present (unit, integration, e2e)
+
+### How to Present Findings
+
+After analysis, present a summary to the user:
+
+*"I've looked through your existing codebase. Here's what I found:"*
+
+- List the tech stack and key libraries
+- Note what's working well (has migrations, uses an auth library, has tests, etc.)
+- Flag concerns organized by severity:
+  - **Critical** (fix immediately): hardcoded secrets, missing `.gitignore`, `.env` committed to git history
+  - **Important** (fix soon): no input validation, missing database constraints, no error handling, outdated dependencies with known vulnerabilities
+  - **Recommended** (improve over time): no tests, no structured logging, no health check endpoint, missing security headers
+
+### Pre-Fill the Profile
+
+Use the analysis to pre-fill answers to the questionnaire:
+- **Q3 (accounts/login):** Detected from auth configuration
+- **Q4 (data stored):** Inferred from database schema and models
+- **Q5 (access method):** Detected from project type (web app, API, CLI, etc.)
+- **Q6 (hosting):** Detected from deployment configuration
+- **Q10:** Already answered — existing code
+
+Then ask the user ONLY for the questions that can't be detected:
+- **Q1 (what are you building):** Still valuable to hear in their words
+- **Q2 (who will use this):** Can't be determined from code
+- **Q7 (expected users):** Can't be determined from code
+- **Q8 (downtime impact):** Can't be determined from code
+- **Q9 (budget):** Can't be determined from code
+
+### Gap Assessment
+
+After determining the tier, compare the existing codebase against the tier's rules and produce a prioritized list of gaps:
+
+*"Based on your project's tier, here are the areas where the codebase doesn't yet meet the recommended standards. I've organized them by priority:"*
+
+1. **Critical gaps** — security vulnerabilities, exposed secrets, missing data protection. Address before doing anything else.
+2. **Important gaps** — missing input validation, no backup strategy, no error handling, missing database constraints. Address before adding new features.
+3. **Recommended improvements** — missing tests, no monitoring, no deployment automation. Address as part of ongoing development.
+
+Note these gaps in the PROJECT_PROFILE.md under "Warnings and Flags."
+
+Do NOT try to fix everything at once. Work through gaps incrementally, starting with critical items, alongside the user's feature work.
 
 ---
 

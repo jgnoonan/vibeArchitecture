@@ -13,7 +13,10 @@ If this is the first session, ensure the project is configured correctly:
 
 Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `vibeArchitecture/`).
 
-- **If it does not exist or has not been filled in** (still contains `[To be filled in]` placeholders): STOP. Do not write any code. Read `intake/questionnaire.md` and conduct the intake conversation with the user first. The conversation will produce a completed `PROJECT_PROFILE.md` in the project root.
+- **If it does not exist or has not been filled in** (still contains `[To be filled in]` placeholders): STOP. Do not write any code. Read `intake/questionnaire.md` and conduct the intake conversation with the user first.
+  - **For existing projects:** The questionnaire includes an "Existing Project Analysis" section. When the user says the project already has code, analyze the codebase first. Detect the tech stack, security posture, database setup, auth patterns, deployment configuration, and testing coverage. Use what you find to pre-fill the profile, then ask only the questions that can't be answered by reading the code. Produce a gap assessment comparing the current codebase against the determined tier's rules.
+  - **For new projects:** Run the questionnaire conversationally as described in `intake/questionnaire.md`.
+  - Either path produces a completed `PROJECT_PROFILE.md` in the project root.
 - **If it HAS been filled in**: Proceed to Step 3.
 
 ## Step 3: Load the Appropriate Rules

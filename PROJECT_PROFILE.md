@@ -46,6 +46,33 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/performance.md`
 - [ ] `rules/compliance.md`
 
+## Detected Tech Stack (Existing Projects Only)
+
+If this project was analyzed from an existing codebase, the detected stack is listed here:
+
+- **Language/Framework:** [Detected or N/A]
+- **Database:** [Detected or N/A]
+- **Authentication:** [Detected or N/A]
+- **Hosting/Deployment:** [Detected or N/A]
+- **Testing:** [Detected or N/A]
+- **Monitoring/Logging:** [Detected or N/A]
+
+## Gap Assessment (Existing Projects Only)
+
+If this project was analyzed from an existing codebase, the gaps between current state and the tier's requirements are listed here, organized by priority:
+
+### Critical (fix before doing anything else)
+
+- [None detected, or list items]
+
+### Important (fix before adding new features)
+
+- [None detected, or list items]
+
+### Recommended (address during ongoing development)
+
+- [None detected, or list items]
+
 ## Warnings and Flags
 
 [To be filled in during intake — privacy policy needed, compliance consultation recommended, budget concerns, etc.]

@@ -45,7 +45,21 @@ Not sure how to run these commands? Just ask your AI agent: *"Copy the vibeArchi
 
 ### Step 3: Start building
 
-That's it. On first run, the AI will automatically add `vibeArchitecture/` to your project's `.gitignore` (the framework is a tool, not part of your codebase), walk you through a short conversation about your project, and then apply the right level of guidance as you build. Your project profile is saved at the project root so it stays in your repository.
+On first run, the AI will automatically add `vibeArchitecture/` to your project's `.gitignore` (the framework is a tool, not part of your codebase), then guide you through an intake process before applying the right level of guidance.
+
+**Starting a new project?** Just tell your AI agent:
+
+> *"Read vibeArchitecture/ARCHITECT.md and let's get started on a new project."*
+
+The AI will walk you through a short conversation about what you're building, who will use it, and what data is involved. Then it starts coding with the right guardrails in place.
+
+**Adding vibeArchitecture to an existing project?** Tell your AI agent:
+
+> *"Read vibeArchitecture/ARCHITECT.md. This is an existing project — analyze the codebase and build a project profile."*
+
+The AI will scan your existing code and report back what it found: your tech stack, database, security setup, deployment configuration, and more. It will flag anything that needs attention (like hardcoded secrets or missing input validation), organized by priority. Then it will ask you a few questions it can't answer by reading the code — things like who your users are and what happens if the app goes down. The result is a project profile and a prioritized gap assessment so you know exactly what to address and in what order.
+
+Your project profile is saved at the project root so it stays in your repository.
 
 ## New to GitHub and Git?
 
@@ -105,10 +119,20 @@ You don't need a GitHub account to start building. You can set this up later whe
 
 ## What Happens
 
+**For new projects:**
+
 1. **The AI asks you questions** — plain English, no jargon. Things like "Who will use this?" and "What happens if it goes down?"
 2. **Your answers create a project profile** — this tells the AI how much architectural rigor your project needs
 3. **The AI enforces the right rules** — a personal hobby project gets light guidance; an app handling medical data gets comprehensive guardrails
 4. **You build with confidence** — knowing the AI is watching for the mistakes that experienced engineers have learned to avoid the hard way
+
+**For existing projects:**
+
+1. **The AI analyzes your codebase** — it detects your tech stack, database, authentication, security posture, deployment setup, and testing coverage
+2. **It reports what it found** — in plain English, including what's working well and what needs attention
+3. **It asks only the questions code can't answer** — who your users are, what downtime means for you, your budget
+4. **Your answers plus the analysis create a project profile and gap assessment** — a prioritized list of what to fix (critical items first) alongside your regular feature work
+5. **The AI enforces the right rules going forward** — and helps you close the gaps incrementally
 
 ## How It's Organized
 
