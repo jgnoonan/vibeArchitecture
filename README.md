@@ -61,6 +61,98 @@ The AI will scan your existing code and report back what it found: your tech sta
 
 Your project profile is saved at the project root so it stays in your repository.
 
+## Using with Xcode or Android Studio
+
+vibeArchitecture works with any language and any IDE — including Swift, SwiftUI, Kotlin, and Java. Since Xcode and Android Studio don't have a built-in Claude integration, you'll use **Claude Code** alongside your IDE. Claude Code runs in your terminal and can read, create, and modify files in your project — the same files your IDE sees.
+
+### Setting Up Claude Code
+
+Claude Code is a command-line tool from Anthropic. To install it:
+
+1. **Open Terminal** (Mac) or **your terminal app** (Windows/Linux)
+2. **Install Claude Code:**
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+If you don't have npm, ask your AI agent for help installing Node.js first, or see [Anthropic's Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) for alternative install methods.
+
+3. **Navigate to your project folder:**
+
+For Xcode projects (the folder containing your `.xcodeproj` or `.xcworkspace` file):
+
+```bash
+cd ~/path/to/your/xcode-project
+```
+
+For Android Studio projects (the folder containing your `build.gradle` or `settings.gradle` file):
+
+```bash
+cd ~/path/to/your/android-project
+```
+
+4. **Start Claude Code:**
+
+```bash
+claude
+```
+
+That's it — Claude Code can now see all the files in your project, including vibeArchitecture.
+
+### The Workflow
+
+You'll use both tools side by side:
+
+- **Xcode or Android Studio** — for editing code, running the app, using the debugger, and testing on simulators/emulators
+- **Claude Code (in your terminal)** — for AI-assisted architecture, code generation, answering questions, and vibeArchitecture guidance
+
+They share the same project folder, so changes made by Claude Code appear immediately in your IDE, and vice versa. Think of it like having an architect (Claude Code) and a workbench (your IDE) in the same workshop.
+
+### Quick Start for Xcode Projects
+
+```bash
+cd ~/path/to/your/xcode-project
+```
+
+Then follow the normal Quick Start above (Steps 1–3). When you get to Step 2, use the Claude Code integration:
+
+```bash
+cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md
+```
+
+For a **new iOS/macOS project**, tell Claude Code:
+
+> *"Read vibeArchitecture/ARCHITECT.md and let's get started on a new project. I'm building an iOS app with Swift."*
+
+For an **existing Xcode project**, tell Claude Code:
+
+> *"Read vibeArchitecture/ARCHITECT.md. This is an existing iOS project — analyze the codebase and build a project profile."*
+
+### Quick Start for Android Studio Projects
+
+```bash
+cd ~/path/to/your/android-project
+```
+
+Then follow the normal Quick Start above (Steps 1–3). When you get to Step 2, use the Claude Code integration:
+
+```bash
+cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md
+```
+
+For a **new Android project**, tell Claude Code:
+
+> *"Read vibeArchitecture/ARCHITECT.md and let's get started on a new project. I'm building an Android app with Kotlin."*
+
+For an **existing Android project**, tell Claude Code:
+
+> *"Read vibeArchitecture/ARCHITECT.md. This is an existing Android project — analyze the codebase and build a project profile."*
+
+### What About Gemini in Android Studio?
+
+Android Studio has Google's Gemini built in, but it doesn't support reading custom framework files like vibeArchitecture. Use Claude Code in your terminal for the architectural guidance, and use Gemini in Android Studio for its built-in features (code completion, lint fixes, etc.) if you like — they won't conflict.
+
 ## New to GitHub and Git?
 
 If terms like "repository," "clone," and "git" are unfamiliar, here's what you need to know.
