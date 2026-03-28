@@ -10,6 +10,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Authorization:** Determining what you're allowed to do after authentication. An admin can delete users; a regular user can't. *Why you should care: Authentication without authorization means every logged-in user has full access to everything.*
 
+**Atomic operation:** An operation that completes entirely or not at all — nothing can interrupt it halfway. Like flipping a light switch: it's either on or off, never stuck between. *Why you should care: When multiple threads update a counter or flag, atomic operations prevent two updates from colliding and producing a wrong result.*
+
 **Backpressure:** A mechanism that slows down producers when consumers can't keep up. Like a valve that reduces flow when the pipe is full. *Why you should care: Without it, a sudden surge of work can overwhelm your system and crash it.*
 
 **Blue-green deployment:** Running two identical environments and switching traffic between them for zero-downtime deployments. *Why you should care: It lets you update your app without users experiencing downtime.*
@@ -28,6 +30,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Circuit breaker:** A pattern that stops calling a failing service, giving it time to recover. Like an electrical breaker that trips to prevent a fire. *Why you should care: Without it, a failing external service can take your entire application down.*
 
+**Concurrency:** Multiple operations happening at the same time (or interleaved), potentially accessing the same resources. *Why you should care: Almost every web application handles concurrent requests. If two users update the same data at the same instant, you need a strategy for that or one update silently disappears.*
+
 **Connection pooling:** Maintaining a set of reusable database connections instead of creating a new one for each request. *Why you should care: Creating connections is slow. Pooling makes database operations significantly faster.*
 
 **CORS (Cross-Origin Resource Sharing):** A browser security mechanism that controls which websites can make requests to your API. *Why you should care: Misconfigured CORS either blocks legitimate requests or allows malicious ones.*
@@ -35,6 +39,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **CQRS (Command Query Responsibility Segregation):** Separating the read side and write side of your application into different models. *Why you should care: You probably don't need it for most applications, but you might encounter it in recommendations. Use it only if you have very different read and write patterns at significant scale.*
 
 **CRUD:** Create, Read, Update, Delete — the four basic operations for data. *Why you should care: Most web applications are fundamentally CRUD operations. Understanding this simplifies your design.*
+
+**Deadlock:** Two or more operations each waiting for the other to finish, so none of them ever do. Thread A holds Lock 1 and wants Lock 2; Thread B holds Lock 2 and wants Lock 1 — both wait forever. *Why you should care: Deadlocks freeze your application with no error message. They're hard to diagnose because nothing crashes — everything just stops.*
 
 **DDoS (Distributed Denial of Service):** An attack that overwhelms your servers with traffic to make them unavailable. *Why you should care: Rate limiting and CDNs help protect against this.*
 
@@ -60,11 +66,19 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Migration (database):** A version-controlled script that changes the database schema. *Why you should care: Without migrations, database changes are manual, unreproducible, and can't be rolled back.*
 
+**Mutex (mutual exclusion):** A lock that only one thread can hold at a time. Like a bathroom door lock — if someone's inside, everyone else waits. *Why you should care: Mutexes are the most basic tool for preventing race conditions when multiple threads access shared data.*
+
 **N+1 query problem:** A performance bug where loading a list of N items triggers N additional queries for related data, instead of loading everything in 1-2 queries. *Why you should care: It's the #1 cause of slow pages in web applications.*
 
 **ORM (Object-Relational Mapping):** A library that lets you interact with the database using your programming language instead of writing SQL directly. Examples: Prisma, SQLAlchemy, Sequelize, Active Record. *Why you should care: ORMs speed up development but can hide performance problems. Understand what queries they generate.*
 
+**Optimistic concurrency:** An approach where you proceed without locking, then check if anyone else changed the data before you save. If they did, you retry. *Why you should care: It's faster than locking when conflicts are rare, which they usually are.*
+
 **Parameterized query:** A database query where user input is passed as separate parameters rather than concatenated into the query string. Prevents SQL injection. *Why you should care: This single practice prevents one of the most dangerous and common web vulnerabilities.*
+
+**Pessimistic concurrency:** An approach where you lock the data before reading it, preventing anyone else from changing it until you're done. *Why you should care: It's the safe choice when conflicts are frequent or the stakes are high (money, inventory).*
+
+**Race condition:** A bug where the outcome depends on the unpredictable timing of two or more operations. Like two people editing the same document — whoever saves last wins, and the other person's changes vanish. *Why you should care: Race conditions work fine in testing (single user) and fail mysteriously in production (many users). They're among the hardest bugs to find and fix.*
 
 **Rate limiting:** Restricting how many requests a client can make in a given time period. *Why you should care: Without it, one abusive user or bot can overwhelm your server or run up your cloud bill.*
 

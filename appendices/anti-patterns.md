@@ -188,3 +188,55 @@ query = "SELECT * FROM users WHERE email = '" + user_input + "'"
 **Why it's bad:** Anyone can bypass the frontend by making direct API calls. Every browser has developer tools that let users modify requests. Client-side security is UX, not security.
 
 **Do this instead:** All security checks on the server. Client-side validation is for user convenience only.
+
+---
+
+## Concurrency Anti-Patterns
+
+### Ignoring Concurrent Access
+
+**What it looks like:** Two users buy the last item in stock. The code reads "1 in stock," processes both purchases, and writes "0 in stock." You've sold an item you don't have.
+
+**Why it's bad:** Code that works perfectly with one user at a time silently produces wrong results under real-world load. These bugs are intermittent and extremely hard to reproduce — they depend on exact timing.
+
+**Do this instead:** Use database transactions with proper locking (`SELECT ... FOR UPDATE`) or optimistic concurrency (version numbers on rows). Any time two operations can touch the same data simultaneously, you need a concurrency strategy.
+
+---
+
+### Writing to Files Without Locking
+
+**What it looks like:** Multiple processes or AI agents write to the same configuration file, log file, or data file without coordination. Intermittent data corruption, missing entries, or garbled content.
+
+**Why it's bad:** Operating systems don't lock files for you. Two processes writing to the same file at the same time can interleave their writes, producing corrupted data. A crash mid-write can leave a half-written file.
+
+**Do this instead:** Use file locks, write to a temporary file and rename atomically, or use a database for shared state instead of files. If you must share files, coordinate through a single writer process.
+
+---
+
+### Holding Locks During External Calls
+
+**What it looks like:** Acquire a lock, call an API that takes 5 seconds, release the lock. Every other thread that needs that lock waits 5 seconds.
+
+**Why it's bad:** The lock duration is now controlled by the external service, not your code. If the API is slow or hangs, the lock is held indefinitely. Everything that depends on that resource freezes.
+
+**Do this instead:** Fetch data from the external service first (no lock). Then acquire the lock, update the shared resource with the fetched data, and release immediately. Minimize the time any lock is held.
+
+---
+
+### Non-Idempotent Retries
+
+**What it looks like:** A payment request times out. Did it go through? The code retries. Now the customer is charged twice.
+
+**Why it's bad:** Network timeouts don't tell you whether the operation succeeded or failed — only that you didn't get a response in time. Blindly retrying a non-idempotent operation can duplicate it.
+
+**Do this instead:** Assign a unique idempotency key to each operation. Include it in the request. The receiving system checks if it's already processed that key and returns the original result instead of processing again. All payment APIs support this — use it.
+
+---
+
+### Global Mutable State
+
+**What it looks like:** A module-level variable (like a counter, cache, or config object) that gets read and written by every request handler without synchronization.
+
+**Why it's bad:** Web frameworks handle requests concurrently. Multiple threads writing to a shared variable without locks produces incorrect values, corrupted data structures, or crashes. The bugs are timing-dependent and appear randomly.
+
+**Do this instead:** Use thread-safe data structures (concurrent maps, atomic counters), request-scoped state, or proper synchronization (mutexes). Better yet, keep state in a database or cache service designed for concurrent access.

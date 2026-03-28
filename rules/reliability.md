@@ -38,6 +38,18 @@
 - Cached or stale data is almost always better than an error page. If you can serve a slightly outdated response while the backend recovers, do it.
 - Design "read-only mode" as a fallback for write-path failures. Users can still browse and view data even when writes are temporarily unavailable.
 
+## Concurrency
+
+- When multiple threads, processes, or agents can access the same resource (a file, a database row, a shared variable, an API), assume they WILL access it at the same time. Design for it, don't hope it won't happen.
+- Protect shared state with the appropriate mechanism for your platform: mutexes/locks for threads, database transactions with proper isolation for data, file locks for filesystem operations, atomic operations for simple counters and flags.
+- Prefer "share nothing" over shared state. If each thread, process, or worker has its own copy of the data it needs, there's nothing to conflict over. Merge results afterward.
+- Use optimistic concurrency for low-contention resources: read the data, do your work, then check if someone else changed it before you write. If they did, retry. Optimistic approaches avoid holding locks and work well when conflicts are rare.
+- Use pessimistic concurrency (explicit locks) for high-contention or critical resources: lock first, do your work, then release. Use this when conflicts are frequent or the cost of a conflict is high (financial transactions, inventory counts).
+- Never hold locks while waiting on external calls. If you lock a resource, call an API that takes 10 seconds, then unlock — everything else that needs that resource is blocked for those 10 seconds. Do the external call first, then lock, write, unlock.
+- Design operations to be idempotent — running them twice produces the same result as running them once. This is essential for retries, message queues, and any situation where "did my operation actually succeed?" is uncertain. Use unique request IDs or idempotency keys to detect and deduplicate repeated operations.
+- Be especially careful with file operations. Most operating systems don't lock files automatically. If two processes write to the same file simultaneously, you get corrupted data. Use file locks, write to a temporary file and rename atomically, or use a database instead of files for shared state.
+- For Rust specifically: the compiler enforces memory safety and prevents data races, but logical race conditions (two threads reading a value, both deciding to update, one overwriting the other's work) are still your responsibility. `Mutex`, `RwLock`, channels, and atomic types are your tools.
+
 ## Health Checks
 
 - Every deployed service must have a health check endpoint (typically `GET /health` or `GET /healthz`).
