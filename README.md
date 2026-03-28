@@ -308,6 +308,38 @@ vibeArchitecture/
         └── AGENTS.md                     # For Android Studio (Panda+)
 ```
 
+## Token Usage
+
+vibeArchitecture is designed to be lightweight in your AI's context window. The rules layer is compact, guides are only loaded when you ask "why?", and the framework scales with your project's tier — a simple personal project loads far less than a regulated business application.
+
+### Per-Session Cost (loaded every time you start a conversation)
+
+| Tier | What's loaded | Est. tokens | % of 200K window |
+|------|--------------|-------------|-------------------|
+| **Personal** | Core + universal rules | ~2,850 | ~1.4% |
+| **Shared** | Above + security, data, testing | ~5,550 | ~2.8% |
+| **Public** | Above + API rules | ~6,400 | ~3.2% |
+| **Business** | Above + reliability, infrastructure, observability, performance | ~11,100 | ~5.6% |
+| **Business (experienced)** | Above + system design | ~12,400 | ~6.2% |
+| **Regulated** | Everything including compliance | ~13,800 | ~6.9% |
+
+### One-Time Costs
+
+| Activity | Est. tokens | When |
+|----------|-------------|------|
+| **Intake conversation** (questionnaire + tier definitions) | ~5,800 | Once per project |
+| **Existing project analysis** | ~5,800 + codebase scanning | Once per project |
+
+### On-Demand Guides
+
+Guides are **never loaded automatically**. They're pulled in only when you ask "why?" or when the AI needs deeper context for a specific decision. Each guide averages about **~1,560 tokens** — a small, temporary addition.
+
+The entire guides library totals ~45,000 tokens, but it would never be loaded all at once. A typical session might pull in one or two guides at most.
+
+### What This Means in Practice
+
+For a typical project on the Shared or Public tier, the framework uses roughly **3–6%** of your AI's context window. That leaves the vast majority available for your actual code and conversation. Even at the Regulated tier with everything loaded, the framework stays under 7%.
+
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
