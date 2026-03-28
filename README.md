@@ -34,13 +34,16 @@ git submodule add https://github.com/jgnoonan/vibeArchitecture.git vibeArchitect
 
 Copy the integration file for your tool into your **project root** (the same folder that contains the `vibeArchitecture/` folder):
 
-| Tool | Command |
-|------|---------|
-| **Claude Code** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` |
-| **Cursor** | `cp vibeArchitecture/integrations/cursorrules ./.cursorrules` |
-| **GitHub Copilot / Codex** | `cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md` |
-| **Android Studio (Panda+)** | `cp vibeArchitecture/integrations/android-studio/AGENTS.md ./AGENTS.md` |
-| **Other tools** | Tell the agent: "Read vibeArchitecture/ARCHITECT.md before we start" |
+| Tool | Command | Setup Guide |
+|------|---------|-------------|
+| **Claude Code** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` | |
+| **Cursor** | `cp vibeArchitecture/integrations/cursorrules ./.cursorrules` | |
+| **GitHub Copilot / Codex** | `cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md` | |
+| **Xcode (26.3+)** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` | [Xcode setup](#using-with-xcode) |
+| **Android Studio (Panda+)** | `cp vibeArchitecture/integrations/android-studio/AGENTS.md ./AGENTS.md` | [Android Studio setup](#using-with-android-studio) |
+| **Other tools** | Tell the agent: "Read vibeArchitecture/ARCHITECT.md before we start" | |
+
+**Using Xcode or Android Studio?** These IDEs need a one-time setup to configure Claude as your AI provider before the integration file will work. Follow the setup guide linked above for your IDE.
 
 Not sure how to run these commands? Just ask your AI agent: *"Copy the vibeArchitecture integration file for [your tool name] into the project root."* It will do it for you.
 
