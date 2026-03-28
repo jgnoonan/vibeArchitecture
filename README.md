@@ -38,6 +38,8 @@ Copy the integration file for your tool into your **project root** (the same fol
 |------|---------|-------------|
 | **Claude Code** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` | |
 | **Cursor** | `cp vibeArchitecture/integrations/cursorrules ./.cursorrules` | |
+| **VS Code (with Copilot)** | `cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md` | |
+| **VS Code (with Claude)** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` | |
 | **GitHub Copilot / Codex** | `cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md` | |
 | **Xcode (26.3+)** | `cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md` | [Xcode setup](#using-with-xcode) |
 | **Android Studio (Panda+)** | `cp vibeArchitecture/integrations/android-studio/AGENTS.md ./AGENTS.md` | [Android Studio setup](#using-with-android-studio) |
