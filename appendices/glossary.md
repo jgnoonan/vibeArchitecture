@@ -64,7 +64,13 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Load balancer:** A system that distributes incoming requests across multiple servers. *Why you should care: It enables horizontal scaling and provides redundancy if one server fails.*
 
+**Microservices:** An architecture where your application is split into small, independently deployable services that communicate over the network. Each service has its own codebase and database. *Why you should care: Microservices solve real problems at scale but add enormous complexity. Most applications should start as a monolith and decompose only when there's evidence it's necessary.*
+
 **Migration (database):** A version-controlled script that changes the database schema. *Why you should care: Without migrations, database changes are manual, unreproducible, and can't be rolled back.*
+
+**Modular monolith:** A monolith with strictly enforced internal boundaries between modules. Modules communicate through explicit interfaces, not by reaching into each other's internals. *Why you should care: You get most of the organizational benefits of microservices without the operational complexity. It's also the best preparation for future decomposition.*
+
+**Monolith:** An application built and deployed as a single unit. All code runs in the same process. *Why you should care: This is the right default for most applications. It's simpler to develop, deploy, debug, and operate than a distributed system.*
 
 **Mutex (mutual exclusion):** A lock that only one thread can hold at a time. Like a bathroom door lock — if someone's inside, everyone else waits. *Why you should care: Mutexes are the most basic tool for preventing race conditions when multiple threads access shared data.*
 
@@ -93,6 +99,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Soft delete:** Marking a record as deleted (usually with a timestamp) instead of physically removing it. *Why you should care: It allows recovery of accidentally deleted data and maintains referential integrity with related records.*
 
 **Stateless (application design):** The application doesn't store any data in its own process between requests. All state lives in external services (database, cache). *Why you should care: Stateless applications can scale horizontally — you can run multiple copies behind a load balancer.*
+
+**Strangler Fig pattern:** A migration strategy where you gradually replace parts of an old system with new services, routing traffic incrementally until the old code can be removed. *Why you should care: It's the safest way to migrate from a monolith to services — no big-bang rewrite, no risky cutovers.*
 
 **TLS (Transport Layer Security):** The protocol that provides HTTPS — encrypted communication between browsers and servers. *Why you should care: Without TLS, data (including passwords) travels in plain text that anyone on the network can read.*
 

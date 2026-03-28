@@ -11,6 +11,7 @@
 - **Project name:** [To be filled in]
 - **Description:** [To be filled in]
 - **Date created:** [To be filled in]
+- **Experience level:** [beginner / intermediate / experienced]
 
 ## Project Tier
 
@@ -32,6 +33,18 @@ See `intake/tier-definitions.md` for what this tier means.
 | Budget | [To be filled in] |
 | New or existing project? | [To be filled in] |
 
+## Architecture (Business/Regulated Tier, Experienced Developers Only)
+
+These fields are filled in only when the experience level is `experienced` AND the tier is Business or Regulated. For all other combinations, the default is monolith — skip this section.
+
+| Question | Answer |
+|----------|--------|
+| Team size | [To be filled in or N/A] |
+| Independent scaling needs? | [To be filled in or N/A] |
+| Independent deployment needs? | [To be filled in or N/A] |
+| Clear domain boundaries? | [To be filled in or N/A] |
+| **Architecture style** | [Monolith / Modular monolith / Services — evaluate] |
+
 ## Active Rule Sets
 
 Based on the tier, these rule files are enforced:
@@ -44,6 +57,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/infrastructure.md`
 - [ ] `rules/observability.md`
 - [ ] `rules/performance.md`
+- [ ] `rules/system-design.md`
 - [ ] `rules/compliance.md`
 
 ## Detected Tech Stack (Existing Projects Only)

@@ -18,6 +18,25 @@ Walk the user through these questions to understand their project and determine 
 
 ## The Questions
 
+### Q0: What's your background?
+
+*Ask:* "One more thing before we dive in — what's your background with building software?"
+- **I'm new to this** — AI does most of the coding, I describe what I want
+- **I've built a few things** — I can read code and make changes, but I'm still learning
+- **I'm an experienced developer** — I have a software engineering background
+
+Record as `experience_level` in the profile:
+- "New to this" → `beginner`
+- "Built a few things" → `intermediate`
+- "Experienced developer" → `experienced`
+
+**This does NOT change which rules apply.** All three levels get the full framework for their tier. It adjusts:
+- **Communication style:** For `beginner` and `intermediate`, use plain language and explain every technical concept. For `experienced`, use concise technical language — standard terminology without definitions, skip analogies, surface tradeoffs at a deeper level.
+- **Question depth:** For `experienced` users at Business tier or above, ask the additional architecture questions (Q11–Q14) after tier determination.
+- **System design rules:** For `experienced` users at Business tier or above, load `rules/system-design.md`.
+
+---
+
 ### Q1: What are you building?
 
 *Ask:* "Tell me about what you want to build. Just describe it in your own words — what will it do, and what problem does it solve?"
@@ -218,6 +237,16 @@ Scan the project and look for the following. Summarize findings for the user in 
 - Test coverage (if measurable)
 - Types of tests present (unit, integration, e2e)
 
+**Architecture complexity (signals for system design questions):**
+- Multiple separate deployment configurations (multiple Dockerfiles, separate CI/CD pipelines for different parts)
+- Monorepo with independent modules that have their own package manifests or build configs
+- Multiple distinct databases or data stores serving different purposes
+- Existing service-oriented or microservices architecture (multiple running services, API gateway, message queues)
+- Large number of contributors or recent commit authors (suggests multiple teams)
+- Distinct domain directories with minimal cross-references (payments, inventory, notifications operating independently)
+
+If 2+ of these signals are detected AND the tier is Business or Regulated, surface the architecture questions (Q11–Q14) regardless of experience level. The codebase itself is indicating architectural complexity that needs to be addressed.
+
 ### How to Present Findings
 
 After analysis, present a summary to the user:
@@ -279,6 +308,85 @@ Then check for upgrades (tier can only go UP):
   Q8 is "Critical"                       → at least Business
   Q8 is "Critical" + sensitive data (Q4) → Regulated
 ```
+
+---
+
+## Architecture Questions (Conditional)
+
+**Ask these ONLY when both conditions are true:**
+1. The user's `experience_level` is `experienced`
+2. The determined tier is **Business** or **Regulated**
+
+For `beginner` and `intermediate` users, or for Personal/Shared/Public tiers, skip this section entirely. The monolith default in `rules/system-design.md` is the right choice for them.
+
+### Q11: How big is the development team?
+
+*Ask:* "How many developers will be working on this codebase?"
+- **Just me or 1–2 people**
+- **A small team (3–5 people)**
+- **A larger team (6+ people)**
+- **Multiple teams working on different parts**
+
+Record in the profile. This is a key input for architecture style decisions.
+
+---
+
+### Q12: Do different parts need to scale independently?
+
+*Ask:* "Does your system have parts with very different resource needs? For example, image processing that's CPU-heavy while user authentication is lightweight — or a real-time feed that handles 100x the traffic of account management."
+- **No** — it's fairly uniform
+- **Yes** — there are clearly different scaling profiles
+- **Not sure**
+
+If "Not sure": default to uniform. Revisit when real traffic data exists.
+
+---
+
+### Q13: Do teams need to deploy independently?
+
+*Ask:* "Do different teams need to ship their changes without waiting on other teams?"
+- **No** — we coordinate releases
+- **Yes** — we need independent deployment
+- **Not applicable** — it's just one team
+
+If "Yes" combined with "Multiple teams" from Q11: this is a strong signal for service decomposition.
+
+---
+
+### Q14: Are there hard domain boundaries?
+
+*Ask:* "Does your system have clearly separate domains — areas that barely share data and could function independently? For example: payments, inventory management, and notifications."
+- **No** — it's one cohesive application
+- **Yes** — there are distinct domains with clear boundaries
+- **Not sure yet**
+
+---
+
+### Architecture Style Determination
+
+```
+Default: Monolith (all projects start here)
+
+Consider service decomposition if 2+ of these are true:
+  Q11 = "Multiple teams"
+  Q12 = "Yes" (independent scaling needs)
+  Q13 = "Yes" (independent deployment needs)
+  Q14 = "Yes" (clear domain boundaries)
+
+If 0–1 are true: Monolith. Record as "Monolith" in the profile.
+If 2 are true: Modular monolith with clear boundaries. Record as "Modular monolith."
+  Flag: "Your project has some signals pointing toward services, but a
+  well-structured monolith with clear internal boundaries is the right
+  starting point. When the boundaries prove themselves, they become
+  natural extraction points."
+If 3–4 are true: Services may be justified. Record as "Services — evaluate."
+  Flag: "Your team structure and scaling needs suggest services may be
+  appropriate. But start with the boundaries clearly defined in a
+  monolith or modular monolith. Extract services from proven boundaries
+  — don't design them from scratch."
+```
+
+Even when the determination suggests services, the AI should emphasize the Strangler Fig approach: prove the boundaries in a monolith, then extract incrementally. See `guides/system-design/architecture-styles.md` for the detailed decision framework.
 
 ---
 

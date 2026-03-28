@@ -276,6 +276,7 @@ vibeArchitecture/
 │   ├── infrastructure.md                 # Business+
 │   ├── observability.md                  # Business+
 │   ├── performance.md                    # Business+
+│   ├── system-design.md                  # Business+ (experienced developers)
 │   └── compliance.md                     # Regulated only
 ├── guides/                               # Detailed explanations — loaded on demand
 │   ├── security/                         # Secrets, input validation, authentication
@@ -285,7 +286,8 @@ vibeArchitecture/
 │   ├── infrastructure/                   # Deployment, containers
 │   ├── observability/                    # Logging, monitoring
 │   ├── performance/                      # Database performance, caching
-│   └── operations/                       # Cost management, day 2 operations
+│   ├── operations/                       # Cost management, day 2 operations
+│   └── system-design/                    # Architecture styles, monolith vs. services
 ├── checklists/                           # Human-readable action items
 │   ├── before-you-build.md
 │   ├── before-you-deploy.md

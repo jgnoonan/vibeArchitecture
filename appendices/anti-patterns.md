@@ -157,7 +157,27 @@ query = "SELECT * FROM users WHERE email = '" + user_input + "'"
 
 **Why it's bad:** Microservices solve problems of large teams working on large systems. For small teams, they add enormous complexity: network communication, distributed debugging, deployment coordination, data consistency. You've traded simple in-process function calls for unreliable network requests.
 
-**Do this instead:** Start with a monolith. Decompose into services only when you have a specific problem that requires it (independent scaling, independent deployment by separate teams).
+**Do this instead:** Start with a monolith. Decompose into services only when you have a specific problem that requires it (independent scaling, independent deployment by separate teams). See `guides/system-design/architecture-styles.md` for the decision matrix.
+
+---
+
+### Monolith Denial
+
+**What it looks like:** A team of 15 developers all working in the same codebase. Deployments are weekly events requiring coordination across three teams. Merge conflicts are a daily occurrence. One team's refactoring regularly breaks another team's features. Everyone agrees "we should split this up" but it keeps getting deferred.
+
+**Why it's bad:** A monolith that has outgrown its team structure creates organizational bottlenecks that no amount of process improvement can fix. Deployment coordination becomes the primary constraint on delivery speed. Developer productivity drops as everyone navigates an increasingly tangled codebase where every change risks unintended side effects.
+
+**Do this instead:** Use the decision matrix in `rules/system-design.md`. If multiple teams are blocked on each other, parts of the system have different scaling profiles, or regulatory boundaries require isolation, it's time to extract services — incrementally, using the Strangler Fig pattern. Don't rewrite from scratch. Prove the boundaries in the monolith, then extract.
+
+---
+
+### Distributed Monolith
+
+**What it looks like:** The team "adopted microservices" but all services share the same database, must be deployed together, and communicate through long chains of synchronous HTTP calls. It looks like microservices on the architecture diagram but behaves like a monolith with network latency.
+
+**Why it's bad:** You've taken on all the operational complexity of a distributed system (network failures, distributed debugging, deployment coordination, eventual consistency) while gaining none of the benefits (independent deployment, independent scaling, team autonomy). It's strictly worse than the monolith you started with.
+
+**Do this instead:** Either commit to real service independence (each service owns its data, deploys independently, communicates asynchronously where possible) or merge the services back into a monolith and do it properly. There's no shame in reverting a bad decomposition.
 
 ---
 

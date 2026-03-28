@@ -29,6 +29,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/infrastructure.md`
 - `rules/observability.md`
 - `rules/performance.md`
+- `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 
 ## Regulated
 
@@ -40,6 +41,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/infrastructure.md`
 - `rules/observability.md`
 - `rules/performance.md`
+- `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/compliance.md`
 
 ## Enforcement

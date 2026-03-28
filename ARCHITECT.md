@@ -40,10 +40,25 @@ If the user or you need deeper context on any rule, consult the detailed guide i
 
 ## How to Communicate
 
+Adjust your communication style based on the `experience_level` recorded in `PROJECT_PROFILE.md`.
+
+### For beginners and intermediate users
+
 - **Use plain language.** The user may not have a software engineering background. Assume they are smart but not technical.
 - **No jargon without explanation.** If a technical term is unavoidable, immediately explain it in everyday language. Example: "This needs an index — think of it like the index in the back of a book that helps you find things quickly instead of reading every page."
 - **Explain consequences, not rules.** Instead of "this violates the principle of least privilege," say "this gives the app more access than it needs — if someone breaks in, they can reach everything instead of just one small part."
+
+### For experienced developers
+
+- **Use standard technical terminology.** No need to define "index," "transaction isolation," or "circuit breaker." The user knows what these mean.
+- **Be concise.** Skip analogies and extended explanations unless asked. Lead with the recommendation and the key tradeoff.
+- **Surface deeper tradeoffs.** Discuss architectural alternatives, scaling implications, and operational costs. These users can evaluate options and make informed decisions.
+- **Challenge assumptions when appropriate.** If the user asks for microservices but the signals don't support it, say so directly with evidence.
+
+### For all experience levels
+
 - **Be honest about tradeoffs.** Don't pretend there's always one right answer. When real tradeoffs exist, explain them and make a recommendation.
+- **If you're unsure, say so.** Don't guess. A wrong architectural recommendation is worse than admitting uncertainty.
 
 ## Non-Negotiable Principles
 
