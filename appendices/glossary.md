@@ -12,6 +12,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Atomic operation:** An operation that completes entirely or not at all — nothing can interrupt it halfway. Like flipping a light switch: it's either on or off, never stuck between. *Why you should care: When multiple threads update a counter or flag, atomic operations prevent two updates from colliding and producing a wrong result.*
 
+**Auto-scaling:** Automatically adding or removing servers based on demand — more during busy periods, fewer during quiet ones. *Why you should care: It keeps your app responsive during traffic spikes without paying for idle servers at 3 AM.*
+
 **Backpressure:** A mechanism that slows down producers when consumers can't keep up. Like a valve that reduces flow when the pipe is full. *Why you should care: Without it, a sudden surge of work can overwhelm your system and crash it.*
 
 **Blue-green deployment:** Running two identical environments and switching traffic between them for zero-downtime deployments. *Why you should care: It lets you update your app without users experiencing downtime.*
@@ -34,6 +36,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Connection pooling:** Maintaining a set of reusable database connections instead of creating a new one for each request. *Why you should care: Creating connections is slow. Pooling makes database operations significantly faster.*
 
+**Dead letter queue (DLQ):** A holding area for messages that failed to process after multiple attempts. Instead of retrying forever, the failed message is moved aside for investigation. *Why you should care: Without a DLQ, one bad message can block your entire queue and prevent any other work from being processed.*
+
 **CORS (Cross-Origin Resource Sharing):** A browser security mechanism that controls which websites can make requests to your API. *Why you should care: Misconfigured CORS either blocks legitimate requests or allows malicious ones.*
 
 **CQRS (Command Query Responsibility Segregation):** Separating the read side and write side of your application into different models. *Why you should care: You probably don't need it for most applications, but you might encounter it in recommendations. Use it only if you have very different read and write patterns at significant scale.*
@@ -43,6 +47,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Deadlock:** Two or more operations each waiting for the other to finish, so none of them ever do. Thread A holds Lock 1 and wants Lock 2; Thread B holds Lock 2 and wants Lock 1 — both wait forever. *Why you should care: Deadlocks freeze your application with no error message. They're hard to diagnose because nothing crashes — everything just stops.*
 
 **DDoS (Distributed Denial of Service):** An attack that overwhelms your servers with traffic to make them unavailable. *Why you should care: Rate limiting and CDNs help protect against this.*
+
+**Defense in depth:** Layering multiple security controls so that if one fails, others still protect you. Like a castle with a moat, walls, and locked doors — an attacker has to get past all of them. *Why you should care: No single security measure is perfect. Layers mean a single failure doesn't expose everything.*
 
 **Encryption at rest:** Encrypting data while it's stored on disk. *Why you should care: If someone steals the hard drive or gains access to the raw storage, they can't read the data.*
 
@@ -58,11 +64,19 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Idempotency:** An operation that produces the same result whether you execute it once or multiple times. *Why you should care: Networks are unreliable. Requests get retried. If creating an order isn't idempotent, a retry might create a duplicate order.*
 
+**Infrastructure as Code (IaC):** Defining your servers, databases, and networking in configuration files instead of setting them up manually through a dashboard. *Why you should care: It makes your infrastructure reproducible, version-controlled, and reviewable — just like your application code.*
+
+**Integration test:** A test that verifies multiple components work together correctly — for example, that your code can actually save and retrieve data from the database. *Why you should care: Unit tests check individual pieces; integration tests catch problems in how those pieces connect.*
+
 **Index (database):** A data structure that speeds up queries by allowing the database to find rows without scanning the entire table. *Why you should care: A missing index on a large table can make a query 1000x slower.*
 
 **JWT (JSON Web Token):** A self-contained token used for authentication that carries information (claims) and is cryptographically signed. *Why you should care: Common for API authentication. Important to understand the tradeoffs vs. sessions.*
 
 **Load balancer:** A system that distributes incoming requests across multiple servers. *Why you should care: It enables horizontal scaling and provides redundancy if one server fails.*
+
+**Managed service:** Infrastructure that a cloud provider operates for you — updates, backups, scaling, and maintenance are handled automatically. *Why you should care: It lets you focus on building your application instead of maintaining servers.*
+
+**Message queue:** A system that holds messages (descriptions of work) until a worker is ready to process them. Like a to-do list that multiple workers can pull from. *Why you should care: Queues let you handle slow tasks (emails, image processing) in the background instead of making users wait.*
 
 **Microservices:** An architecture where your application is split into small, independently deployable services that communicate over the network. Each service has its own codebase and database. *Why you should care: Microservices solve real problems at scale but add enormous complexity. Most applications should start as a monolith and decompose only when there's evidence it's necessary.*
 
@@ -90,7 +104,13 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **RTO (Recovery Time Objective):** How quickly you need to recover after an outage. *Why you should care: It determines your backup, failover, and deployment strategy.*
 
+**Postmortem:** A structured review after an incident — what happened, why, and how to prevent it from happening again. The focus is on improving the system, not blaming people. *Why you should care: Without postmortems, you fix the symptom but not the cause, and the same incident happens again.*
+
+**Read replica:** A copy of your database that handles read queries while the primary database handles writes. *Why you should care: If your app reads much more than it writes (most do), replicas can dramatically improve performance.*
+
 **RPO (Recovery Point Objective):** How much data you can afford to lose, measured in time. An RPO of 1 hour means you can lose up to 1 hour of data. *Why you should care: It determines your backup frequency.*
+
+**Runbook:** A step-by-step guide for handling a specific type of incident, written when you're calm so you can follow it when things are on fire at 2 AM. *Why you should care: Under stress, people forget steps. A runbook makes incident response faster and more reliable.*
 
 **Saga pattern:** A way to manage multi-step operations across services where each step can be compensated (undone) if a later step fails. *Why you should care: For complex workflows (like checkout: reserve inventory, charge payment, send confirmation), you need a strategy for partial failures.*
 
@@ -102,10 +122,18 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Strangler Fig pattern:** A migration strategy where you gradually replace parts of an old system with new services, routing traffic incrementally until the old code can be removed. *Why you should care: It's the safest way to migrate from a monolith to services — no big-bang rewrite, no risky cutovers.*
 
+**Test pyramid:** A model for balancing different types of tests — many fast unit tests at the base, fewer integration tests in the middle, a handful of slow end-to-end tests at the top. *Why you should care: It keeps your test suite fast and maintainable while still catching bugs at every level.*
+
+**Threat modeling:** Systematically thinking about what could go wrong with your application's security — who might attack it, how, and what you can do about it. *Why you should care: 30 minutes of structured thinking about threats can prevent months of incident response.*
+
 **TLS (Transport Layer Security):** The protocol that provides HTTPS — encrypted communication between browsers and servers. *Why you should care: Without TLS, data (including passwords) travels in plain text that anyone on the network can read.*
 
 **Transaction (database):** A group of database operations that either all succeed or all fail together. *Why you should care: Without transactions, a crash in the middle of a multi-step operation leaves your data in a half-finished, inconsistent state.*
 
 **Vertical scaling:** Using a bigger server (more CPU, more memory) to handle more load. *Why you should care: It's the simplest scaling strategy and is often the right first step before adding complexity with horizontal scaling.*
+
+**Unit test:** A test that checks one small piece of your code in isolation — does this function return the right answer? Runs fast, no database or network needed. *Why you should care: Unit tests tell you exactly what broke and run in milliseconds, making them the fastest feedback loop for catching bugs.*
+
+**Vendor lock-in:** When your application becomes so dependent on one cloud provider's specific services that switching to another would require significant rewriting. *Why you should care: Some lock-in is fine and the productivity tradeoff is worth it, but understanding the risk helps you make deliberate choices.*
 
 **XSS (Cross-Site Scripting):** An attack where malicious JavaScript is injected into a web page and runs in other users' browsers. *Why you should care: It can steal user sessions, redirect users to malicious sites, and modify page content.*

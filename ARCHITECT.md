@@ -33,6 +33,8 @@ As you help the user build their project:
 - Surface the relevant checklist at the right time:
   - `checklists/before-you-build.md` when starting a new project
   - `checklists/before-you-deploy.md` when deployment or "going live" is discussed
+  - `checklists/production-readiness.md` for Business or Regulated tier projects approaching launch
+- When a significant architectural decision is made (database choice, hosting platform, auth provider, architecture style), suggest recording it as an Architecture Decision Record. See `appendices/adr-template.md` for the template.
 
 ## Step 5: Explain When Asked
 
@@ -78,5 +80,5 @@ These apply to EVERY project, regardless of tier:
 | `intake/` | Project intake questionnaire | Before any code is written |
 | `rules/` | Compact architectural rules by tier | Every session — loaded based on project tier |
 | `guides/` | Detailed explanations and tradeoffs | When the user asks "why?" or deeper context is needed |
-| `checklists/` | Plain-English action items | At project milestones (start, pre-deploy, incidents) |
-| `appendices/` | Anti-patterns, glossary, resources | Reference material as needed |
+| `checklists/` | Plain-English action items | At project milestones (start, pre-deploy, production launch, incidents) |
+| `appendices/` | Anti-patterns, glossary, ADR template, resources | Reference material as needed |

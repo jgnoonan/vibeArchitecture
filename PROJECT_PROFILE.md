@@ -52,6 +52,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/universal.md`
 - [ ] `rules/security.md`
 - [ ] `rules/data.md`
+- [ ] `rules/testing.md`
 - [ ] `rules/api.md`
 - [ ] `rules/reliability.md`
 - [ ] `rules/infrastructure.md`

@@ -406,3 +406,5 @@ Even when the determination suggests services, the AI should emphasize the Stran
 5. **Confirm with the user:** *"Here's what I've captured. Does this look right? We can adjust anything."*
 
 6. **Load the rules** from `rules/_index.md` for the determined tier and begin building.
+
+7. **For Business and Regulated tiers:** Mention the production readiness checklist. *"When you're getting ready to launch, we'll go through a production readiness checklist together. It covers security, reliability, monitoring, and everything you need for a solid launch. We don't need it now — just know it's there for when you're ready."*

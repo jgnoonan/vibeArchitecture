@@ -271,6 +271,7 @@ vibeArchitecture/
 │   ├── universal.md                      # All projects
 │   ├── security.md                       # Shared+
 │   ├── data.md                           # Shared+
+│   ├── testing.md                        # Shared+
 │   ├── api.md                            # Public+
 │   ├── reliability.md                    # Business+
 │   ├── infrastructure.md                 # Business+
@@ -279,21 +280,24 @@ vibeArchitecture/
 │   ├── system-design.md                  # Business+ (experienced developers)
 │   └── compliance.md                     # Regulated only
 ├── guides/                               # Detailed explanations — loaded on demand
-│   ├── security/                         # Secrets, input validation, authentication
+│   ├── security/                         # Secrets, input validation, threat modeling
 │   ├── data/                             # Schema design, integrity, lifecycle
-│   ├── api/                              # API design, API security
-│   ├── reliability/                      # Failure modes, resilience patterns
-│   ├── infrastructure/                   # Deployment, containers
+│   ├── api/                              # API design, API security, versioning
+│   ├── reliability/                      # Failure modes, HA, concurrency, incidents
+│   ├── infrastructure/                   # Deployment, containers, cloud fundamentals
 │   ├── observability/                    # Logging, monitoring
-│   ├── performance/                      # Database performance, caching
+│   ├── testing/                          # Testing strategy, integration testing
+│   ├── performance/                      # Database performance, caching, scaling
 │   ├── operations/                       # Cost management, day 2 operations
-│   └── system-design/                    # Architecture styles, monolith vs. services
+│   └── system-design/                    # Architecture styles, async patterns
 ├── checklists/                           # Human-readable action items
 │   ├── before-you-build.md
 │   ├── before-you-deploy.md
+│   ├── production-readiness.md           # Business/Regulated launch checklist
 │   └── something-broke.md
 ├── appendices/
 │   ├── anti-patterns.md                  # Common mistakes and how to avoid them
+│   ├── adr-template.md                   # Architecture Decision Record template
 │   ├── glossary.md                       # Plain-English definitions
 │   └── further-reading.md               # Curated learning resources
 └── integrations/                         # Drop-in configs for AI tools
