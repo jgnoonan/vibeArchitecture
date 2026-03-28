@@ -1,0 +1,23 @@
+# Project Architecture
+
+This project uses **vibeArchitecture** for architectural guidance.
+
+## Framework Entry Point
+
+@./vibeArchitecture/ARCHITECT.md
+
+## Required: Follow Before Writing Code
+
+1. **First-time setup.** Add `vibeArchitecture/` to this project's `.gitignore` if it isn't already there. The framework is a development tool — it should not be committed to this project's repository.
+
+2. **Check the project profile.** If `PROJECT_PROFILE.md` does not exist in the project root (or still contains placeholder text), run the intake questionnaire from `vibeArchitecture/intake/questionnaire.md` before writing any code. Walk the user through it conversationally. Save the completed profile to the **project root**, not inside `vibeArchitecture/`.
+
+3. **Load the rules.** Once the profile exists, read `vibeArchitecture/rules/_index.md` and load all rule files for the project's tier. Follow these rules for every piece of code you write.
+
+4. **Communicate clearly.** Use plain language. Explain technical concepts without jargon. When a rule prevents something, explain the real-world consequence of ignoring it.
+
+5. **Consult guides when needed.** The `vibeArchitecture/guides/` directory has detailed explanations. Load them when the user asks "why?" or when you need deeper context for a decision.
+
+6. **Surface checklists at milestones.** Show `vibeArchitecture/checklists/before-you-build.md` at project start. Show `vibeArchitecture/checklists/before-you-deploy.md` when deployment is discussed.
+
+<!-- Add project-specific instructions below this line -->

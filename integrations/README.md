@@ -34,6 +34,26 @@ cp vibeArchitecture/integrations/AGENTS.md ./AGENTS.md
 
 Copilot and Codex read `AGENTS.md` for project-level agent instructions.
 
+### Android Studio (Panda and newer)
+
+Android Studio Panda and newer versions support AI providers beyond Gemini — including Anthropic Claude. If you've configured Claude as your AI provider (Settings > Tools > AI), vibeArchitecture works natively through Android Studio's `AGENTS.md` file support.
+
+Copy the Android Studio-specific integration file to your **project root**:
+
+```bash
+cp vibeArchitecture/integrations/android-studio/AGENTS.md ./AGENTS.md
+```
+
+This version uses Android Studio's `@` import syntax to automatically inline the vibeArchitecture entry point, so the AI receives the framework instructions as part of every prompt — no manual "read this file" step needed.
+
+If you already have an `AGENTS.md` in your project root, merge the content rather than overwriting it.
+
+**Note:** Android Studio also has a Rules feature under Settings > Tools > AI > Prompt Library. The `AGENTS.md` file approach is preferred because it's checked into version control and shared with your team. Rules are stored locally in the IDE.
+
+### Xcode (with Claude Code)
+
+Xcode doesn't have a built-in Claude integration. Use Claude Code in your terminal alongside Xcode — they share the same project folder. See the main README for setup instructions.
+
 ### Other AI Tools
 
 If your tool uses a different configuration file, the content is the same — adapt the instructions from any of the templates above. The key instruction is: **read `vibeArchitecture/ARCHITECT.md` before writing any code and follow its instructions.**
