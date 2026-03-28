@@ -103,59 +103,53 @@ If you switch back to Gemini as your AI provider, the `AGENTS.md` file still wor
 
 ## Using with Xcode
 
-Xcode doesn't have a built-in Claude integration, so you'll use **Claude Code** alongside Xcode. Claude Code runs in your terminal and can read, create, and modify files in your project — the same files Xcode sees.
+Xcode 26.3 and newer include a **native Claude Agent** — a full agentic coding tool that can analyze your project, modify files, build, test, and iterate, all inside Xcode. It automatically reads `CLAUDE.md` from your project root, so vibeArchitecture works directly with no separate terminal tool needed.
 
-### Setting Up Claude Code
+### Setting Up Claude Agent in Xcode
 
-Claude Code is a command-line tool from Anthropic. To install it:
-
-1. **Open Terminal**
-2. **Install Claude Code:**
-
-```bash
-npm install -g @anthropic-ai/claude-code
-```
-
-If you don't have npm, ask your AI agent for help installing Node.js first, or see [Anthropic's Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) for alternative install methods.
-
-3. **Navigate to your project folder** (the folder containing your `.xcodeproj` or `.xcworkspace` file):
-
-```bash
-cd ~/path/to/your/xcode-project
-```
-
-4. **Start Claude Code:**
-
-```bash
-claude
-```
-
-### The Workflow
-
-You'll use both tools side by side:
-
-- **Xcode** — for editing code, running the app, using the debugger, and testing on simulators
-- **Claude Code (in your terminal)** — for AI-assisted architecture, code generation, answering questions, and vibeArchitecture guidance
-
-They share the same project folder, so changes made by Claude Code appear immediately in Xcode, and vice versa. Think of it like having an architect (Claude Code) and a workbench (Xcode) in the same workshop.
+1. Open **Xcode > Settings > Intelligence**
+2. Click **Anthropic** under Providers
+3. Click **Get** next to Claude Agent and install it
+4. Sign in with your Claude.ai account, or click the More button (…) and choose **Provide an Anthropic API Key**
+5. Optionally choose your preferred model (Opus for most capable, Sonnet for balanced)
 
 ### Adding vibeArchitecture
 
-Follow the normal Quick Start above (Steps 1–3). When you get to Step 2, use the Claude Code integration:
+Follow the normal Quick Start above (Steps 1–3). When you get to Step 2, use the Claude Code integration — it works for both Claude Code and Xcode's Claude Agent:
 
 ```bash
 cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md
 ```
 
+Or ask the Claude Agent in Xcode: *"Copy vibeArchitecture/integrations/CLAUDE.md to the project root as CLAUDE.md."*
+
+The Claude Agent automatically reads `CLAUDE.md` at the start of every session, so vibeArchitecture's instructions are active as soon as the file is in place.
+
 ### Starting the Intake
 
-For a **new iOS/macOS project**, tell Claude Code:
+For a **new iOS/macOS project**, tell the Claude Agent in Xcode's coding assistant:
 
-> *"Read vibeArchitecture/ARCHITECT.md and let's get started on a new project. I'm building an iOS app with Swift."*
+> *"Let's get started on a new project. I'm building an iOS app with Swift."*
 
-For an **existing Xcode project**, tell Claude Code:
+For an **existing Xcode project**:
 
-> *"Read vibeArchitecture/ARCHITECT.md. This is an existing iOS project — analyze the codebase and build a project profile."*
+> *"This is an existing project — analyze the codebase and build a project profile."*
+
+Because `CLAUDE.md` is loaded automatically, you don't need to tell the agent to read vibeArchitecture — it already has.
+
+### Advanced: Skills and MCP
+
+Xcode's Claude Agent also supports:
+
+- **Skills** at `~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/skills` — reusable instruction sets
+- **MCP (Model Context Protocol)** — connecting to external tools, databases, and APIs
+- **Commands** at `~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/commands` — custom slash commands
+
+These are optional. The `CLAUDE.md` integration is all you need for vibeArchitecture.
+
+### Alternative: Claude Code in Terminal
+
+If you prefer using Claude Code alongside Xcode instead of the built-in Claude Agent, that works too. Install Claude Code (`npm install -g @anthropic-ai/claude-code`), navigate to your project folder in Terminal, and run `claude`. Both tools see the same project files.
 
 ## New to GitHub and Git?
 

@@ -50,9 +50,15 @@ If you already have an `AGENTS.md` in your project root, merge the content rathe
 
 **Note:** Android Studio also has a Rules feature under Settings > Tools > AI > Prompt Library. The `AGENTS.md` file approach is preferred because it's checked into version control and shared with your team. Rules are stored locally in the IDE.
 
-### Xcode (with Claude Code)
+### Xcode (26.3 and newer)
 
-Xcode doesn't have a built-in Claude integration. Use Claude Code in your terminal alongside Xcode — they share the same project folder. See the main README for setup instructions.
+Xcode 26.3+ includes a native Claude Agent that automatically reads `CLAUDE.md` from the project root. Use the same Claude Code integration:
+
+```bash
+cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md
+```
+
+Set up Claude Agent in Xcode via Settings > Intelligence > Anthropic > Claude Agent. See the main README for full setup instructions.
 
 ### Other AI Tools
 
