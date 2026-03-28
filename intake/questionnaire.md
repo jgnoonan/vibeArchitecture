@@ -176,8 +176,27 @@ If their budget doesn't match typical costs for their tier, flag it honestly but
 ### Q10: New project or existing code?
 
 *Ask:* "Are we starting from scratch, or adding to an existing project?"
-- **Starting from scratch** — proceed to Tier Determination Logic below.
-- **Adding to existing code** — proceed to Existing Project Analysis below, then Tier Determination.
+- **Starting from scratch** — proceed to Q10.5, then Tier Determination Logic below.
+- **Adding to existing code** — proceed to Q10.5, then Existing Project Analysis below, then Tier Determination.
+
+---
+
+### Q10.5: Does this project use AI or language models?
+
+*Ask:* "Will your app call AI services like ChatGPT, Claude, or other language models? Or will it use multiple AI agents that work together?"
+- **No AI** — the app doesn't call any AI/LLM services
+- **Single AI calls** — the app calls an AI model for specific tasks (chatbot, summarization, classification, content generation)
+- **Multiple agents** — the app has multiple AI agents that work together, pass tasks between each other, or coordinate on complex workflows
+
+Record as `ai_usage` in the profile:
+- "No AI" → `none`
+- "Single AI calls" → `single-llm`
+- "Multiple agents" → `multi-agent`
+
+**If `single-llm` or `multi-agent`:** Load `rules/multi-agent.md` for the project. The LLM call hygiene, prompt management, output validation, and cost control rules apply even for single LLM integrations. The agent orchestration rules are most relevant for `multi-agent` projects.
+
+**If `multi-agent`:** After tier determination, mention that detailed orchestration guidance is available:
+*"Since you're building a multi-agent system, I'll apply additional rules for how your agents communicate, manage costs, and handle failures. There are detailed guides available when we get into the specifics of your agent architecture."*
 
 ---
 
@@ -237,6 +256,19 @@ Scan the project and look for the following. Summarize findings for the user in 
 - Test coverage (if measurable)
 - Types of tests present (unit, integration, e2e)
 
+**AI and agent usage (signals for multi-agent rules):**
+- AI/LLM SDK packages in dependencies (`openai`, `anthropic`, `@anthropic-ai/sdk`, `langchain`, `langgraph`, `crewai`, `autogen`, `llamaindex`, `ai` (Vercel AI SDK), `google-generativeai`, `cohere`, `replicate`)
+- Multiple LLM client instantiations or multiple agent class definitions
+- Tool/function definitions for LLM function calling
+- Prompt files or prompt template directories
+- Agent orchestration configuration (workflow definitions, agent role definitions)
+- Multiple model configurations (suggesting different models for different tasks)
+
+If AI/LLM packages are detected, pre-fill `ai_usage` accordingly:
+- One LLM client with simple calls → `single-llm`
+- Multiple agents, agent frameworks, or orchestration patterns → `multi-agent`
+- No AI packages → `none` (still ask Q10.5 to confirm — they may be planning to add AI)
+
 **Architecture complexity (signals for system design questions):**
 - Multiple separate deployment configurations (multiple Dockerfiles, separate CI/CD pipelines for different parts)
 - Monorepo with independent modules that have their own package manifests or build configs
@@ -275,6 +307,7 @@ Then ask the user ONLY for the questions that can't be detected:
 - **Q7 (expected users):** Can't be determined from code
 - **Q8 (downtime impact):** Can't be determined from code
 - **Q9 (budget):** Can't be determined from code
+- **Q10.5 (AI usage):** Confirm the detected AI usage level, or ask if not detected
 
 ### Gap Assessment
 

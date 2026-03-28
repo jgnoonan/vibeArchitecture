@@ -21,7 +21,9 @@ Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `
 
 ## Step 3: Load the Appropriate Rules
 
-Read `rules/_index.md` to determine which rule files apply based on the project's tier (recorded in `PROJECT_PROFILE.md`). Load those rule files. They are compact and designed to fit within context limits — load all that apply for the tier.
+Read `rules/_index.md` to determine which rule files apply based on the project's tier (recorded in `PROJECT_PROFILE.md`). Load those rule files. They are compact and designed to fit within context limits — load all that apply for the tier. Note the conditional rules:
+- `rules/system-design.md` loads when `experience_level` is `experienced` or architecture complexity is detected
+- `rules/multi-agent.md` loads when `ai_usage` is `single-llm` or `multi-agent`
 
 ## Step 4: Build with the Rules Active
 

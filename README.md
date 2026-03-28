@@ -278,6 +278,7 @@ vibeArchitecture/
 │   ├── observability.md                  # Business+
 │   ├── performance.md                    # Business+
 │   ├── system-design.md                  # Business+ (experienced developers)
+│   ├── multi-agent.md                    # Shared+ (when project uses AI/LLMs)
 │   └── compliance.md                     # Regulated only
 ├── guides/                               # Detailed explanations — loaded on demand
 │   ├── security/                         # Secrets, input validation, threat modeling
@@ -289,7 +290,8 @@ vibeArchitecture/
 │   ├── testing/                          # Testing strategy, integration testing
 │   ├── performance/                      # Database performance, caching, scaling
 │   ├── operations/                       # Cost management, day 2 operations
-│   └── system-design/                    # Architecture styles, async patterns
+│   ├── system-design/                    # Architecture styles, async patterns
+│   └── multi-agent/                      # Agent orchestration, LLM architecture, AI testing
 ├── checklists/                           # Human-readable action items
 │   ├── before-you-build.md
 │   ├── before-you-deploy.md

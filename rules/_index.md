@@ -12,6 +12,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/security.md`
 - `rules/data.md`
 - `rules/testing.md`
+- `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 
 ## Public
 
@@ -20,6 +21,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/data.md`
 - `rules/testing.md`
 - `rules/api.md`
+- `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 
 ## Business
 
@@ -33,6 +35,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/observability.md`
 - `rules/performance.md`
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
+- `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 
 ## Regulated
 
@@ -46,6 +49,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/observability.md`
 - `rules/performance.md`
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
+- `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/compliance.md`
 
 ## Enforcement

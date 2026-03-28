@@ -12,6 +12,7 @@
 - **Description:** [To be filled in]
 - **Date created:** [To be filled in]
 - **Experience level:** [beginner / intermediate / experienced]
+- **AI usage:** [none / single-llm / multi-agent]
 
 ## Project Tier
 
@@ -59,6 +60,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/observability.md`
 - [ ] `rules/performance.md`
 - [ ] `rules/system-design.md`
+- [ ] `rules/multi-agent.md`
 - [ ] `rules/compliance.md`
 
 ## Detected Tech Stack (Existing Projects Only)
