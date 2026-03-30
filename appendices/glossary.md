@@ -68,6 +68,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Expand-and-contract pattern:** A database migration strategy where you add a new column, migrate data, update the code to use it, and then remove the old column — rather than renaming or changing a column in one step. *Why you should care: It lets you change your database schema without downtime or breaking running code. Each step is safe to deploy independently.*
 
+**EventSource / Server-Sent Events (SSE):** A browser API for receiving a stream of updates from a server over a single HTTP connection. The server pushes data to the client; the client doesn't send back through the same connection. *Why you should care: SSE is much simpler than WebSockets for cases where you only need server-to-client push (notifications, live feeds, dashboards). The browser handles reconnection automatically.*
+
 **Exponential backoff:** A retry strategy where you wait progressively longer between attempts — 1 second, then 2, then 4, then 8. *Why you should care: When a service is overwhelmed or recovering, retrying immediately makes it worse. Backing off gives it time to recover.*
 
 **Encryption at rest:** Encrypting data while it's stored on disk. *Why you should care: If someone steals the hard drive or gains access to the raw storage, they can't read the data.*
@@ -78,6 +80,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Feature flag:** A configuration switch that enables or disables a feature without deploying new code. *Why you should care: You can deploy code to production safely and enable features gradually or disable them instantly if problems arise.*
 
+**Faceted search:** A search feature that lets users narrow results by multiple categories simultaneously — filter by brand, price range, color, and size all at once. *Why you should care: Users of e-commerce sites and content-heavy applications expect this. It requires either a dedicated search engine or careful database design.*
+
 **Foreign key:** A database column that references a row in another table, with the database enforcing that the reference is valid. *Why you should care: Without foreign keys, your database can accumulate broken references that cause mysterious bugs.*
 
 **Guardrails (AI):** Rules and constraints that limit what an AI agent can do — preventing it from taking dangerous actions, producing harmful content, or exceeding its scope. *Why you should care: An AI agent without guardrails can leak data, run up costs, or take actions you never intended. Guardrails are the safety boundaries.*
@@ -87,6 +91,10 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Horizontal scaling:** Adding more servers to handle more load.
 
 **HSTS (HTTP Strict Transport Security):** A security header that tells browsers to always use HTTPS for your site, even if someone types the HTTP address. *Why you should care: Without HSTS, an attacker could intercept the initial HTTP request before the redirect to HTTPS and steal session cookies or inject content.* *Why you should care: It removes the ceiling on capacity, but requires your application to be stateless.*
+
+**Full-text search:** A database feature that searches the content of text fields for matching words or phrases, with relevance ranking. Unlike `LIKE '%term%'`, full-text search understands word boundaries, can rank results by relevance, and supports stemming ("running" matches "run"). *Why you should care: PostgreSQL and MySQL both have built-in full-text search that's surprisingly capable. Try it before adding a dedicated search engine.*
+
+**i18n (Internationalization):** Designing your application so it can support multiple languages and regions — externalizing strings, handling locale-specific date/number/currency formatting, supporting different character sets. The "18" refers to the 18 letters between "i" and "n." *Why you should care: If there's any chance your app will need multiple languages, building i18n from the start is nearly free. Retrofitting it later means touching every template and every hardcoded string.*
 
 **IDOR (Insecure Direct Object Reference):** A vulnerability where changing an ID in a URL or request lets you access another user's data. Example: changing `/api/orders/123` to `/api/orders/124` and seeing someone else's order. *Why you should care: It's one of the most common web vulnerabilities. Every endpoint that uses an ID must verify the requesting user is authorized to access that specific resource.*
 
@@ -103,6 +111,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **JWT (JSON Web Token):** A self-contained token used for authentication that carries information (claims) and is cryptographically signed. *Why you should care: Common for API authentication. Important to understand the tradeoffs vs. sessions.*
 
 **LLM-as-Judge:** Using a separate AI model to evaluate the quality of another AI model's output. *Why you should care: It's the most scalable way to measure whether your agents are producing good results. A human can't review every output, but an AI judge can score them automatically.*
+
+**l10n (Localization):** The process of actually adapting your application for a specific locale — translating text, formatting dates and numbers for the region, using the right currency symbol. The "10" refers to the 10 letters between "l" and "n." *Why you should care: Localization is the content work; internationalization (i18n) is the plumbing. You need the plumbing first.*
 
 **Load balancer:** A system that distributes incoming requests across multiple servers. *Why you should care: It enables horizontal scaling and provides redundancy if one server fails.*
 
@@ -186,7 +196,11 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Unit test:** A test that checks one small piece of your code in isolation — does this function return the right answer? Runs fast, no database or network needed. *Why you should care: Unit tests tell you exactly what broke and run in milliseconds, making them the fastest feedback loop for catching bugs.*
 
+**UTF-8:** A character encoding that can represent every character in every language, including emoji. It's the universal standard for web applications. *Why you should care: If your database, API, or HTML isn't using UTF-8, characters like accented letters (café), Chinese characters, or emoji will display as garbled text or break your application.*
+
 **Vendor lock-in:** When your application becomes so dependent on one cloud provider's specific services that switching to another would require significant rewriting. *Why you should care: Some lock-in is fine and the productivity tradeoff is worth it, but understanding the risk helps you make deliberate choices.*
+
+**WebSocket:** A protocol for persistent, full-duplex (two-way) communication between a browser and server. Unlike regular HTTP where the client always initiates, either side can send messages at any time. *Why you should care: WebSockets enable real-time features like chat, collaborative editing, and multiplayer games. But they add complexity — use Server-Sent Events or polling if you only need server-to-client push.*
 
 **WCAG (Web Content Accessibility Guidelines):** The international standard for web accessibility. Level A is the minimum, Level AA is what most laws require and most organizations target, Level AAA is the highest. *Why you should care: WCAG AA is the benchmark. When someone says "is this accessible?" they usually mean "does it meet WCAG 2.1 Level AA?"*
 

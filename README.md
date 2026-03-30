@@ -290,9 +290,9 @@ vibeArchitecture/
 │   ├── infrastructure/                   # Deployment, containers, cloud fundamentals
 │   ├── observability/                    # Logging, monitoring
 │   ├── testing/                          # Testing strategy, integration testing
-│   ├── performance/                      # Database performance, caching, scaling
-│   ├── operations/                       # Cost management, day 2 operations
-│   ├── system-design/                    # Architecture styles, async patterns
+│   ├── performance/                      # Database performance, caching, scaling, search
+│   ├── operations/                       # Cost management, day 2 operations, i18n
+│   ├── system-design/                    # Architecture styles, async patterns, real-time
 │   └── multi-agent/                      # Agent orchestration, LLM architecture, AI testing
 ├── checklists/                           # Human-readable action items
 │   ├── before-you-build.md

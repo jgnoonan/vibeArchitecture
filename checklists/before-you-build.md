@@ -50,6 +50,12 @@ Things to decide before you (or your AI) write the first line of code. You don't
 - [ ] Are you aware that accessibility is a legal requirement in many jurisdictions? (ADA in the US, European Accessibility Act in the EU.)
 - [ ] Plan to use semantic HTML from the start — `<button>` for buttons, `<label>` for form labels, proper headings. It's almost free to do now and very expensive to fix later.
 
+## Internationalization (If Your Users May Speak Different Languages)
+
+- [ ] Will your app need to support multiple languages — now or in the future? (If there's even a reasonable chance, set up i18n from the start.)
+- [ ] Will your app display dates, numbers, or currency to users in different regions? (These formats vary — 03/26/2026 vs. 26.03.2026, $1,234.56 vs. 1.234,56 €.)
+- [ ] Plan to externalize all user-facing strings from day one. Never hardcode text in templates. It's almost free to do now and very expensive to fix later.
+
 ## Deployment (Where It Will Live)
 
 - [ ] Do you know where you'll deploy this? (Vercel, Railway, Fly.io, AWS, a VPS, etc.)
