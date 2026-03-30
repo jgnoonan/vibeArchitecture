@@ -97,6 +97,26 @@ query = "SELECT * FROM users WHERE email = '" + user_input + "'"
 
 ---
 
+### Schemaless "Because Flexible"
+
+**What it looks like:** Choosing a document database (MongoDB, Firestore) specifically to avoid designing a schema, then storing inconsistent documents — some records have `userName`, others have `user_name`, some have a `phone` field, others don't. No validation at the database level.
+
+**Why it's bad:** "Schemaless" doesn't mean "no schema." It means the schema moves from the database (where it's enforced) to your application code (where it's hoped for). Every piece of code that reads data now has to handle every possible shape a document might be in. Bugs from inconsistent data are subtle and hard to trace.
+
+**Do this instead:** If you use a document database, define and enforce a schema in your application layer. Use validation libraries (Zod, Joi, Pydantic) at the boundary. Better yet, start with a relational database unless you have a specific reason not to — most applications have relational data.
+
+---
+
+### God Environment File
+
+**What it looks like:** A single `.env` file with 50+ variables covering database credentials, API keys for 12 services, feature flags, application config, debug settings, and deployment parameters. No documentation on what each variable does. Copy-pasted between environments with manual edits.
+
+**Why it's bad:** Nobody knows which variables are required, which are optional, and what valid values look like. Missing a variable causes a cryptic runtime error. Different environments drift apart because someone forgot to add the new variable to staging. Secrets and non-sensitive config are mixed together, making it hard to manage access.
+
+**Do this instead:** Group environment variables by purpose. Document each one (an `.env.example` file with comments). Separate secrets (API keys, database passwords) from configuration (feature flags, log levels). Validate that required variables are present at application startup — fail fast with a clear error message, not deep in a request handler.
+
+---
+
 ### No Data Validation at the Database Level
 
 **What it looks like:** All validation is in application code. The database accepts anything.

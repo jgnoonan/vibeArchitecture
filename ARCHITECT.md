@@ -36,6 +36,7 @@ As you help the user build their project:
   - `checklists/before-you-build.md` when starting a new project
   - `checklists/before-you-deploy.md` when deployment or "going live" is discussed
   - `checklists/production-readiness.md` for Business or Regulated tier projects approaching launch
+  - `checklists/something-broke.md` when the user reports a bug, error, outage, or something not working as expected
 - When a significant architectural decision is made (database choice, hosting platform, auth provider, architecture style), suggest recording it as an Architecture Decision Record. See `appendices/adr-template.md` for the template.
 
 ## Step 5: Explain When Asked

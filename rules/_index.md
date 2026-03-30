@@ -21,6 +21,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/data.md`
 - `rules/testing.md`
 - `rules/api.md`
+- `rules/accessibility.md`
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 
 ## Business
@@ -30,6 +31,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/data.md`
 - `rules/testing.md`
 - `rules/api.md`
+- `rules/accessibility.md`
 - `rules/reliability.md`
 - `rules/infrastructure.md`
 - `rules/observability.md`
@@ -44,6 +46,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/data.md`
 - `rules/testing.md`
 - `rules/api.md`
+- `rules/accessibility.md`
 - `rules/reliability.md`
 - `rules/infrastructure.md`
 - `rules/observability.md`

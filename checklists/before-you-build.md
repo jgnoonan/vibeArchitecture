@@ -44,6 +44,12 @@ Things to decide before you (or your AI) write the first line of code. You don't
 - [ ] If you handle health data, are you aware of HIPAA requirements?
 - [ ] Do you need terms of service? (Generally yes, if strangers will use your app.)
 
+## Accessibility (If the Public Will Use Your App)
+
+- [ ] Will people with disabilities use your app? (If it's public, the answer is yes — even if you don't realize it.)
+- [ ] Are you aware that accessibility is a legal requirement in many jurisdictions? (ADA in the US, European Accessibility Act in the EU.)
+- [ ] Plan to use semantic HTML from the start — `<button>` for buttons, `<label>` for form labels, proper headings. It's almost free to do now and very expensive to fix later.
+
 ## Deployment (Where It Will Live)
 
 - [ ] Do you know where you'll deploy this? (Vercel, Railway, Fly.io, AWS, a VPS, etc.)

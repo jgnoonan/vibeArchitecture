@@ -1,5 +1,8 @@
 # Universal Rules
 
+> Applies to: All tiers.
+> These are foundational practices that apply to every project. For detailed explanations, see the relevant topic-specific guides in `guides/`.
+
 These apply to EVERY project regardless of tier. No exceptions.
 
 ## Version Control

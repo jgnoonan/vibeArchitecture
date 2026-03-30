@@ -273,6 +273,7 @@ vibeArchitecture/
 │   ├── data.md                           # Shared+
 │   ├── testing.md                        # Shared+
 │   ├── api.md                            # Public+
+│   ├── accessibility.md                  # Public+
 │   ├── reliability.md                    # Business+
 │   ├── infrastructure.md                 # Business+
 │   ├── observability.md                  # Business+
@@ -281,6 +282,7 @@ vibeArchitecture/
 │   ├── multi-agent.md                    # Shared+ (when project uses AI/LLMs)
 │   └── compliance.md                     # Regulated only
 ├── guides/                               # Detailed explanations — loaded on demand
+│   ├── accessibility/                    # WCAG basics, semantic HTML, testing
 │   ├── security/                         # Secrets, input validation, threat modeling
 │   ├── data/                             # Schema design, integrity, lifecycle
 │   ├── api/                              # API design, API security, versioning
@@ -303,7 +305,8 @@ vibeArchitecture/
 │   ├── glossary.md                       # Plain-English definitions
 │   └── further-reading.md               # Curated learning resources
 └── integrations/                         # Drop-in configs for AI tools
-    ├── CLAUDE.md                         # For Claude Code
+    ├── README.md                         # Setup instructions per tool
+    ├── CLAUDE.md                         # For Claude Code / Xcode
     ├── cursorrules                       # For Cursor
     ├── AGENTS.md                         # For GitHub Copilot / Codex
     └── android-studio/
@@ -315,6 +318,8 @@ vibeArchitecture/
 vibeArchitecture is designed to be lightweight in your AI's context window. The rules layer is compact, guides are only loaded when you ask "why?", and the framework scales with your project's tier — a simple personal project loads far less than a regulated business application.
 
 ### Per-Session Cost (loaded every time you start a conversation)
+
+*Estimates below exclude conditional rules (multi-agent, system-design) which add ~800–1,000 tokens each when applicable. Last measured: March 2026.*
 
 | Tier | What's loaded | Est. tokens | % of 200K window |
 |------|--------------|-------------|-------------------|

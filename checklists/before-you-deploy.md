@@ -53,6 +53,14 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] Can you see error logs from your deployed app? (Know where they are and how to access them.)
 - [ ] Do you have a way to check if requests are succeeding or failing? (Even basic access logs help.)
 
+## Accessibility (If the Public Will Use Your App)
+
+- [ ] Can you navigate the core user flow using only the keyboard? (Tab through the app without touching the mouse.)
+- [ ] Do all images have alt text? (Ask your AI: "Check all images for missing alt attributes.")
+- [ ] Do all form fields have visible labels (not just placeholder text)?
+- [ ] Can you see which element is focused when Tabbing? (There should be a visible outline or highlight.)
+- [ ] Run a Lighthouse accessibility audit in Chrome DevTools. Fix any critical issues.
+
 ## Legal (If the Public Will Use Your App)
 
 - [ ] If you collect personal data: do you have a privacy policy? (Even a basic one.)

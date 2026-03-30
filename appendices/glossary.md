@@ -8,7 +8,13 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Agent orchestration:** Coordinating multiple AI agents to work together on a task — deciding who does what, passing information between agents, and assembling the final result. *Why you should care: Multi-agent systems can be powerful but also complex. Without clear orchestration, agents duplicate work, lose context, or loop forever.*
 
+**Accessibility (a11y):** Building your application so that people with disabilities can use it — including people using screen readers, keyboard-only navigation, voice control, or high-contrast settings. *Why you should care: About 15% of people have a disability. It's also a legal requirement for public applications in most jurisdictions.*
+
+**ADR (Architecture Decision Record):** A short document that records an important technical decision — what you decided, why, and what other options you considered. *Why you should care: Six months from now, nobody will remember why you chose PostgreSQL over MongoDB. An ADR preserves that reasoning so decisions don't get revisited or accidentally reversed.*
+
 **API (Application Programming Interface):** A defined way for software to talk to other software. When your frontend shows data from your backend, it uses an API. *Why you should care: You're probably building one whether you realize it or not.*
+
+**ARIA (Accessible Rich Internet Applications):** A set of HTML attributes that add accessibility information to custom components for screen readers. The first rule of ARIA: don't use it if a native HTML element does the job. *Why you should care: ARIA is sometimes needed for custom widgets, but incorrect ARIA is worse than no ARIA — it misleads assistive technology.*
 
 **Authentication:** Proving who you are. Logging in with a username and password is authentication. *Why you should care: Without it, anyone can pretend to be anyone.*
 
@@ -17,6 +23,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Atomic operation:** An operation that completes entirely or not at all — nothing can interrupt it halfway. Like flipping a light switch: it's either on or off, never stuck between. *Why you should care: When multiple threads update a counter or flag, atomic operations prevent two updates from colliding and producing a wrong result.*
 
 **Auto-scaling:** Automatically adding or removing servers based on demand — more during busy periods, fewer during quiet ones. *Why you should care: It keeps your app responsive during traffic spikes without paying for idle servers at 3 AM.*
+
+**BAA (Business Associate Agreement):** A legal contract required under HIPAA between a healthcare provider and any vendor that handles protected health information (PHI). *Why you should care: If your application processes health data in the US, your cloud provider and any third-party service that touches that data must sign a BAA. Using a service without a BAA is a compliance violation.*
 
 **Backpressure:** A mechanism that slows down producers when consumers can't keep up. Like a valve that reduces flow when the pipe is full. *Why you should care: Without it, a sudden surge of work can overwhelm your system and crash it.*
 
@@ -40,6 +48,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Connection pooling:** Maintaining a set of reusable database connections instead of creating a new one for each request. *Why you should care: Creating connections is slow. Pooling makes database operations significantly faster.*
 
+**Content-Security-Policy (CSP):** A security header that tells browsers which sources of content (scripts, images, styles) are allowed to load on your page. *Why you should care: CSP is one of the strongest defenses against XSS attacks. If a malicious script is injected, CSP can prevent the browser from executing it.*
+
 **Context window:** The maximum amount of text (measured in tokens) that an AI model can process in a single conversation. Everything — your instructions, the conversation history, and the model's response — must fit within this window. *Why you should care: If your agent's context fills up, it starts forgetting earlier instructions or information. Managing context is a core challenge in agent systems.*
 
 **Dead letter queue (DLQ):** A holding area for messages that failed to process after multiple attempts. Instead of retrying forever, the failed message is moved aside for investigation. *Why you should care: Without a DLQ, one bad message can block your entire queue and prevent any other work from being processed.*
@@ -56,6 +66,10 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Defense in depth:** Layering multiple security controls so that if one fails, others still protect you. Like a castle with a moat, walls, and locked doors — an attacker has to get past all of them. *Why you should care: No single security measure is perfect. Layers mean a single failure doesn't expose everything.*
 
+**Expand-and-contract pattern:** A database migration strategy where you add a new column, migrate data, update the code to use it, and then remove the old column — rather than renaming or changing a column in one step. *Why you should care: It lets you change your database schema without downtime or breaking running code. Each step is safe to deploy independently.*
+
+**Exponential backoff:** A retry strategy where you wait progressively longer between attempts — 1 second, then 2, then 4, then 8. *Why you should care: When a service is overwhelmed or recovering, retrying immediately makes it worse. Backing off gives it time to recover.*
+
 **Encryption at rest:** Encrypting data while it's stored on disk. *Why you should care: If someone steals the hard drive or gains access to the raw storage, they can't read the data.*
 
 **Encryption in transit:** Encrypting data while it's moving between systems (HTTPS/TLS). *Why you should care: Without it, anyone on the network path can read the data being transferred.*
@@ -70,13 +84,19 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 
 **Hallucination (AI):** When an AI model generates information that sounds confident and plausible but is factually wrong — inventing statistics, citing nonexistent sources, or fabricating details. *Why you should care: If your agent makes decisions based on hallucinated facts (wrong prices, nonexistent API endpoints, fabricated customer data), those decisions will be wrong too.*
 
-**Horizontal scaling:** Adding more servers to handle more load. *Why you should care: It removes the ceiling on capacity, but requires your application to be stateless.*
+**Horizontal scaling:** Adding more servers to handle more load.
+
+**HSTS (HTTP Strict Transport Security):** A security header that tells browsers to always use HTTPS for your site, even if someone types the HTTP address. *Why you should care: Without HSTS, an attacker could intercept the initial HTTP request before the redirect to HTTPS and steal session cookies or inject content.* *Why you should care: It removes the ceiling on capacity, but requires your application to be stateless.*
+
+**IDOR (Insecure Direct Object Reference):** A vulnerability where changing an ID in a URL or request lets you access another user's data. Example: changing `/api/orders/123` to `/api/orders/124` and seeing someone else's order. *Why you should care: It's one of the most common web vulnerabilities. Every endpoint that uses an ID must verify the requesting user is authorized to access that specific resource.*
 
 **Idempotency:** An operation that produces the same result whether you execute it once or multiple times. *Why you should care: Networks are unreliable. Requests get retried. If creating an order isn't idempotent, a retry might create a duplicate order.*
 
 **Infrastructure as Code (IaC):** Defining your servers, databases, and networking in configuration files instead of setting them up manually through a dashboard. *Why you should care: It makes your infrastructure reproducible, version-controlled, and reviewable — just like your application code.*
 
-**Integration test:** A test that verifies multiple components work together correctly — for example, that your code can actually save and retrieve data from the database. *Why you should care: Unit tests check individual pieces; integration tests catch problems in how those pieces connect.*
+**Integration test:** A test that verifies multiple components work together correctly
+
+**Jitter:** Adding a small random delay to retry timing so that many clients retrying at the same time don't all hit the server at the exact same instant. *Why you should care: Without jitter, a service that just recovered from being overwhelmed gets slammed by all the retrying clients at once, causing it to fail again — a "thundering herd."* — for example, that your code can actually save and retrieve data from the database. *Why you should care: Unit tests check individual pieces; integration tests catch problems in how those pieces connect.*
 
 **Index (database):** A data structure that speeds up queries by allowing the database to find rows without scanning the entire table. *Why you should care: A missing index on a large table can make a query 1000x slower.*
 
@@ -85,6 +105,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **LLM-as-Judge:** Using a separate AI model to evaluate the quality of another AI model's output. *Why you should care: It's the most scalable way to measure whether your agents are producing good results. A human can't review every output, but an AI judge can score them automatically.*
 
 **Load balancer:** A system that distributes incoming requests across multiple servers. *Why you should care: It enables horizontal scaling and provides redundancy if one server fails.*
+
+**Magic bytes:** The first few bytes of a file that identify its actual type, regardless of the file extension. A file named `photo.jpg` might actually be a `.exe` if its magic bytes say so. *Why you should care: When accepting file uploads, checking the extension alone isn't enough. Validating magic bytes prevents users from uploading disguised malicious files.*
 
 **Managed service:** Infrastructure that a cloud provider operates for you — updates, backups, scaling, and maintenance are handled automatically. *Why you should care: It lets you focus on building your application instead of maintaining servers.*
 
@@ -107,6 +129,8 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Optimistic concurrency:** An approach where you proceed without locking, then check if anyone else changed the data before you save. If they did, you retry. *Why you should care: It's faster than locking when conflicts are rare, which they usually are.*
 
 **Parameterized query:** A database query where user input is passed as separate parameters rather than concatenated into the query string. Prevents SQL injection. *Why you should care: This single practice prevents one of the most dangerous and common web vulnerabilities.*
+
+**PII (Personally Identifiable Information):** Any data that can identify a specific person — name, email, phone number, address, IP address, government ID. *Why you should care: PII triggers privacy regulations (GDPR, CCPA). Collecting, storing, or leaking PII without proper handling can result in legal penalties and loss of user trust.*
 
 **Pessimistic concurrency:** An approach where you lock the data before reading it, preventing anyone else from changing it until you're done. *Why you should care: It's the safe choice when conflicts are frequent or the stakes are high (money, inventory).*
 
@@ -131,6 +155,12 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Saga pattern:** A way to manage multi-step operations across services where each step can be compensated (undone) if a later step fails. *Why you should care: For complex workflows (like checkout: reserve inventory, charge payment, send confirmation), you need a strategy for partial failures.*
 
 **SLA/SLO/SLI:** Service Level Agreement (contractual promise), Service Level Objective (internal target), Service Level Indicator (actual measurement). *Why you should care: These define what "reliable enough" means for your application and drive architecture decisions.*
+
+**Screen reader:** Software that reads screen content aloud for people who are blind or have low vision. Common screen readers: VoiceOver (macOS/iOS), NVDA (Windows, free), TalkBack (Android). *Why you should care: Screen readers rely on semantic HTML to understand your page. If your code uses `<div>` for everything, the screen reader can't tell a button from a paragraph.*
+
+**Semantic HTML:** Using HTML elements for their intended purpose — `<button>` for buttons, `<nav>` for navigation, `<h1>` for main headings — rather than styling generic `<div>` elements to look like them. *Why you should care: It's the foundation of accessibility, helps SEO, and makes your code more readable. AI agents frequently generate non-semantic HTML.*
+
+**Sharding:** Splitting your database across multiple servers, with different data on each (e.g., users A–M on Server 1, users N–Z on Server 2). *Why you should care: Sharding is a last-resort scaling strategy. It adds enormous complexity and should only be considered after you've exhausted query optimization, connection pooling, caching, and read replicas.*
 
 **Soft delete:** Marking a record as deleted (usually with a timestamp) instead of physically removing it. *Why you should care: It allows recovery of accidentally deleted data and maintains referential integrity with related records.*
 
@@ -157,5 +187,7 @@ Plain-English definitions of architectural terms. Each entry includes a brief "w
 **Unit test:** A test that checks one small piece of your code in isolation — does this function return the right answer? Runs fast, no database or network needed. *Why you should care: Unit tests tell you exactly what broke and run in milliseconds, making them the fastest feedback loop for catching bugs.*
 
 **Vendor lock-in:** When your application becomes so dependent on one cloud provider's specific services that switching to another would require significant rewriting. *Why you should care: Some lock-in is fine and the productivity tradeoff is worth it, but understanding the risk helps you make deliberate choices.*
+
+**WCAG (Web Content Accessibility Guidelines):** The international standard for web accessibility. Level A is the minimum, Level AA is what most laws require and most organizations target, Level AAA is the highest. *Why you should care: WCAG AA is the benchmark. When someone says "is this accessible?" they usually mean "does it meet WCAG 2.1 Level AA?"*
 
 **XSS (Cross-Site Scripting):** An attack where malicious JavaScript is injected into a web page and runs in other users' browsers. *Why you should care: It can steal user sessions, redirect users to malicious sites, and modify page content.*

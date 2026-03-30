@@ -1,6 +1,7 @@
 # Compliance Rules
 
 > Applies to: Regulated tier only.
+> This file is self-contained — compliance requirements are specific enough that a separate guide directory is not needed. Cross-references to other rules and guides are inline.
 > This file covers architectural implications of common regulations. It is NOT legal advice. Consult a qualified professional for your specific regulatory obligations.
 
 ## General Principles

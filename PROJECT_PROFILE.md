@@ -55,6 +55,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/data.md`
 - [ ] `rules/testing.md`
 - [ ] `rules/api.md`
+- [ ] `rules/accessibility.md`
 - [ ] `rules/reliability.md`
 - [ ] `rules/infrastructure.md`
 - [ ] `rules/observability.md`
