@@ -16,7 +16,22 @@ Ask the user these questions conversationally. Don't dump them all at once — h
 3. **What data will it handle?** (Personal info? Payments? Health data? Just content?)
 4. **Is this new or existing code?**
 
-Record the tier mentally. Apply the rules below for that tier and all tiers below it.
+After the conversation, create a `PROJECT_PROFILE.md` file in the project root with the answers:
+
+```markdown
+# Project Profile
+
+- **Project name:** [from the conversation]
+- **Description:** [from the conversation]
+- **Date created:** [today's date]
+- **Tier:** [Personal / Shared / Public / Business / Regulated]
+- **Data sensitivity:** [from the conversation]
+- **New or existing:** [new / existing]
+```
+
+This file is the persistent record of the intake. If the AI finds an existing `PROJECT_PROFILE.md` in a future session, it should read it and skip the intake questions.
+
+Apply the rules below for the determined tier and all tiers below it.
 
 ## Rules by Tier
 
