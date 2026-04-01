@@ -48,6 +48,12 @@
 - Include a `.dockerignore` file. Keep `.env` files, `.git`, `node_modules`, and other unnecessary files out of the image.
 - Scan container images for known vulnerabilities before deploying (Trivy, Snyk Container, or your CI platform's built-in scanner).
 
+## Regulated Deployment
+
+- For Regulated-tier projects, hosting platform choice is constrained by compliance requirements. HIPAA requires a signed BAA, PCI-DSS requires network segmentation capabilities, GDPR may require data residency in specific regions. See `guides/infrastructure/regulated-deployment.md` for the full decision framework.
+- Every production deployment must be auditable: who deployed, what commit, when, who approved. Use CI/CD as the sole deployment path — no manual deploys to production.
+- Separation of duties: the person who writes code must not be the sole person who deploys it. Require pull request reviews and automated deployment from the main branch.
+
 ## Network Security
 
 - Databases must never be publicly accessible. Place them in a private network; connect through your application only.

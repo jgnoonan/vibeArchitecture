@@ -84,6 +84,12 @@ If your customers require SOC 2 compliance:
 
 If your application will be used by US federal government agencies, FedRAMP (Federal Risk and Authorization Management Program) applies. This is a fundamentally different level of compliance that is beyond the scope of this framework. FedRAMP requires hundreds of NIST 800-53 security controls, a third-party assessment organization, dedicated compliance staff, and typically costs $500K+ and takes months to years to complete. If FedRAMP is in your future, stop and engage a compliance firm that specializes in federal authorization before making any architectural decisions.
 
+## Deployment and Infrastructure
+
+- Compliance requirements constrain where and how you deploy. See `guides/infrastructure/regulated-deployment.md` for platform selection guidance, data residency, deployment audit trails, and separation of duties.
+- Your hosting platform must support your compliance framework. HIPAA requires a BAA. PCI-DSS requires network segmentation. GDPR may require EU data residency. Verify before choosing a platform — migrating later is expensive.
+- Backups inherit the same compliance requirements as the data they contain: encryption, retention periods, access controls, and data residency all apply.
+
 ## Compliance Documentation
 
 - Maintain a data flow diagram showing how data moves through your system: where it enters, where it's stored, where it's processed, and where it exits.
