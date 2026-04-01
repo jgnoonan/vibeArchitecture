@@ -14,6 +14,30 @@ vibeArchitecture fixes this. It's a set of instructions your AI reads before wri
 
 Open **[Vibe Code Guardian](https://chatgpt.com/g/g-69cd25c7200c8191938a6de92ddc56fb-vibe-code-guardian)** and describe what you want to build. It asks a few questions, then writes code with security and reliability guardrails automatically. Nothing to install, nothing to configure.
 
+### Option A+: Install as a Claude Skill (for Claude.ai users)
+
+If you use Claude.ai (Pro, Team, or Enterprise), you can install vibeArchitecture as a Skill that activates automatically whenever you start building a project.
+
+<details>
+<summary><strong>Claude Skill installation steps</strong></summary>
+
+1. Download the `ClaudeSkill/vibeArchitecture/` folder from this repo (or download the whole ZIP and find it inside)
+2. ZIP the `vibeArchitecture/` folder inside `ClaudeSkill/` so the structure is:
+   ```
+   vibeArchitecture.zip
+   └── vibeArchitecture/
+       ├── SKILL.md
+       ├── references/
+       └── assets/
+   ```
+3. Go to [claude.ai](https://claude.ai) > **Settings** > **Capabilities**
+4. Upload the ZIP file
+5. Enable the skill
+
+Once installed, Claude will automatically run the intake questionnaire and apply architectural guardrails whenever you ask it to build something. No prompt to paste, no files to copy -- it just works.
+
+</details>
+
 ### Option B: Paste one prompt (any AI tool)
 
 Copy this into Claude, Cursor, Copilot, Codex, or any other AI coding tool:
@@ -155,7 +179,8 @@ vibeArchitecture/
 ├── guides/                               # Detailed explanations (on demand)
 ├── checklists/                           # Human-readable action items
 ├── appendices/                           # Anti-patterns, glossary, resources
-└── integrations/                         # Drop-in configs for AI tools
+├── integrations/                         # Drop-in configs for AI tools
+└── ClaudeSkill/                          # Installable Claude.ai Skill
 ```
 
 </details>
