@@ -10,15 +10,19 @@ vibeArchitecture fixes this. It's a set of instructions your AI reads before wri
 
 ## Get Started in 60 Seconds
 
-### Option A: Paste one prompt (no downloads, no setup)
+### Option A: Use the ChatGPT GPT (zero setup)
 
-Copy this into any AI coding tool (Claude, Cursor, ChatGPT, Copilot, Codex — anything):
+Open **[Vibe Code Guardian](https://chatgpt.com/g/g-69cd25c7200c8191938a6de92ddc56fb-vibe-code-guardian)** and describe what you want to build. It asks a few questions, then writes code with security and reliability guardrails automatically. Nothing to install, nothing to configure.
+
+### Option B: Paste one prompt (any AI tool)
+
+Copy this into Claude, Cursor, Copilot, Codex, or any other AI coding tool:
 
 > **Read the BOOTSTRAP.md file from https://github.com/jgnoonan/vibeArchitecture and follow its instructions before we start building. Ask me the intake questions first.**
 
 That's it. Your AI will ask you a few questions about what you're building, then write code with proper guardrails automatically.
 
-### Option B: Full setup (more features, detailed guides)
+### Option C: Full setup (more features, detailed guides)
 
 For the complete framework with detailed explanations, checklists, and IDE-specific integrations:
 
