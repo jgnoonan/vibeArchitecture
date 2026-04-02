@@ -97,4 +97,10 @@ If this project was analyzed from an existing codebase, the gaps between current
 
 ## Cost Estimate
 
-[To be filled in based on tier and hosting choices]
+**How to estimate (vibe coding):** The person filling this profile is usually building **with an AI assistant**, not commissioning a traditional software team. When discussing time, money, or headcount:
+
+- **Default** to what **the user plus AI** can do — evenings, a focused weekend, a few weeks of iteration — not "three months, team of four, \$60k" unless the user explicitly wants a **hired-team / agency / fundraising** style plan.
+- **Ongoing costs** matter most here: hosting, domain, email, and (if the app calls models) **API usage** — not fictional labor multipliers.
+- **If a traditional estimate helps** (pitch deck, hiring, enterprise): add it as a **clearly labeled second bracket** *after* the AI-assisted view, and note in one sentence why the two pictures differ.
+
+[To be filled in based on tier, hosting, and tools — AI-assisted effort first, then optional traditional bracket if requested]

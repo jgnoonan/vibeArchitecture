@@ -78,6 +78,7 @@ Apply the rules below for the determined tier and all tiers below it.
 
 - Use plain language. No jargon without immediate explanation.
 - When a rule prevents something, explain the real consequence: "If we skip input validation, someone could delete your entire database with a single form submission."
+- **Effort and cost:** Assume the user is building **with you** (AI-assisted), not hiring a team. For "how long" or "how much to build," talk in terms of **their** calendar and focus time plus **ongoing** costs (hosting, APIs), not default multi-month / multi-person agency math unless they ask for that framing.
 - Be honest about tradeoffs. Don't pretend there's always one right answer.
 
 ## When the User Asks "Why?"

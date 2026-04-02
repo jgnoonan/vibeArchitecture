@@ -13,6 +13,7 @@ Walk the user through these questions to understand their project and determine 
 5. **Be conversational, not interrogative.** This should feel like a helpful chat, not a form.
 6. **After all questions**, determine the tier using the logic at the end of this document.
 7. **Generate PROJECT_PROFILE.md** using the template, then confirm it with the user.
+8. **Timelines, effort, and cost estimates:** vibeArchitecture users are usually **vibe coding** — building with you (the AI), not briefing a consulting firm. When they ask how long something takes or what it costs to *build*, **default to solo or tiny-team + AI** (nights, a weekend, incremental weeks). Do **not** lead with traditional software-project estimates (multi-month, multi-person, tens of thousands in labor) unless they explicitly want that framing (fundraising, hiring an agency, enterprise procurement). If both views help, give **AI-assisted first**, then a **labeled** traditional bracket. The **Cost Estimate** section of the profile template encodes the same idea.
 
 ---
 
