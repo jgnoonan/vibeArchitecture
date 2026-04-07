@@ -15,6 +15,7 @@ Ask the user these questions conversationally. Don't dump them all at once — h
    - Legal/compliance requirements (healthcare, finance, government) → **Regulated** tier
 3. **What data will it handle?** (Personal info? Payments? Health data? Just content?)
 4. **Is this new or existing code?**
+5. **How do you want explanations: short and technical, or step by step with more context?** Record as `experience_level`: short and technical → `experienced`; step by step → `beginner`; in between → `intermediate`. If the user skips, default to `experienced` and note they can say *"explain like I'm new"* anytime.
 
 After the conversation, create a `PROJECT_PROFILE.md` file in the project root with the answers:
 
@@ -25,11 +26,12 @@ After the conversation, create a `PROJECT_PROFILE.md` file in the project root w
 - **Description:** [from the conversation]
 - **Date created:** [today's date]
 - **Tier:** [Personal / Shared / Public / Business / Regulated]
+- **Experience level:** [beginner / intermediate / experienced]
 - **Data sensitivity:** [from the conversation]
 - **New or existing:** [new / existing]
 ```
 
-This file is the persistent record of the intake. If the AI finds an existing `PROJECT_PROFILE.md` in a future session, it should read it and skip the intake questions.
+This file is the persistent record of the intake. If the AI finds an existing `PROJECT_PROFILE.md` in a future session, it should read it. **Skip repeating the full intake only when tier and experience level are already set**; if the profile is missing **Experience level**, ask that single question once (see `ARCHITECT.md` Step 2), then continue.
 
 Apply the rules below for the determined tier and all tiers below it.
 

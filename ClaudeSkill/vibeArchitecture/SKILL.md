@@ -19,7 +19,8 @@ Activate this skill when:
 
 Look for a `PROJECT_PROFILE.md` in the project root or in the conversation context.
 
-- **If it exists and is filled in:** Read the tier and apply the rules for that tier. Skip to Step 3.
+- **If it exists and is filled in** (tier and project basics resolved) **and `experience_level` is one of `beginner`, `intermediate`, or `experienced`:** Read the tier and apply the rules for that tier. Skip to Step 3.
+- **If it exists and is filled in but `experience_level` is missing or invalid:** Do not write code yet. Ask once: *"How do you want explanations: short and technical, or step by step with more context?"* Map to `experienced` / `beginner` / `intermediate` respectively; if the user skips, default to `experienced` and note they can say *"explain like I'm new"* anytime. Update `PROJECT_PROFILE.md`, then go to Step 3.
 - **If it does not exist or has placeholder text:** Proceed to Step 2.
 
 ## Step 2: Run the Intake Conversation
@@ -27,6 +28,8 @@ Look for a `PROJECT_PROFILE.md` in the project root or in the conversation conte
 Before writing any code, ask the user these questions conversationally. Ask one or two at a time. Be natural, not interrogative.
 
 Start with: "Before we start building, I'd like to ask a few quick questions about your project. This helps me apply the right level of protection. Takes about 2 minutes."
+
+**Q0: "How do you like explanations: short and technical, or step by step with more context?"** (Or use the fuller background question from the full framework.) Record as `experience_level`: short and technical → `experienced`; step by step → `beginner`; in between → `intermediate`.
 
 **Q1: "Tell me what you want to build."**
 Get a one-sentence description.
@@ -82,6 +85,7 @@ Create a `PROJECT_PROFILE.md` with the answers:
 - **Description:** [from conversation]
 - **Date created:** [today's date]
 - **Tier:** [Personal / Shared / Public / Business / Regulated]
+- **Experience level:** [beginner / intermediate / experienced]
 - **Data sensitivity:** [from conversation]
 - **AI usage:** [none / single-llm / multi-agent]
 - **New or existing:** [new / existing]
@@ -115,15 +119,18 @@ As you help the user build:
 
 ## How to Communicate
 
-- **Use plain language.** The user may have no coding background. Assume they are smart but not technical.
-- **No jargon without explanation.** If a technical term is unavoidable, immediately explain it. Example: "This needs an index -- think of it like the index in the back of a book that helps you find things quickly instead of reading every page."
-- **Explain consequences, not rules.** Instead of "this violates least privilege," say "this gives the app more access than it needs -- if someone breaks in, they can reach everything instead of just one small part."
+Adjust depth using **`experience_level`** from the profile once set. **Beginner / intermediate:** plain language, explain jargon, consequences over rule names. **Experienced:** concise, technical terms OK, no analogies unless asked.
+
+- **Use plain language** when `experience_level` is `beginner` or `intermediate`. Assume smart, not necessarily technical.
+- **No jargon without explanation** for `beginner` / `intermediate`. Example: "This needs an index -- think of it like the index in the back of a book that helps you find things quickly instead of reading every page."
+- **Explain consequences, not rules** for `beginner` / `intermediate`. Instead of "this violates least privilege," say "this gives the app more access than it needs -- if someone breaks in, they can reach everything instead of just one small part."
+- **Experienced users:** lead with the answer; skip praise and filler.
 - **Be honest about tradeoffs.** Don't pretend there's always one right answer.
 - **Effort and cost estimates:** Default to **the user plus you (the AI)** — realistic solo/small-session timelines (e.g. a weekend of focused work, a few weeks of evenings). Do **not** open with traditional team estimates (months, multiple FTEs, tens of thousands in labor) unless they explicitly want a hiring, agency, or investor-style plan. If both views help, give **vibe-coding first**, then a **clearly labeled** traditional bracket. See `assets/project-profile-template.md` under **Cost Estimate** for the same guidance when filling the profile.
 
 ## What Never to Do
 
-- NEVER skip the intake conversation, even if the user says "just build it"
+- NEVER skip capturing **tier** and **experience_level** before writing code. Full intake can be shortened only when the profile already has both; if tier exists but experience is missing, the one-question gate in Step 1 is mandatory.
 - NEVER hardcode secrets in code, even in examples
 - NEVER generate code without error handling
 - NEVER use a div as a button or skip form labels

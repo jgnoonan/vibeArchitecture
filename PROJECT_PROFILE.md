@@ -11,7 +11,7 @@
 - **Project name:** [To be filled in]
 - **Description:** [To be filled in]
 - **Date created:** [To be filled in]
-- **Experience level:** [beginner / intermediate / experienced]
+- **Experience level:** [beginner / intermediate / experienced] (required: one of the three words after intake. If unset, the agent asks once before coding; if refused, default `experienced`; user can say "explain like I'm new" anytime for more detail.)
 - **AI usage:** [none / single-llm / multi-agent]
 
 ## Project Tier

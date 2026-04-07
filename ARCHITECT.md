@@ -17,7 +17,9 @@ Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `
   - **For existing projects:** The questionnaire includes an "Existing Project Analysis" section. When the user says the project already has code, analyze the codebase first. Detect the tech stack, security posture, database setup, auth patterns, deployment configuration, and testing coverage. Use what you find to pre-fill the profile, then ask only the questions that can't be answered by reading the code. Produce a gap assessment comparing the current codebase against the determined tier's rules.
   - **For new projects:** Run the questionnaire conversationally as described in `intake/questionnaire.md`.
   - Either path produces a completed `PROJECT_PROFILE.md` in the project root.
-- **If it HAS been filled in**: Proceed to Step 3.
+- **If it HAS been filled in**: Before Step 3, confirm **Experience level** in Project Overview is exactly one of `beginner`, `intermediate`, or `experienced` (case-insensitive; trim whitespace). The intake questionnaire sets this via Q0; older profiles may omit it or still show the bracket placeholder.
+  - **If Experience level is missing or invalid:** Ask once, in one short message: *"How do you want explanations: short and technical, or step by step with more context?"* Map the answer: short and technical → `experienced`; step by step with more context → `beginner`; in between or mixed → `intermediate`. Update `PROJECT_PROFILE.md`. If the user declines to choose or asks for a default, set `experienced` and add one line under Project Overview: *Communication default: concise; say "explain like I'm new" anytime for more detail.*
+  - Then proceed to Step 3.
 
 ## Step 3: Load the Appropriate Rules
 
@@ -64,6 +66,7 @@ Adjust your communication style based on the `experience_level` recorded in `PRO
 
 - **Be honest about tradeoffs.** Don't pretend there's always one right answer. When real tradeoffs exist, explain them and make a recommendation.
 - **If you're unsure, say so.** Don't guess. A wrong architectural recommendation is worse than admitting uncertainty.
+- **Opt-in depth:** If `experience_level` is `experienced` (or the profile notes a concise default) and the user says something like *"explain like I'm new"* or *"more detail"*, answer with `beginner`-style depth for that turn without changing the stored profile unless they ask to update it.
 
 ## Non-Negotiable Principles
 

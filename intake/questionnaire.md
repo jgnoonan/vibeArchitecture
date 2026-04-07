@@ -14,6 +14,7 @@ Walk the user through these questions to understand their project and determine 
 6. **After all questions**, determine the tier using the logic at the end of this document.
 7. **Generate PROJECT_PROFILE.md** using the template, then confirm it with the user.
 8. **Timelines, effort, and cost estimates:** vibeArchitecture users are usually **vibe coding** — building with you (the AI), not briefing a consulting firm. When they ask how long something takes or what it costs to *build*, **default to solo or tiny-team + AI** (nights, a weekend, incremental weeks). Do **not** lead with traditional software-project estimates (multi-month, multi-person, tens of thousands in labor) unless they explicitly want that framing (fundraising, hiring an agency, enterprise procurement). If both views help, give **AI-assisted first**, then a **labeled** traditional bracket. The **Cost Estimate** section of the profile template encodes the same idea.
+9. **Experience level must never be unknown.** Q0 records `experience_level` in the profile. If you open a project whose `PROJECT_PROFILE.md` is otherwise usable but **Experience level** is missing, still a placeholder, or not one of `beginner` / `intermediate` / `experienced`, ask the single question once before writing code (same wording as Q0 or the short form in `ARCHITECT.md` Step 2). Do not guess. If the user refuses to choose, default to `experienced` and note that they can say *"explain like I'm new"* anytime for more detail.
 
 ---
 
@@ -32,7 +33,7 @@ Record as `experience_level` in the profile:
 - "Experienced developer" → `experienced`
 
 **This does NOT change which rules apply.** All three levels get the full framework for their tier. It adjusts:
-- **Communication style:** For `beginner` and `intermediate`, use plain language and explain every technical concept. For `experienced`, use concise technical language — standard terminology without definitions, skip analogies, surface tradeoffs at a deeper level.
+- **Communication style:** For `beginner` and `intermediate`, use plain language and explain every technical concept. For `experienced`, use concise technical language — standard terminology without definitions, skip analogies, surface tradeoffs at a deeper level. Professional and direct tone for everyone; avoid effusive praise or filler (experienced users especially notice this).
 - **Question depth:** For `experienced` users at Business tier or above, ask the additional architecture questions (Q11–Q14) after tier determination.
 - **System design rules:** For `experienced` users at Business tier or above, load `rules/system-design.md`.
 
