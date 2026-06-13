@@ -24,9 +24,12 @@ jobs:
           args: >
             --no-progress
             --max-concurrency 4
+            --max-retries 3
+            --retry-wait-time 5
             --exclude-loopback
             --exclude mailto:*
             --accept 200,403,429
             '**/*.md'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
