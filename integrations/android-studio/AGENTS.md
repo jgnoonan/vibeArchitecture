@@ -18,6 +18,10 @@ This project uses **vibeArchitecture** for architectural guidance.
 
 5. **Consult guides when needed.** The `vibeArchitecture/guides/` directory has detailed explanations. Load them when the user asks "why?" or when you need deeper context for a decision.
 
-6. **Surface checklists at milestones.** Show `vibeArchitecture/checklists/before-you-build.md` at project start. Show `vibeArchitecture/checklists/before-you-deploy.md` when deployment is discussed.
+6. **Surface checklists at milestones.**
+   - `vibeArchitecture/checklists/before-you-build.md` at project start
+   - `vibeArchitecture/checklists/before-you-deploy.md` when deployment is discussed
+   - `vibeArchitecture/checklists/production-readiness.md` for Business or Regulated tier projects approaching launch
+   - `vibeArchitecture/checklists/something-broke.md` when the user reports a bug, error, outage, or something not working
 
 <!-- Add project-specific instructions below this line -->

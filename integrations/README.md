@@ -12,17 +12,22 @@ Copy `CLAUDE.md` to your project root:
 cp vibeArchitecture/integrations/CLAUDE.md ./CLAUDE.md
 ```
 
-Claude Code automatically reads `CLAUDE.md` at the start of every session.
+Claude Code automatically reads `CLAUDE.md` at the start of every session. This template uses `@./vibeArchitecture/ARCHITECT.md` to inline the framework entry point.
 
-### Cursor
+### Cursor (recommended)
 
-Copy `cursorrules` to your project root as `.cursorrules`:
+Copy the rule file into `.cursor/rules/`:
 
 ```bash
-cp vibeArchitecture/integrations/cursorrules ./.cursorrules
+mkdir -p .cursor/rules
+cp vibeArchitecture/integrations/cursor/vibeArchitecture.mdc .cursor/rules/
 ```
 
-Cursor automatically reads `.cursorrules` for project-level instructions.
+Cursor loads rules from `.cursor/rules/` automatically. The rule uses `alwaysApply: true` and references `@./vibeArchitecture/ARCHITECT.md`.
+
+**Legacy:** `.cursorrules` in the project root still works. Copy `integrations/cursorrules` if your Cursor version does not support `.cursor/rules/` yet.
+
+**Cursor Skill (optional):** Install `CursorSkill/vibeArchitecture/` to `~/.cursor/skills/vibeArchitecture/` for skill-based activation without per-project setup. See the main README.
 
 ### GitHub Copilot / Codex
 
@@ -75,6 +80,7 @@ Each template tells the AI agent to:
 5. Load and enforce the appropriate rules based on the project's tier
 6. Communicate in plain language with the user
 7. Consult the detailed guides when deeper explanation is needed
+8. Surface checklists at milestones: before-you-build, before-you-deploy, production-readiness (Business/Regulated), and something-broke (incidents)
 
 The templates are intentionally short. All the logic lives in `ARCHITECT.md` and the framework modules — the integration file just points the AI there.
 

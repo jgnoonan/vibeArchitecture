@@ -16,7 +16,9 @@ Thank you for your interest in improving vibeArchitecture. This framework exists
 1. Fork the repository
 2. Create a branch for your change (`git checkout -b improve-security-guide`)
 3. Make your changes
-4. Submit a pull request with a clear description of what you changed and why
+4. If you edited files in `rules/`, `intake/tier-definitions.md`, or `PROJECT_PROFILE.template.md`, run `./scripts/sync.sh` to update Claude Skill and Cursor Skill derived files
+5. Run `./scripts/sync.sh --check` to verify everything is in sync before opening a PR
+6. Submit a pull request with a clear description of what you changed and why
 
 ### What Makes a Good Pull Request
 
@@ -55,7 +57,8 @@ All content in vibeArchitecture follows these principles:
 
 ## Structure Conventions
 
-- **Rules files** go in `rules/` and are named for their domain: `security.md`, `data.md`, etc.
+- **Rules files** go in `rules/` and are named for their domain: `security.md`, `data.md`, etc. This is the **canonical source** for rule content.
+- **Claude Skill and Cursor Skill** `references/` directories are **generated** from `rules/` via `./scripts/sync.sh` — edit `rules/` first, then sync.
 - **Guide files** go in `guides/{domain}/` and are named for their specific topic: `guides/security/authentication.md`.
 - **Each rules file references its corresponding guides** with a note at the top: `> For detailed explanations: see guides/{domain}/`
 - **Each guide starts with a note** explaining when to read it: `> This guide explains... Read it when...`

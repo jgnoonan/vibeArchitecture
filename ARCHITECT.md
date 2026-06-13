@@ -1,5 +1,7 @@
 # vibeArchitecture
 
+**Framework version:** 1.1.0
+
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 
 ## Step 1: Project Setup
@@ -16,7 +18,7 @@ Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `
 - **If it does not exist or has not been filled in** (still contains `[To be filled in]` placeholders): STOP. Do not write any code. Read `intake/questionnaire.md` and conduct the intake conversation with the user first.
   - **For existing projects:** The questionnaire includes an "Existing Project Analysis" section. When the user says the project already has code, analyze the codebase first. Detect the tech stack, security posture, database setup, auth patterns, deployment configuration, and testing coverage. Use what you find to pre-fill the profile, then ask only the questions that can't be answered by reading the code. Produce a gap assessment comparing the current codebase against the determined tier's rules.
   - **For new projects:** Run the questionnaire conversationally as described in `intake/questionnaire.md`.
-  - Either path produces a completed `PROJECT_PROFILE.md` in the project root.
+  - Either path produces a completed `PROJECT_PROFILE.md` in the project root. Use `PROJECT_PROFILE.template.md` in this folder as the starting template.
 - **If it HAS been filled in**: Before Step 3, confirm **Experience level** in Project Overview is exactly one of `beginner`, `intermediate`, or `experienced` (case-insensitive; trim whitespace). The intake questionnaire sets this via Q0; older profiles may omit it or still show the bracket placeholder.
   - **If Experience level is missing or invalid:** Ask once, in one short message: *"How do you want explanations: short and technical, or step by step with more context?"* Map the answer: short and technical → `experienced`; step by step with more context → `beginner`; in between or mixed → `intermediate`. Update `PROJECT_PROFILE.md`. If the user declines to choose or asks for a default, set `experienced` and add one line under Project Overview: *Communication default: concise; say "explain like I'm new" anytime for more detail.*
   - Then proceed to Step 3.
@@ -26,6 +28,7 @@ Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `
 Read `rules/_index.md` to determine which rule files apply based on the project's tier (recorded in `PROJECT_PROFILE.md`). Load those rule files. They are compact and designed to fit within context limits — load all that apply for the tier. Note the conditional rules:
 - `rules/system-design.md` loads when `experience_level` is `experienced` or architecture complexity is detected
 - `rules/multi-agent.md` loads when `ai_usage` is `single-llm` or `multi-agent`
+- `rules/mobile.md` loads when building native mobile apps (iOS, Android, React Native, or Flutter)
 
 ## Step 4: Build with the Rules Active
 

@@ -151,3 +151,12 @@ The `assets/` directory contains:
 ## More Information
 
 vibeArchitecture is open source (MIT licensed). For the full framework with detailed guides, checklists, and IDE integrations: https://github.com/jgnoonan/vibeArchitecture
+
+## Installing in Cursor
+
+This skill is the Cursor edition of vibeArchitecture. To install:
+
+1. Copy the `CursorSkill/vibeArchitecture/` folder from the repo into `~/.cursor/skills/vibeArchitecture/` (personal) or `.cursor/skills/vibeArchitecture/` (project-scoped)
+2. Alternatively, ZIP the `vibeArchitecture/` folder so the archive contains `vibeArchitecture/SKILL.md` at the top level and import via Cursor Settings > Rules > Agent Skills
+
+When the full framework is also present in a project as `vibeArchitecture/`, prefer reading `vibeArchitecture/ARCHITECT.md` and `vibeArchitecture/guides/` for deeper context beyond the compact `references/` files in this skill.

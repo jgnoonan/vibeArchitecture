@@ -13,6 +13,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/data.md`
 - `rules/testing.md`
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
+- `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
 
 ## Public
 
@@ -23,6 +24,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/api.md`
 - `rules/accessibility.md`
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
+- `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
 
 ## Business
 
@@ -38,6 +40,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/performance.md`
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
+- `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
 
 ## Regulated
 
@@ -53,6 +56,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/performance.md`
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
+- `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
 - `rules/compliance.md`
 
 ## Enforcement

@@ -1,3 +1,8 @@
+---
+description: vibeArchitecture architectural guardrails — intake, tier rules, and checklists
+alwaysApply: true
+---
+
 # Project Architecture
 
 This project uses **vibeArchitecture** for architectural guidance.

@@ -1,7 +1,7 @@
 # Universal Rules
 
 > Applies to: All tiers.
-> These are foundational practices that apply to every project. For detailed explanations, see the relevant topic-specific guides in `guides/`.
+> These are foundational practices that apply to every project. For detailed explanations, see the relevant topic-specific guides in `guides/` (including `guides/security/supply-chain.md` for dependency and CI hygiene).
 
 These apply to EVERY project regardless of tier. No exceptions.
 
@@ -35,6 +35,9 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Use a lock file (`package-lock.json`, `poetry.lock`, `Cargo.lock`, etc.) so all environments use identical dependency versions.
 - Keep dependencies updated. Outdated packages are the most common source of known security vulnerabilities.
 - Evaluate before adding. Is it maintained? Does it have known vulnerabilities? Could you write it in a few lines instead of adding a dependency?
+- Run dependency audits before deploy (`npm audit`, `pip-audit`, `cargo audit`). Fix critical and high severity issues.
+- Enable secret scanning on the repository (GitHub secret scanning, gitleaks, or truffleHog in CI). A committed API key is compromised even if removed in the next commit.
+- Pin CI action and base image versions. Never use `latest` tags in production pipelines.
 
 ## Code Quality
 

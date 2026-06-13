@@ -1,7 +1,7 @@
 # Multi-Agent and LLM Rules
 
 > Applies to: Shared tier and above, when the project uses AI/LLM services.
-> For detailed explanations: see `guides/multi-agent/`
+> For detailed explanations: see `guides/multi-agent/`, `guides/multi-agent/llm-security.md` (OWASP LLM Top 10), and `guides/multi-agent/mcp-tool-patterns.md` (MCP / tool use)
 
 ## Agent Boundaries
 

@@ -13,6 +13,7 @@
 - **Date created:** [To be filled in]
 - **Experience level:** [beginner / intermediate / experienced] (required: one of the three words after intake. If unset, the agent asks once before coding; if refused, default `experienced`; user can say "explain like I'm new" anytime for more detail.)
 - **AI usage:** [none / single-llm / multi-agent]
+- **Platform:** [web / mobile-native / both / other]
 
 ## Project Tier
 
@@ -62,6 +63,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/performance.md`
 - [ ] `rules/system-design.md`
 - [ ] `rules/multi-agent.md`
+- [ ] `rules/mobile.md`
 - [ ] `rules/compliance.md`
 
 ## Detected Tech Stack (Existing Projects Only)

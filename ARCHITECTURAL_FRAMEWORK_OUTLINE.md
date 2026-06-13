@@ -1,6 +1,6 @@
 # vibeArchitecture: A Software Architecture Framework for AI-Assisted Development
 
-> **Note:** This is the original planning document from the project's inception. The implementation intentionally evolved from this outline — the directory structure, file organization, and scope have been refined based on real-world usage and feedback. For the current framework structure and usage instructions, see `README.md`.
+> **Historical document only.** This is the original planning document from the project's inception. The implementation intentionally evolved from this outline — the directory structure, file organization, and scope have been refined based on real-world usage and feedback. **Do not use this file for current setup or structure.** For the current framework, see [`README.md`](README.md), [`ARCHITECT.md`](ARCHITECT.md), and [`CHANGELOG.md`](CHANGELOG.md).
 
 **GitHub:** [github.com/jgnoonan/vibeArchitecture](https://github.com/jgnoonan/vibeArchitecture)
 
