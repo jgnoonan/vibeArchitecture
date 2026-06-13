@@ -6,7 +6,7 @@ Curated resources for learning more. Organized by difficulty — start with the 
 
 ## Starting Points (Accessible, No Prior Experience Needed)
 
-**The Twelve-Factor App** — [twelve-factor.net](https://twelve-factor.net)
+**The Twelve-Factor App** — [github.com/heroku/12factor](https://github.com/heroku/12factor)
 A set of principles for building modern web applications. Short, practical, and widely referenced. Read this first if you've never thought about application architecture.
 
 **OWASP Top 10** — [owasp.org/Top10](https://owasp.org/www-project-top-ten/)
