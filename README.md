@@ -112,6 +112,20 @@ The AI handles everything from there.
 
 ---
 
+## See It In Action
+
+New here? These three files show exactly what changes after vibeArchitecture is active:
+
+| | |
+|--|--|
+| **[5-minute walkthrough](examples/first-success-walkthrough.md)** | Prompt → intake questions → profile → first feature |
+| **[Sample PROJECT_PROFILE.md](examples/sample-PROJECT_PROFILE.md)** | What the AI generates after intake (Recipe Box, Shared tier) |
+| **[Before / after code](examples/before-and-after.md)** | Same login API request — with and without guardrails |
+
+No install needed to read them. To try it yourself, paste the [Option B prompt](#option-b-paste-one-prompt-any-ai-tool) into any AI coding tool.
+
+---
+
 ## What It Actually Does
 
 **1. Asks your AI the right questions first.**
@@ -198,6 +212,7 @@ vibeArchitecture/
 ├── appendices/                           # Anti-patterns, glossary, resources
 ├── integrations/                         # Drop-in configs for AI tools
 ├── scripts/sync.sh                       # Keeps skill packages in sync with rules/
+├── examples/                             # Walkthrough, sample profile, before/after
 ├── ClaudeSkill/                          # Installable Claude.ai Skill
 └── CursorSkill/                          # Installable Cursor Agent Skill
 ```

@@ -26,6 +26,14 @@ Thank you for your interest in improving vibeArchitecture. This framework exists
 - **Explain the "why."** Don't just say what you changed — explain why the change improves the framework.
 - **Respect the audience.** This framework is written for people who may not have a software engineering background. Technical accuracy matters, but so does accessibility.
 
+### Signed commits (maintainers)
+
+This project recommends **verified signed commits** on `main` — a reasonable trust signal for a security-focused framework. Contributors are not required to sign, but maintainers should sign when possible.
+
+To enable locally, see GitHub's guide: [Signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). SSH signing (`git config gpg.format ssh`) is the simplest path on modern macOS.
+
+To require verified commits on the default branch, a repo admin can enable **Branch protection → Require signed commits** in GitHub repository settings.
+
 ## Writing Standards
 
 All content in vibeArchitecture follows these principles:
