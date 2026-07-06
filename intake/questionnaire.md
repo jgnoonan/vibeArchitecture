@@ -457,6 +457,8 @@ Even when the determination suggests services, the AI should emphasize the Stran
 
 5. **Confirm with the user:** *"Here's what I've captured. Does this look right? We can adjust anything."*
 
-6. **Load the rules** from `rules/_index.md` for the determined tier and begin building.
+6. **Load the rules** from `rules/_index.md` for the determined tier.
+
+7. **Confirm what's active before writing code.** State it back in two or three lines: the tier and why, whether the privacy overlay is on, and the exact rule files loaded. Example: *"Active guardrails: Public tier + privacy overlay. Loaded rules: universal, security, data, testing, api, accessibility, privacy. I'll follow these as I build — tell me if the tier looks off."* This lets the user catch a wrong tier before it shapes the code. If you can't name the loaded rules, you haven't loaded them. Then begin building.
 
 7. **For Business and Regulated tiers:** Mention the production readiness checklist. *"When you're getting ready to launch, we'll go through a production readiness checklist together. It covers security, reliability, monitoring, and everything you need for a solid launch. We don't need it now — just know it's there for when you're ready."*

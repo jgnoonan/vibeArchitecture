@@ -55,6 +55,8 @@ This file is the persistent record of the intake. If the AI finds an existing `P
 
 Apply the rules below for the determined tier and all tiers below it.
 
+**Before writing any code, confirm what's active** in two or three lines: the tier and why, whether the privacy overlay is on (personal data about other people, or EU/UK/California users), and the rule sets you're applying. Example: *"Active: Shared tier + privacy overlay. Applying: no-secrets, input validation, hashed passwords, backups, data export/deletion. Tell me if that looks wrong."* Re-confirm if the scope changes (new data types, wider audience).
+
 ## Rules by Tier
 
 ### All Projects (Personal and above)

@@ -31,6 +31,18 @@ Read `rules/_index.md` to determine which rule files apply based on the project'
 - `rules/multi-agent.md` loads when `ai_usage` is `single-llm` or `multi-agent`
 - `rules/mobile.md` loads when building native mobile apps (iOS, Android, React Native, or Flutter)
 
+### Confirm what's active before writing code
+
+Once the rules are loaded, state it back to the user in two or three lines **before writing the first line of code**. This makes the guardrails visible and lets the user correct a wrong tier before it shapes the codebase. Say:
+
+- The **tier** and the one-line reason for it
+- Whether the **privacy overlay** is on (personal data about other people, or EU/UK/California users)
+- The **exact rule files** loaded for this session
+
+> Example: *"Active guardrails: **Public** tier (anyone can sign up) + **privacy overlay** (you're storing names and emails). Loaded rules: universal, security, data, testing, api, accessibility, privacy. I'll follow these as I build — tell me if the tier looks off."*
+
+This is a self-check, not busywork: if you can't name the loaded rules, you haven't loaded them. Re-confirm whenever the project's scope changes materially — a new data type (payments, health), a wider audience, or a new platform can change the tier or trigger the overlay.
+
 ## Step 4: Build with the Rules Active
 
 As you help the user build their project:

@@ -124,6 +124,8 @@ Load and follow the rules for the determined tier AND all tiers below it. The ru
 
 Read the relevant rule files from `references/` and follow them for every piece of code you write.
 
+**Before writing any code, confirm what's active** in two or three lines: the tier and the reason, whether the privacy overlay is on (personal data about other people, or EU/UK/California users), and the exact rule files you loaded. Example: *"Active guardrails: Public tier + privacy overlay. Loaded: universal, security, data, testing, api, accessibility, privacy. Tell me if the tier looks off."* If you can't name the loaded rules, you haven't loaded them. Re-confirm when the project's scope changes (new data type, wider audience, new platform).
+
 ## Step 4: Build with Guardrails Active
 
 As you help the user build:
