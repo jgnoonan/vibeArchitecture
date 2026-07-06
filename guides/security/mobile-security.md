@@ -62,6 +62,24 @@ Both platforms reject or penalize apps that over-collect or misdeclare data use.
 
 ---
 
+## App Store Review: Rejections That Actually Bite
+
+Getting your code working is only half the battle. Apple and Google review every app, and they reject or pull apps for privacy and policy reasons an AI assistant won't warn you about until it's too late. These are the high-frequency 2026 triggers. Check every one before you submit.
+
+**In-app account deletion (iOS, required).** If your app lets users create an account, Apple requires a way to delete that account *from inside the app* — not "email us to close your account." A settings screen link that starts the deletion is enough. This is one of the most common rejections for apps with sign-up. (Android has similar expectations and a required "delete account" link in your Play listing.)
+
+**iOS Privacy Manifest (`PrivacyInfo.xcprivacy`).** Your app — and every third-party SDK you bundle — must ship a privacy manifest declaring what data it collects and *why*. On top of that, certain common APIs are now "required reason" APIs (things like reading file timestamps, disk space, or user defaults): you must declare an approved reason code for using them. Missing or incomplete manifests now cause rejections at submission. Ask your AI to check whether your SDKs already provide their own manifests — most popular ones do, but you still need yours.
+
+**Privacy labels must match reality.** Apple's App Privacy "nutrition label" and Google Play's Data Safety section are forms *you* fill out describing what you collect. Reviewers (and automated tooling) compare your declarations against what the app actually does. If you say "no data collected" but your analytics SDK phones home with device IDs, that mismatch gets flagged. Fill these out honestly, and re-check them every time you add an SDK. See `rules/mobile.md` ("App Store and Privacy").
+
+**Tracking requires the ATT prompt (iOS).** If your app tracks users across other companies' apps and websites — anything using the IDFA advertising identifier, most ad and attribution SDKs — you must show Apple's App Tracking Transparency prompt and get permission first. Undisclosed tracking SDKs are a rejection and post-launch removal risk. If you don't need cross-app tracking, don't add the SDK, and you can skip the prompt entirely.
+
+**Permissions need purpose strings, requested in context.** Every sensitive permission (camera, location, contacts, microphone) needs a plain-language usage description — on iOS these are the `NSCameraUsageDescription`-style strings in `Info.plist`; a missing one is an automatic rejection. Request the permission *when the feature is first used*, not at launch. This ties directly to the existing rule: request permissions in context, with an explanation before the system prompt (`rules/mobile.md`).
+
+**Android specifics.** Google Play enforces a *recent target API level* — apps that target an old Android version can't be updated or shown to new users until you bump the target SDK. You also need an accurate Data Safety section (as above) and, if you use a foreground service (background location, media playback, data sync), you must declare its type and justify it; unjustified foreground services get rejected.
+
+**The pre-submission checklist:** account deletion in-app, privacy manifest present, privacy labels match the SDKs you actually ship, ATT prompt if you track, purpose strings for every permission, current Android target SDK. Walking through these first saves a rejection round-trip that can add a week to your launch.
+
 ## Testing on Real Devices
 
 Simulators don't replicate: low memory kills, background suspension, biometric failures, OS-level permission revokes, or network handoffs (Wi-Fi → cellular). Test auth flows and offline behavior on physical hardware before launch.

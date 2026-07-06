@@ -28,6 +28,19 @@
 - Don't rely on hiding UI elements as access control. If a button is hidden but the API endpoint isn't protected, the data is exposed.
 - Verify that users can only access THEIR OWN data. "Can user A see user B's records?" is one of the most common security bugs (Insecure Direct Object Reference). Always filter queries by the authenticated user's identity.
 
+## Cross-Site Request Forgery (CSRF)
+
+- If you authenticate with cookies (including httpOnly session cookies — the recommended default above), you MUST defend against CSRF. Without it, a malicious page can make the user's browser send authenticated requests to your app (the cookie rides along automatically) and perform actions as them.
+- Set session cookies to `SameSite=Lax` (or `Strict`) — this alone blocks most cross-site cookie sends. Add `Secure` and `HttpOnly`.
+- For state-changing requests (POST/PUT/PATCH/DELETE), also use anti-CSRF tokens (synchronizer token or double-submit cookie). Most web frameworks and auth libraries provide this — turn it on.
+- Token-based auth sent in an `Authorization` header (not a cookie) is not vulnerable to CSRF in the same way, because the browser doesn't attach it automatically — but then you've taken on the token-storage risk noted above. Pick one model and secure it fully.
+
+## Abuse and Bot Controls
+
+- Public signup, login, password-reset, contact, and comment endpoints attract bots. Rate limit them (see `rules/api.md`) and add friction where needed: CAPTCHA or a privacy-friendly challenge (hCaptcha, Cloudflare Turnstile) on signup and other abuse-prone forms.
+- Block disposable/temporary email domains on signup if account quality matters. Require email verification before granting anything valuable.
+- For any user-generated content shown to others, plan for moderation from the start: length/link limits, profanity/spam filtering, a report mechanism, and the ability to remove content and ban users. Unmoderated UGC becomes a spam and abuse vector fast.
+
 ## HTTPS and Transport Security
 
 - All traffic must use HTTPS. No exceptions, including "internal" or "non-sensitive" pages.

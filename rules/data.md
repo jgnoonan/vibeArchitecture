@@ -44,11 +44,11 @@
 - Enable encryption at rest. Most managed databases offer this — turn it on.
 - Know where sensitive data lives. Track which tables and columns contain personal, financial, or other protected information.
 - Don't log sensitive data. Query logs, application logs, and error reports must not contain passwords, credit card numbers, SSNs, or health information.
-- When deleting sensitive data, confirm it's actually gone — not just soft-deleted and still queryable, not sitting in retained backups indefinitely.
+- When deleting sensitive data, confirm it's actually gone — not just soft-deleted and still queryable, not sitting in retained backups indefinitely. A soft-delete flag does NOT satisfy a user's deletion request. If you store personal data about real people, see `rules/privacy.md` for data-subject deletion and retention obligations.
 
 ## Migrations
 
-- Migrations are forward-only. Write a new migration to fix a mistake. Never edit or delete a migration that has been applied.
-- Make schema changes backward-compatible when possible. The expand-and-contract pattern: add the new column → deploy code that writes to both old and new → migrate existing data → deploy code that reads only the new column → drop the old column.
+- Treat applied migrations as immutable. Never edit or delete a migration that has already run somewhere — write a new migration to fix a mistake.
+- In production, prefer to **roll forward**, not down. Recovering by writing a new corrective migration is safer than running a `down` against live data (down-migrations that drop columns/tables destroy data). Write reversible `down` logic for local and CI use, but don't rely on reverting production.
+- Make schema changes backward-compatible when possible. The expand-and-contract pattern: add the new column → deploy code that writes to both old and new → migrate existing data → deploy code that reads only the new column → drop the old column. This is what lets you deploy without downtime.
 - Test migrations against realistic data volumes. A migration that takes 2 seconds on a test database can lock a production table for 20 minutes.
-- Include both "up" (apply) and "down" (revert) logic in every migration, even if you hope never to revert.

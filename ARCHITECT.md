@@ -1,6 +1,6 @@
 # vibeArchitecture
 
-**Framework version:** 1.1.0
+**Framework version:** 1.2.0
 
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 
@@ -26,6 +26,7 @@ Look for `PROJECT_PROFILE.md` in the **project root** (the parent directory of `
 ## Step 3: Load the Appropriate Rules
 
 Read `rules/_index.md` to determine which rule files apply based on the project's tier (recorded in `PROJECT_PROFILE.md`). Load those rule files. They are compact and designed to fit within context limits — load all that apply for the tier. Note the conditional rules:
+- `rules/privacy.md` loads when the app stores personal data about other people, or any users are in the EU / UK / California (data-subject-rights overlay — applies from Shared upward, independent of tier)
 - `rules/system-design.md` loads when `experience_level` is `experienced` or architecture complexity is detected
 - `rules/multi-agent.md` loads when `ai_usage` is `single-llm` or `multi-agent`
 - `rules/mobile.md` loads when building native mobile apps (iOS, Android, React Native, or Flutter)

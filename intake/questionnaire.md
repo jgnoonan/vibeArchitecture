@@ -92,11 +92,18 @@ If No and tier is Personal or Shared: simplifies security guidance significantly
 - Location tracking or movement data
 - None of the above — just non-personal stuff (todos, game scores, preferences)
 
+- Biometric data (face scans, fingerprints, voiceprints)
+- Data about children under 13 (or under 16 in the EU)
+
 **Tier upgrades based on answers:**
 - Health/medical data → upgrade to **Regulated**
+- Biometric data → upgrade to **Regulated** (special-category data under GDPR)
+- Data about children → upgrade to at least **Business**, and flag COPPA/age-verification obligations
 - Payment/financial data → upgrade to at least **Business**
 - Government IDs → upgrade to at least **Business**
-- Names/emails/phone → flag that a privacy policy is likely needed
+- Names/emails/phone/location about **other people** → apply the **Privacy overlay** (load `rules/privacy.md`): the app owes users data-subject rights (access, deletion, consent). This is separate from tier and applies from Shared upward.
+
+**Also ask where the users are** (one line): *"Will any of your users be in the EU, UK, or California?"* If yes, note in the profile that GDPR / UK GDPR / CCPA obligations apply — this makes the Privacy overlay mandatory, not optional, even for a Public-tier app.
 
 ---
 
@@ -338,11 +345,21 @@ Start with Q2 answer:
 
 Then check for upgrades (tier can only go UP):
   Q4 has health/medical data            → Regulated
+  Q4 has biometric data                 → Regulated
   Q4 has payment/financial data          → at least Business
   Q4 has government IDs                  → at least Business
+  Q4 has children's data                 → at least Business (flag COPPA)
   Q8 is "Critical"                       → at least Business
   Q8 is "Critical" + sensitive data (Q4) → Regulated
+
+Then apply the Privacy overlay (independent of tier — it is an ADD-ON, not an upgrade):
+  App stores personal data about OTHER people
+    (names/emails/phone/location), i.e. tier is Shared or above
+                                        → load rules/privacy.md
+  Any users in the EU / UK / California → load rules/privacy.md (mandatory)
 ```
+
+**Why the overlay exists:** GDPR/CCPA obligations are triggered by *who your users are*, not by how "serious" the app is. A Public-tier app with EU signups owes users data export, deletion, and consent — but it is not otherwise "Regulated." The overlay loads just the data-subject-rights rules (`rules/privacy.md`) without pulling in the full Regulated compliance set. Health/payment/biometric/government/children's data still escalate the whole tier as above.
 
 ---
 

@@ -28,6 +28,8 @@ See `intake/tier-definitions.md` for what this tier means.
 | Who is this for? | [To be filled in] |
 | User accounts required? | [To be filled in] |
 | Data sensitivity | [To be filled in] |
+| Stores personal data about other people? | [yes / no] |
+| Any users in EU / UK / California? | [yes / no / unsure] |
 | Access method | [To be filled in] |
 | Hosting | [To be filled in] |
 | Expected users | [To be filled in] |
@@ -61,6 +63,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/infrastructure.md`
 - [ ] `rules/observability.md`
 - [ ] `rules/performance.md`
+- [ ] `rules/privacy.md` *(personal data about other people, or EU/UK/California users)*
 - [ ] `rules/system-design.md`
 - [ ] `rules/multi-agent.md`
 - [ ] `rules/mobile.md`

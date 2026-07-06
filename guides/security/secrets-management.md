@@ -81,6 +81,25 @@ Design for rotation from the start:
 - Changing a secret should require only updating the environment variable and restarting the app — no code changes
 - For critical secrets, consider a rotation schedule (every 90 days is common)
 
+### Rotating Without an Outage: The Overlap Window
+
+"Update the variable and restart the app" is fine for a database password, but it quietly breaks for secrets that are used to *sign* things — JWT signing keys, session secrets, and webhook-signing secrets. Here's the trap:
+
+**The problem:** Those secrets aren't just used to open a lock; they're used to stamp a signature that gets checked later. Suppose you swap your JWT signing key in one move. Every token you already handed out was signed with the *old* key. The instant the app only knows the *new* key, every one of those in-flight tokens fails its signature check — and every logged-in user is kicked out at once. The same happens if you rotate a session secret (all sessions become invalid) or a webhook-signing secret (in-flight webhook deliveries suddenly look forged). A hard cutover turns a routine rotation into an outage.
+
+**The fix: accept two secrets at once.** Instead of swapping in a single step, run an *overlap window* where both the old and new secret are valid:
+
+1. **Add** the new secret alongside the old one (e.g. `SESSION_SECRET_NEW` next to `SESSION_SECRET`), and deploy so the app **accepts both** when verifying a signature.
+2. **Sign with the new secret** going forward, but keep **verifying against both**. Now new tokens use the new key, and old tokens still check out against the old key.
+3. **Wait** for the old tokens or sessions to age out — long enough that everything signed with the old secret has expired (past your longest token lifetime).
+4. **Remove** the old secret. Nothing is relying on it anymore, so this final step is safe.
+
+At no point is there a moment where a valid, unexpired token can't be verified. That's what makes it zero-downtime.
+
+**This isn't exotic — providers build it in.** Stripe, for example, lets you have two active webhook-signing secrets at the same time precisely so you can roll to a new one without dropping deliveries mid-rotation. Many API providers issue the new key while the old key keeps working for a grace period. When a provider offers an overlap like this, use it; it exists for exactly this reason.
+
+For how JWT signing keys and session secrets are used in the first place, see `guides/security/authentication.md`.
+
 ## Common Mistakes
 
 | Mistake | Why It's Bad | What To Do Instead |
