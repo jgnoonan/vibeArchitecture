@@ -36,6 +36,7 @@ Each tier includes everything from the tiers below it.
 - Basic security practices (input validation, secure password storage)
 - Data integrity (protecting against accidental data loss or corruption)
 - Backup strategy
+- Basic tests for the code that handles money, permissions, and core workflows
 
 **What you don't need to worry about:**
 - Rate limiting and abuse prevention
@@ -55,8 +56,8 @@ Each tier includes everything from the tiers below it.
 - Hardened input validation (assume some users are malicious)
 - Error handling that doesn't leak internal details
 - HTTPS enforcement
-- Basic monitoring (know when things break before users tell you)
-- Deployment strategy (update without downtime)
+- Accessibility (semantic HTML, keyboard navigation, labels) — a legal requirement for public apps in many places
+- Consistent API design
 
 **Why it's different from Shared:** When strangers use your app, you must assume some will try to break it — out of curiosity, malice, or accident. You can't call them up when something goes wrong.
 
@@ -99,3 +100,13 @@ Each tier includes everything from the tiers below it.
 **Typical hosting cost:** $200–1,000+/month
 
 **Important:** The AI applies architectural best practices for regulated environments, but cannot provide legal advice. Consult a compliance specialist or attorney for your specific regulatory obligations.
+
+---
+
+## Privacy: an overlay, not a tier
+
+Some obligations are triggered by **who your users are**, not by how big or serious your app is. If your app stores personal data about other people (names, emails, phone numbers, location) — or any of your users are in the EU, UK, or California — privacy laws like GDPR and CCPA apply even to a small Public-tier app.
+
+When this is the case, the AI applies a **privacy overlay** on top of your tier (the `rules/privacy.md` rules): users can export their data, delete it on request (a hidden "soft delete" flag doesn't count), and consent to non-essential tracking. This is separate from becoming "Regulated" — you get the data-subject-rights basics without the full compliance program.
+
+**Health, payment card, biometric, government-ID, or children's data still escalates the whole tier** (to Business or Regulated as above) — the overlay is for ordinary personal data.

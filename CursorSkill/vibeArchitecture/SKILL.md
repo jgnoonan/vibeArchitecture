@@ -5,6 +5,8 @@ description: Apply architectural guardrails when building software. Runs an inta
 
 # vibeArchitecture
 
+**Framework version:** 1.2.0
+
 Architectural guardrails for AI-generated code. When the user asks you to build software, follow this skill's instructions to ensure the code is secure, reliable, and production-ready.
 
 ## When to Activate
@@ -41,12 +43,16 @@ Get a one-sentence description.
 - Paying customers → **Business** tier
 
 **Q3: "What kind of information will it store?"**
-- Names, emails, phone numbers → note privacy policy needed
+- Names, emails, phone numbers, location → personal data about other people: apply the **Privacy overlay** (load `privacy.md`) — export, deletion, and consent obligations
 - Passwords → note (system handles this even if user doesn't realize)
 - Payment/financial data → upgrade to at least **Business**
 - Health/medical data → upgrade to **Regulated**
+- Biometric data (face, fingerprint) → upgrade to **Regulated**
 - Government IDs → upgrade to at least **Business**
+- Children's data → upgrade to at least **Business** (COPPA)
 - Nothing sensitive → no change
+
+Also ask: **"Will any users be in the EU, UK, or California?"** If yes, the Privacy overlay (`privacy.md`) is mandatory even at Public tier.
 
 **Q4: "What happens if it stops working?"** (Skip for Personal tier)
 - No big deal → no change
@@ -65,10 +71,16 @@ Get a one-sentence description.
 Start with Q2 answer as the base tier.
 Then check for upgrades (tier can only go UP):
   Q3 has health/medical data → Regulated
+  Q3 has biometric data → Regulated
   Q3 has payment/financial data → at least Business
   Q3 has government IDs → at least Business
+  Q3 has children's data → at least Business
   Q4 is "Critical" → at least Business
   Q4 is "Critical" + sensitive data → Regulated
+
+Then apply the Privacy overlay (independent of tier — an add-on, not an upgrade):
+  Stores personal data about other people, OR any EU/UK/California users
+    → load privacy.md (data-subject rights: export, deletion, consent)
 ```
 
 ### After Determining the Tier
@@ -105,11 +117,14 @@ Load and follow the rules for the determined tier AND all tiers below it. The ru
 | **Regulated** | Above + `compliance.md` |
 
 **Conditional rules:**
+- Load `privacy.md` when the app stores personal data about other people, or any users are in the EU / UK / California (data-subject-rights overlay — applies from Shared upward, independent of tier)
 - Load `multi-agent.md` when ai_usage is `single-llm` or `multi-agent`
 - Load `system-design.md` when tier is Business or Regulated AND `experience_level` is `experienced`, or when architecture complexity is detected in an existing codebase
 - Load `mobile.md` when building native mobile apps (iOS, Android, React Native, or Flutter)
 
 Read the relevant rule files from `references/` and follow them for every piece of code you write.
+
+**Before writing any code, confirm what's active** in two or three lines: the tier and the reason, whether the privacy overlay is on (personal data about other people, or EU/UK/California users), and the exact rule files you loaded. Example: *"Active guardrails: Public tier + privacy overlay. Loaded: universal, security, data, testing, api, accessibility, privacy. Tell me if the tier looks off."* If you can't name the loaded rules, you haven't loaded them. Re-confirm when the project's scope changes (new data type, wider audience, new platform).
 
 ## Step 4: Build with Guardrails Active
 

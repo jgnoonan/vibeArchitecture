@@ -15,10 +15,26 @@ Thank you for your interest in improving vibeArchitecture. This framework exists
 
 1. Fork the repository
 2. Create a branch for your change (`git checkout -b improve-security-guide`)
-3. Make your changes
-4. If you edited files in `rules/`, `intake/tier-definitions.md`, or `PROJECT_PROFILE.template.md`, run `./scripts/sync.sh` to update Claude Skill and Cursor Skill derived files
-5. Run `./scripts/sync.sh --check` to verify everything is in sync before opening a PR
+3. Make your changes to the **canonical source only** (see "Canonical sources" below)
+4. If you edited any canonical source, run `./scripts/sync.sh` to regenerate the derived files
+5. Run `./scripts/sync.sh --check` to verify everything is in sync before opening a PR (CI runs this too)
 6. Submit a pull request with a clear description of what you changed and why
+
+### Canonical sources and what they generate
+
+`scripts/sync.sh` keeps derived copies in lockstep with these canonical files — **edit the canonical file, never the generated copy:**
+
+| Canonical source | Generates |
+|------------------|-----------|
+| `rules/*.md` | `{Claude,Cursor}Skill/vibeArchitecture/references/*.md` |
+| `intake/tier-definitions.md` | both skills' `assets/tier-definitions.md` |
+| `PROJECT_PROFILE.template.md` | both skills' `assets/project-profile-template.md` |
+| `ClaudeSkill/vibeArchitecture/SKILL.md` | `CursorSkill/vibeArchitecture/SKILL.md` (Claude body + Cursor install appendix) |
+| `integrations/AGENTS.md` | `integrations/CLAUDE.md`, `integrations/android-studio/AGENTS.md`, `integrations/cursor/vibeArchitecture.mdc` |
+
+`integrations/cursorrules` is intentionally **not** generated — the legacy `.cursorrules` format can't use the `@./…` import, so it's a small standalone file maintained by hand.
+
+The intake logic exists in three forms — the full `intake/questionnaire.md`, the condensed `BOOTSTRAP.md`, and the two `SKILL.md` packages. These are not auto-synced; if you change tier-determination logic, update all of them together.
 
 ### What Makes a Good Pull Request
 
@@ -66,7 +82,7 @@ All content in vibeArchitecture follows these principles:
 ## Structure Conventions
 
 - **Rules files** go in `rules/` and are named for their domain: `security.md`, `data.md`, etc. This is the **canonical source** for rule content.
-- **Claude Skill and Cursor Skill** `references/` directories are **generated** from `rules/` via `./scripts/sync.sh` — edit `rules/` first, then sync.
+- **Claude Skill and Cursor Skill** `references/` directories are **generated** from `rules/` via `./scripts/sync.sh` — edit `rules/` first, then sync. The same script also generates the Cursor `SKILL.md` and the derived integration files (see "Canonical sources" above).
 - **Guide files** go in `guides/{domain}/` and are named for their specific topic: `guides/security/authentication.md`.
 - **Each rules file references its corresponding guides** with a note at the top: `> For detailed explanations: see guides/{domain}/`
 - **Each guide starts with a note** explaining when to read it: `> This guide explains... Read it when...`
@@ -76,10 +92,12 @@ All content in vibeArchitecture follows these principles:
 When adding or modifying rules, respect the tier system:
 
 - **Universal** — applies to all projects, no exceptions
-- **Shared** — adds security and data integrity basics
-- **Public** — adds API hardening and deployment awareness
-- **Business** — adds reliability, infrastructure, observability, performance
+- **Shared** — adds security, data integrity, and testing basics
+- **Public** — adds API hardening and accessibility
+- **Business** — adds reliability, infrastructure, observability, performance, and deployment automation
 - **Regulated** — adds compliance-specific requirements
+
+There is also a **privacy overlay** (`rules/privacy.md`) that is not a tier: it loads whenever the app stores personal data about other people, or has EU/UK/California users, from Shared upward. Keep tier gating consistent across `rules/*.md` (`Applies to:` header), `rules/_index.md`, `intake/tier-definitions.md`, `intake/questionnaire.md`, `BOOTSTRAP.md`, and the README tier table — these must agree.
 
 If a rule only matters for projects with paying customers, it belongs in Business tier or above — not in Universal. Overloading lower tiers with unnecessary rules defeats the purpose of the tiering system.
 

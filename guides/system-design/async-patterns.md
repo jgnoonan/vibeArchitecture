@@ -126,6 +126,32 @@ If you're processing hundreds or thousands of messages per minute, a simple queu
 
 **The rule of thumb:** If you're asking "should I use Kafka?", the answer is almost certainly no. When you actually need it, you'll know — because simpler tools will be measurably failing to keep up.
 
+## Background Jobs for Solo & Serverless Projects
+
+The queue theory above assumes you have a worker running somewhere. If you're a solo developer on serverless (Vercel, Netlify, Cloudflare Workers, Supabase), you often *don't* — and that changes the practical advice. Here's how to actually do background work when you don't run your own always-on server.
+
+**Why you can't just do the slow thing inside the request.** A web request is meant to be quick. Serverless platforms kill a function after a short timeout (often 10–60 seconds), the user is stuck watching a spinner the whole time, and if the function is cut off mid-way the work is simply lost — with no retry. So sending a welcome email, generating a report, calling a slow AI model, or processing an uploaded image should *not* happen inside the request that the user is waiting on. Accept the request, hand the work off, respond immediately.
+
+**The options ladder — climb only as high as you need:**
+
+1. **Platform cron / scheduled functions.** For work on a schedule (nightly reports, hourly cleanup, "check for expired trials"). Vercel Cron, Cloudflare Cron Triggers, Supabase scheduled functions (pg_cron), or a GitHub Actions cron workflow. Zero extra infrastructure — you already have the platform. This is the simplest possible background system: a function that wakes up on a timer.
+
+2. **Hosted queues.** For work triggered by a user action that shouldn't block the response ("they just signed up, send the email"). A hosted queue takes your job over HTTP and calls your function back later, with retries built in — no server to run. Upstash QStash (built for serverless, calls your endpoint), AWS SQS, Inngest, or Trigger.dev (these last two also handle multi-step workflows and scheduling). This is the sweet spot for most solo serverless apps.
+
+3. **A real worker on a long-running host.** When volume is high enough that per-job HTTP calls get expensive or slow, run an actual always-on process (a small VM, a container, a Render/Railway/Fly worker) pulling from a queue. More to operate, so only climb here when the numbers justify it.
+
+**Jobs run at-least-once, so make them idempotent.** Every option above can deliver the same job *twice* — a network hiccup, a retry after a timeout, a redelivery. If "send invoice email" runs twice, the customer gets two emails; if "charge the card" runs twice, that's real money. Give each job a stable idempotency key (the order ID, a UUID you generate once) and check "have I already done this one?" before acting. This is the same idea as the idempotency section above — see `guides/reliability/concurrency.md` and `rules/reliability.md`.
+
+**Retry with backoff, and have a failure path.** When a job fails, retry it — but wait longer between each attempt (backoff) so you don't hammer a service that's already struggling. And cap it: after a handful of failures, send the job to a dead-letter/failure store (as covered above) instead of retrying forever. Most hosted queues do backoff and dead-lettering for you; make sure it's turned on, and make sure *someone gets alerted* when a job lands in the failure pile.
+
+**Quick decision guide:**
+- On a schedule? → platform cron.
+- Triggered by a user action, low/medium volume? → hosted queue (QStash/Inngest/Trigger.dev).
+- Multi-step or needs orchestration? → Inngest / Trigger.dev.
+- High volume, cost-sensitive? → a real worker on a long-running host.
+
+For more on running background work without your own server, see `guides/infrastructure/serverless-and-edge.md`.
+
 ## Getting Started
 
 If your application doesn't use async processing yet and you want to add it:

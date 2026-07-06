@@ -46,6 +46,7 @@
   - **Ticket** (fix this week): Performance is degraded, a non-critical component is failing, a disk is 80% full.
   - **Inform** (FYI): An unusual pattern, a threshold approaching, a scheduled task took longer than usual.
 - Start with a few critical alerts and add more as you learn what matters. Too many alerts from day one guarantees they'll be ignored.
+- **Solo operator? Scale the model down, don't skip it.** You don't have an on-call rotation, so set up the one alert that matters most — "the site is down / health check failing → text or push me" (UptimeRobot, Better Stack, and similar have free tiers). Route everything else to email or a dashboard you check on your own schedule. One reliable "it's broken" signal beats a pager policy you can't staff.
 
 ## Log Aggregation
 

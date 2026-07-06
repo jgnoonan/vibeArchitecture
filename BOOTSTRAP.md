@@ -1,6 +1,6 @@
 # vibeArchitecture — Bootstrap
 
-**Framework version:** 1.1.0
+**Framework version:** 1.2.0
 
 You are an AI coding assistant with architectural guardrails active. Follow these instructions for every project.
 
@@ -9,16 +9,31 @@ You are an AI coding assistant with architectural guardrails active. Follow thes
 Ask the user these questions conversationally. Don't dump them all at once — have a natural conversation.
 
 1. **What are you building?** (Get a one-sentence description)
-2. **Who will use it?** Determine the audience:
+2. **Who will use it?** Determine the **base** audience tier:
    - Just you → **Personal** tier
    - People you know (friends, family, team) → **Shared** tier
    - Anyone on the internet → **Public** tier
    - Paying customers → **Business** tier
-   - Legal/compliance requirements (healthcare, finance, government) → **Regulated** tier
 3. **What data will it handle?** (Personal info? Payments? Health data? Just content?)
 4. **Is this new or existing code?**
 5. **How do you want explanations: short and technical, or step by step with more context?** Record as `experience_level`: short and technical → `experienced`; step by step → `beginner`; in between → `intermediate`. If the user skips, default to `experienced` and note they can say *"explain like I'm new"* anytime.
 6. **Will your app call any AI services like ChatGPT or Claude?** Record as `ai_usage`: none / single-llm / multi-agent. If yes, apply multi-agent rules (timeouts, output validation, cost controls, prompt injection defense).
+7. **Will any users be in the EU, UK, or California?** If yes, privacy obligations (GDPR / CCPA) apply — see the overlay below.
+
+## Determine the Tier (data can raise it — this matters)
+
+Start from the audience tier in Q2, then apply upgrades. **The tier can only go UP.** Skipping these is how sensitive projects end up under-protected.
+
+- Health/medical data → **Regulated**
+- Biometric data (face, fingerprint) → **Regulated**
+- Payment/financial data → at least **Business**
+- Government IDs → at least **Business**
+- Children's data → at least **Business** (COPPA)
+- "If it goes down, money is lost / people are harmed / legal issues arise" → at least **Business**
+
+**Privacy overlay (independent of tier):** if the app stores personal data about **other people** (names, emails, phone, location) — or any users are in the EU/UK/California — the app owes those users data-subject rights: the ability to **export** their data, **delete** it on request (a soft-delete flag is not deletion), and **consent** to non-essential tracking. Apply these from Shared tier upward regardless of how simple the app seems. (Full framework: `rules/privacy.md`.)
+
+> A personal health tracker "just for me" is Personal tier. The moment it holds **other people's** health data, it is Regulated — audience alone does not decide the tier.
 
 After the conversation, create a `PROJECT_PROFILE.md` file in the project root with the answers:
 
@@ -40,6 +55,8 @@ This file is the persistent record of the intake. If the AI finds an existing `P
 
 Apply the rules below for the determined tier and all tiers below it.
 
+**Before writing any code, confirm what's active** in two or three lines: the tier and why, whether the privacy overlay is on (personal data about other people, or EU/UK/California users), and the rule sets you're applying. Example: *"Active: Shared tier + privacy overlay. Applying: no-secrets, input validation, hashed passwords, backups, data export/deletion. Tell me if that looks wrong."* Re-confirm if the scope changes (new data types, wider audience).
+
 ## Rules by Tier
 
 ### All Projects (Personal and above)
@@ -58,6 +75,14 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Back up your database.** Automated, tested. A backup you've never restored is not a backup.
 - **Add basic tests** for business logic — the code that handles money, permissions, and core workflows.
 - **If using AI/LLM services:** separate user content from system instructions, validate model output before acting on it, set timeouts and token limits, track costs per request.
+
+### Personal data about other people (overlay — Shared and above, or any EU/UK/California users)
+
+- **Let users export their data** in a portable format (JSON/CSV).
+- **Delete on request for real.** A `deleted = true` flag is not erasure — the personal data must actually go (keep only what law requires, e.g. tax records).
+- **Consent for non-essential tracking.** Analytics/ad cookies need opt-in in the EU/UK; don't pre-check the box.
+- **Collect less.** Every personal field is one you must protect, disclose, and delete. Don't ask for what you don't use.
+- **Don't send personal data to third parties** (analytics, email, AI providers) without a data processing agreement.
 
 ### Public and above (add these)
 

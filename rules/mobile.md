@@ -25,6 +25,7 @@
 - Declare data collection accurately in App Store Connect and Google Play Data Safety forms. Mismatch between what the app collects and what you declare is a rejection or compliance risk.
 - Request permissions (camera, location, contacts) only when needed, in context, with a plain-language explanation before the system prompt.
 - Use App Transport Security (iOS) and network security config (Android) defaults. Don't add broad exceptions for convenience.
+- Know the store-review triggers before you submit: iOS requires **in-app account deletion** if you support signup, plus a **Privacy Manifest** and justification for "required reason" APIs; Play enforces a recent **target SDK** and an accurate Data Safety form. See `guides/security/mobile-security.md`.
 
 ## Updates and Compatibility
 
