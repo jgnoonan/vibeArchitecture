@@ -83,6 +83,10 @@ If EU users interact with an AI system in your application:
 - Understand your role. **Providers** (who build or substantially modify an AI system) carry heavier obligations than **deployers** (who use one). Building a product on a model API typically makes you a deployer of the model but can make you a provider of your overall system.
 - High-risk categories — AI used for hiring, credit scoring, education access, essential services, law enforcement — carry heavy obligations (risk management, human oversight, documentation, registration). If your AI feature touches one of these, stop and get professional advice.
 
+## EU Cyber Resilience Act (Software Sold into the EU)
+
+- The EU Cyber Resilience Act applies to "products with digital elements" sold into the EU market — including software products. On a 2026–2027 timeline, these products will require an SBOM (Software Bill of Materials), a coordinated vulnerability disclosure process (a documented way for researchers to report security issues to you), and a commitment to security updates over the product's support period. If you sell software into the EU, plan for these now. See `guides/security/supply-chain.md` for SBOM generation.
+
 ## SOC 2 (SaaS / Service Organizations)
 
 If your customers require SOC 2 compliance:

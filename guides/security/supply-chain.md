@@ -84,6 +84,21 @@ If you use Docker: pin base image digests or specific version tags, not `latest`
 
 ---
 
+## SBOM and Artifact Provenance (Business Tier and Above)
+
+An **SBOM** (Software Bill of Materials) is a machine-readable inventory of everything in your build — every package, every version. When the next major vulnerability lands, an SBOM answers "are we affected?" in seconds instead of days. Two standard formats exist: **CycloneDX** and **SPDX**. Generating one is cheap:
+
+- `npm sbom` (built into npm) for Node projects
+- **syft** for everything else: containers, directories, most language ecosystems
+
+Regulated environments often require an SBOM for audits, and EU regulation is extending the requirement to ordinary products — see the Cyber Resilience Act note in `rules/compliance.md`.
+
+**If you publish packages:** enable provenance so consumers can verify your artifact was built from your source by your CI — `npm publish --provenance` on GitHub Actions, or Sigstore signing for containers and binaries. This defends against the compromised-maintainer-laptop class of attack.
+
+**SLSA** (Supply-chain Levels for Software Artifacts) is the maturity frame for all of this: level 1 is documented, scripted builds; higher levels add tamper-resistant, verifiable build pipelines. You don't need to chase levels — but when a customer security questionnaire asks about supply-chain maturity, SLSA is the vocabulary it will use.
+
+---
+
 ## What Good Looks Like at Each Tier
 
 | Tier | Minimum |
@@ -91,7 +106,5 @@ If you use Docker: pin base image digests or specific version tags, not `latest`
 | Personal | Lock file committed, `.env` in `.gitignore` |
 | Shared | + `npm audit` / equivalent before deploy |
 | Public | + Dependabot or equivalent, secret scanning and SAST (CodeQL or Semgrep) in CI |
-| Business | + pinned CI actions, image scanning if containerized |
+| Business | + pinned CI actions, image scanning if containerized, SBOM generated at build |
 | Regulated | + documented SBOM process, approved dependency allowlist |
-
-An SBOM (Software Bill of Materials) is a list of everything in your build. Regulated environments often require one for audits. Tools like Syft or your package manager's export can generate it.
