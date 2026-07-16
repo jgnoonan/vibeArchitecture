@@ -123,8 +123,22 @@ MFA requires two or more forms of identification:
 - Something you **are** (fingerprint, face)
 
 **When to require it:**
-- Admin accounts — always
+- Admin and privileged accounts — always, from day one (Shared tier and above)
 - Accounts with access to sensitive data — strongly recommended
-- All accounts — recommended for Business and Regulated tiers
+- All users — offer it at Public tier and above; recommended to require for Business and Regulated tiers
 
-**Implementation:** Use a library or service for TOTP (time-based one-time passwords, the kind authenticator apps generate). Don't build your own MFA implementation.
+### Choosing a Second Factor
+
+From strongest to last resort:
+
+- **Passkeys / WebAuthn security keys** — phishing-resistant: the credential is bound to your domain, so a fake login page can't capture it. Passkeys work as a second factor or can replace passwords entirely. Prefer these when your auth provider supports them (most do now).
+- **Authenticator apps (TOTP)** — the six-digit codes from apps like Google Authenticator or 1Password. Widely supported, works offline, no phone number needed. A solid default.
+- **SMS codes** — last resort only. Attackers take over phone numbers through SIM-swapping (convincing the carrier to transfer the number to their SIM), and then receive the victim's codes. Better than nothing, but don't offer it as the primary option if you can avoid it.
+
+### Recovery and Lockout
+
+- **Generate recovery codes at enrollment.** A set of one-time-use codes the user stores somewhere safe. Without them, a lost phone means a locked-out user. Store them hashed, like passwords.
+- **Don't let support become the bypass.** Attackers who can't beat MFA call support pretending to be locked out. Define a strict identity-verification procedure for MFA resets, and log every reset. An MFA system that support will disable over one email is theater.
+- **Step-up for sensitive actions.** Even within an authenticated session, re-prompt for the password or MFA before email/password changes, payout changes, or data exports. A stolen session cookie shouldn't be enough to take over the account.
+
+**Implementation:** Use a library or service for TOTP and WebAuthn — auth providers (Auth0, Clerk, Supabase Auth, etc.) have MFA built in. Don't build your own MFA implementation.

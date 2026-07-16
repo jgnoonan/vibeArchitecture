@@ -30,6 +30,9 @@
 - If using sessions: generate cryptographically random session IDs, set appropriate expiration, invalidate on logout and password change.
 - If using tokens (JWT): keep expiration short (minutes to hours, not days), store securely, include only the minimum necessary information in the token.
 - Never store authentication tokens in localStorage. Use httpOnly cookies (the browser protects these from JavaScript access) or secure, short-lived memory storage.
+- Admin and privileged accounts MUST have multi-factor authentication (MFA) from day one (Shared tier and above). Offer MFA to all users at Public tier and above.
+- Prefer passkeys or authenticator apps (TOTP) over SMS codes as the second factor — SMS is vulnerable to SIM-swapping.
+- Require re-authentication or a step-up check (fresh password or MFA prompt) for sensitive actions: email or password changes, payout or bank detail changes, data exports.
 
 ## Authorization
 
