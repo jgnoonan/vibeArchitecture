@@ -14,6 +14,7 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] If users log in: does logging out actually end the session?
 - [ ] Have you tested what happens when someone enters garbage into your forms? (Random characters, extremely long strings, script tags, blank required fields.)
 - [ ] Have you run a static analysis scan on your code? (Enable CodeQL if you're on GitHub, or run Semgrep. Fix the high-severity findings before deploying.)
+- [ ] If you define infrastructure in code (Terraform, CloudFormation, etc.): have you scanned it (Checkov, tfsec, or Trivy) and fixed high-severity findings? (Misconfigured infrastructure is how databases and storage buckets end up public.)
 
 ## Data
 

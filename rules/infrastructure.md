@@ -9,6 +9,7 @@
 - Never make manual changes to production infrastructure through a web console or CLI. Manual changes create drift (the real state doesn't match the code) and can't be audited or rolled back.
 - Store infrastructure code in version control alongside application code. Review infrastructure changes the same way you review code changes.
 - For simpler projects: if you're using a platform like Railway, Vercel, or Fly.io, their configuration files (`fly.toml`, `vercel.json`, `railway.json`) serve as lightweight infrastructure as code. Use them.
+- Scan infrastructure code in CI (Checkov, tfsec, or Trivy's config scanner) and block on high-severity findings. Misconfigured IaC is how public storage buckets and wide-open security groups happen — the scanner catches them before they deploy.
 
 ## Environment Parity
 
