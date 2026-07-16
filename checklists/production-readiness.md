@@ -86,6 +86,7 @@ You don't need to complete everything in one session. This is a roadmap, not a g
 - [ ] **Database queries are optimized.** Slow query logging is enabled. Queries taking more than 1 second are identified and have appropriate indexes.
 - [ ] **No N+1 queries.** Loading a list of items doesn't trigger a separate query for each item's related data.
 - [ ] **Static assets use a CDN.** Images, CSS, JavaScript, and other static files are served from a CDN — not from your application server.
+- [ ] **A basic load test has run against staging.** Use k6 or Locust to simulate expected peak concurrency. The app survives, response times stay acceptable, and rate limits kick in as designed — not before, and not never.
 
 ## Documentation (Recommended)
 

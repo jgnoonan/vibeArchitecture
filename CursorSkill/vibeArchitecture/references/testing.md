@@ -28,7 +28,7 @@
 
 - **Shared:** Have tests for critical business logic. Running tests manually before deploying is acceptable.
 - **Public:** Have tests for business logic and API endpoints. Tests should run automatically before deployment (CI pipeline).
-- **Business:** Comprehensive test suite covering business logic, API endpoints, error handling, and database operations. Tests must run in CI. No deployment without passing tests.
+- **Business:** Comprehensive test suite covering business logic, API endpoints, error handling, and database operations. Tests must run in CI. No deployment without passing tests. Before launch, run a basic load test (k6, Locust) against a staging environment — verify the app survives expected peak concurrency and that rate limits behave under load.
 - **Regulated:** Everything in Business, plus tests for compliance-relevant code paths (audit logging, access control, data handling). Document test coverage for auditors.
 
 ## When AI Writes Tests
