@@ -39,6 +39,11 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Enable secret scanning on the repository (GitHub secret scanning, gitleaks, or truffleHog in CI). A committed API key is compromised even if removed in the next commit.
 - Pin CI action and base image versions. Never use `latest` tags in production pipelines.
 
+## Code Scanning
+
+- Run static analysis (SAST) on your own code in CI: CodeQL (free for public GitHub repos) or Semgrep. Dependency scanning checks other people's code for known vulnerabilities; SAST checks yours for vulnerable patterns.
+- At Public tier and above, treat new high-severity findings as merge blockers. This matters more for AI-generated code, not less — AI repeats the same plausible-looking mistakes, and SAST rules catch exactly those patterns.
+
 ## Code Quality
 
 - Functions do one thing. If you can't describe a function's purpose in one sentence, split it.

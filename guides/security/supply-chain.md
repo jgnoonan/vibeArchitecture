@@ -31,6 +31,19 @@ Scan on every PR, not just periodically. A vulnerability disclosed Tuesday shoul
 
 ---
 
+## Scanning Your Own Code (SAST)
+
+Dependency scanning (above) checks third-party code for known vulnerabilities. Static analysis — SAST — checks YOUR code for vulnerable patterns: SQL injection, hardcoded secrets, path traversal, mass assignment, unsafe deserialization. They are different checks; you want both.
+
+For AI-generated code, SAST is arguably higher-value than for human code. AI repeats the same plausible-looking mistakes across projects, and SAST rules are written to catch exactly those patterns.
+
+- **CodeQL** — free for public GitHub repos. Enable "Code scanning" in the repository's Security tab; the default setup covers most languages.
+- **Semgrep** — fast, open source, works anywhere. Run `semgrep scan --config auto` locally, or add the CI integration.
+
+Treat new high-severity findings as merge blockers at Public tier and above. Triage existing findings once — don't let a wall of old warnings train you to ignore new ones.
+
+---
+
 ## Secret Scanning
 
 Secrets committed to git live forever in history. Enable:
@@ -77,7 +90,7 @@ If you use Docker: pin base image digests or specific version tags, not `latest`
 |------|---------|
 | Personal | Lock file committed, `.env` in `.gitignore` |
 | Shared | + `npm audit` / equivalent before deploy |
-| Public | + Dependabot or equivalent, secret scanning in CI |
+| Public | + Dependabot or equivalent, secret scanning and SAST (CodeQL or Semgrep) in CI |
 | Business | + pinned CI actions, image scanning if containerized |
 | Regulated | + documented SBOM process, approved dependency allowlist |
 

@@ -20,6 +20,7 @@ You don't need to complete everything in one session. This is a roadmap, not a g
 - [ ] **Authorization is enforced on the server.** Every API endpoint checks that the requesting user is allowed to perform the action. Client-side checks are cosmetic — the server is the authority.
 - [ ] **Input is validated.** Every piece of user input is validated on the server before use. SQL injection, XSS, and command injection are prevented.
 - [ ] **Dependencies are checked for vulnerabilities.** Run `npm audit`, `pip-audit`, or equivalent. Address critical and high vulnerabilities.
+- [ ] **Static analysis (SAST) runs in CI.** CodeQL or Semgrep scans your own code on every pull request. New high-severity findings block the merge.
 - [ ] **Security headers are configured.** Content-Security-Policy, X-Frame-Options, X-Content-Type-Options at minimum.
 - [ ] **Admin and debug endpoints are protected or removed.** No debug routes, status pages, or admin tools exposed without authentication.
 
