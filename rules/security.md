@@ -53,6 +53,10 @@
   - `Content-Security-Policy` (CSP) — controls what resources can load on your pages
   - `X-Content-Type-Options: nosniff` — prevents MIME type sniffing
   - `X-Frame-Options: DENY` or `SAMEORIGIN` — prevents your site from being embedded in iframes (clickjacking)
+  - `Referrer-Policy: strict-origin-when-cross-origin` — stops full URLs from leaking to other sites via the Referer header
+  - `Permissions-Policy` — disables browser features you don't use (camera, microphone, geolocation)
+- Name session cookies with the `__Host-` prefix (e.g., `__Host-session`). The browser then enforces Secure, no Domain attribute, and Path=/ — locking the cookie to your exact host.
+- Use Subresource Integrity (SRI) for third-party scripts loaded from CDNs. The `integrity` attribute makes the browser refuse a script that doesn't match the expected hash, so a compromised CDN can't inject code into your pages.
 - Configure CORS with specific allowed origins. Never use `Access-Control-Allow-Origin: *` in production when credentials (cookies, auth headers) are involved.
 
 ## Secrets Management (Beyond Universal Rules)
