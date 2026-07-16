@@ -33,6 +33,7 @@ Gap-analysis release: closes coverage gaps against OWASP Top 10 / ASVS / LLM Top
 - `rules/compliance.md` applicability widened: the GDPR and EU AI Act sections now apply at Public tier and above whenever the app serves EU users (`rules/_index.md` and both skill manifests updated)
 - Checklists (`before-you-deploy.md`, `production-readiness.md`) gained SAST, IaC scanning, and load-testing line items
 - README token estimates updated for grown rules files
+- `BOOTSTRAP.md` refreshed with condensed v1.2.0 rules; `scripts/sync.sh` now fails when the ARCHITECT.md and BOOTSTRAP.md version stamps drift
 
 ## [1.1.0] - 2026-06-13
 
