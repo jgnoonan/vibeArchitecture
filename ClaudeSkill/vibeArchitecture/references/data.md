@@ -45,6 +45,7 @@
 - Know where sensitive data lives. Track which tables and columns contain personal, financial, or other protected information.
 - Don't log sensitive data. Query logs, application logs, and error reports must not contain passwords, credit card numbers, SSNs, or health information.
 - When deleting sensitive data, confirm it's actually gone — not just soft-deleted and still queryable, not sitting in retained backups indefinitely.
+- At Business tier, consider envelope encryption via your platform's KMS for high-sensitivity fields you must store (government IDs, third-party access tokens). Whole-database encryption at rest protects against stolen disks; field-level encryption also protects against leaked backups and over-broad query access. See `rules/compliance.md` for the full Regulated-tier treatment.
 
 ## Migrations
 
