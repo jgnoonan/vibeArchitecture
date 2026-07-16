@@ -50,6 +50,45 @@ If you're storing passwords yourself (even with a library helping), these rules 
 - **Check against known breached passwords.** Libraries like `haveibeenpwned` let you check if a password appeared in a data breach. Reject common and known-compromised passwords.
 - **Never limit maximum password length** to anything less than 128 characters. Users who use password managers generate long random passwords. Let them.
 
+## Passkeys and WebAuthn — The Direction of Travel
+
+Passkeys are the modern replacement for passwords, and in 2026 they've gone mainstream — Apple, Google, and Microsoft all support them across their platforms. For a new app, a passkey is increasingly the best sign-in option you can offer, and it belongs right alongside passwords as a first-class choice.
+
+**How they work, in plain language:** Instead of a shared secret you both know (a password), the user's device holds a private key and your server holds the matching public key. When someone logs in, their device proves it holds the private key — usually unlocked with a fingerprint, face scan, or device PIN. The private key never leaves the device and is never sent to your server.
+
+**Why this matters:**
+- **Phishing-resistant.** A passkey is tied to your exact domain. A fake look-alike site can't trick the device into signing in, because the browser won't hand a `example.com` passkey to `examp1e.com`. This defeats the single most common way accounts get stolen.
+- **Nothing to leak.** There's no password in your database to breach, and no "forgot password" flow to attack. If your database is stolen, the public keys in it are useless to an attacker.
+- **Nothing to reuse.** Users can't pick a weak password or reuse one from a site that got breached, because there's no password at all.
+- **They sync.** Modern passkeys back up and sync across a user's devices through their platform (iCloud Keychain, Google Password Manager) or a password manager, so losing one phone doesn't lock them out.
+
+**The easy path:** Don't implement WebAuthn (the underlying standard) by hand. The providers this guide already recommends — Clerk, Auth0, Supabase Auth, and others — support passkeys with a configuration toggle. Turn it on and let them handle the cryptography and the account-recovery edge cases.
+
+## Email Magic Links and One-Time Codes
+
+A "magic link" logs a user in by emailing them a link they click; a one-time code (OTP) emails or texts a short code they type in. Both skip passwords entirely.
+
+**The tradeoffs:**
+- **Upside:** There's no password to leak, reset, or reuse. The account's security rides on the user's email inbox, which they already protect.
+- **Downside:** Your login now depends entirely on email getting delivered promptly. If your messages land in spam or arrive ten minutes late, users simply can't log in. If you use this method, treat email deliverability as a core part of your auth system — see `guides/operations/email-deliverability.md`.
+
+**Non-negotiable rules if you build this:**
+- **Single-use.** A link or code must stop working the moment it's used once. Otherwise a forwarded or logged link is a permanent key to the account.
+- **Short-lived.** Expire links and codes quickly (5–15 minutes). A link that works for days is a link that leaks.
+- **Rate-limited.** Limit how often codes can be requested and how many wrong guesses are allowed, or an attacker can brute-force a short numeric code.
+
+## Social Login and OAuth (Sign in with Google, etc.)
+
+"Sign in with Google/Apple/GitHub" is genuinely a good option — you offload passwords and account security to a provider that does it well. As with everything else here, **use a provider (Auth0, Clerk, Supabase, Cognito) to wire it up** rather than hand-rolling the OAuth dance. But even through a provider, there are pitfalls a vibe coder hits, and getting them wrong creates real account-takeover holes:
+
+- **Allowlist your redirect URIs exactly.** After login, the provider sends the user back to a URL you specify. Register only the exact URLs you control and nothing else — no wildcards, no "close enough." A loose redirect URI lets an attacker redirect the login (and its token) to a site they control.
+- **Always use the `state` parameter.** `state` is a random value your app sends into the login flow and checks when the user comes back. It ties the response to the request that started it. Without it, an attacker can trick a victim into completing a login the attacker began — logging the victim into the attacker's account (login CSRF), or the reverse. Providers handle this for you; don't disable it.
+- **Use the authorization-code flow with PKCE, not the implicit flow.** The implicit flow hands the token straight to the browser and is deprecated. Authorization-code-with-PKCE is the current standard and what every reputable provider defaults to — keep that default. AI tools routinely generate the deprecated pattern from older training data, so check what yours produced.
+- **Never put tokens in URLs or query strings.** URLs get logged everywhere — server logs, proxies, browser history, analytics tools. (This is the core reason the implicit flow is dead.)
+- **Validate every token you accept:** issuer (`iss` — did it come from the provider you expect?), audience (`aud` — was it issued for YOUR app?), expiry (`exp`), and signature. Skipping audience validation means a token issued for someone else's app can be replayed against yours.
+- **Handle account linking and duplicate emails carefully.** The same person may sign in with Google today and email/password tomorrow. If both carry the same email, don't silently create two separate accounts, and don't let a new sign-in method attach to an existing account without proof. Before linking a new provider to an existing account, verify the person actually controls that email (or requires them to log in with the existing method first). Getting this wrong lets one login method hijack an account created with another.
+- **Never trust `email_verified: false`.** Providers tell you whether they've confirmed the user owns the email. If that flag is false (or missing), treat the email as unverified — never use it to match or link to an existing account, or an attacker can register an unverified address to steal someone else's account.
+
 ## Sessions vs. Tokens (JWTs)
 
 Two main approaches to "remembering" that a user is logged in:
@@ -103,18 +142,7 @@ Where the browser stores the authentication credential matters:
 
 **The recommendation:** httpOnly, Secure, SameSite cookies. They get the best security properties with the least effort.
 
-## OAuth / OIDC: Getting the Flow Right
-
-If you use "Sign in with Google/GitHub/Apple" or access third-party APIs on a user's behalf, you're using OAuth 2.0 — usually with OpenID Connect (OIDC) on top for identity. AI tools routinely generate deprecated OAuth patterns from older training data. The current rules:
-
-- **Authorization code flow with PKCE — always.** PKCE (Proof Key for Code Exchange) protects the code exchange even in public clients like SPAs and mobile apps. Every modern provider supports it. This is the only flow you should use for user sign-in.
-- **Never the implicit flow.** Older tutorials are full of it. It delivers tokens in the URL fragment, where they leak through browser history, referrer headers, and logs. It's deprecated for good reason.
-- **Never put tokens in URLs or query strings.** URLs get logged everywhere — server logs, proxies, browser history, analytics tools.
-- **Validate every token you accept:** issuer (`iss` — did it come from the provider you expect?), audience (`aud` — was it issued for YOUR app?), expiry (`exp`), and signature. Skipping audience validation means a token issued for someone else's app can be replayed against yours.
-- **Exact-match redirect URIs.** Register the full redirect URI with the provider; never use wildcards. A wildcard redirect lets an attacker have authorization codes sent to a domain they control.
-- **Use the `state` parameter.** A random value tied to the user's session, verified when the provider redirects back. This blocks CSRF attacks on the OAuth flow itself — an attacker silently logging you into THEIR account.
-
-As with everything in auth: your provider's official SDK handles most of this correctly. Hand-rolled OAuth callback handlers are where these bugs appear.
+**A cookie catch:** anything stored in a cookie is sent automatically by the browser on every request — including requests triggered by other sites. That's exactly what CSRF (cross-site request forgery) abuses. If you use cookie-based sessions, you must add CSRF protection (a `SameSite` cookie setting plus anti-CSRF tokens). See `rules/security.md`.
 
 ## Common Authentication Mistakes
 

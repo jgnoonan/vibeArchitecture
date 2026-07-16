@@ -2,6 +2,7 @@
 
 > Applies to: Business tier and above.
 > For detailed explanations: see `guides/reliability/`
+> **Deploying to serverless or edge (Vercel, Netlify, Cloudflare Workers, Lambda, Supabase functions)?** Some rules below assume a long-running server — "graceful shutdown", "run two instances", in-process connection pools. On serverless those are handled by the platform or need a different approach (connection poolers, shared-state rate limiting, platform queues). See `guides/infrastructure/serverless-and-edge.md` for the translation.
 
 ## Design for Failure
 

@@ -31,6 +31,7 @@
 - Configure a fallback model. If your primary model is unavailable or rate-limited, fall back to an alternative (e.g., Claude Sonnet → Claude Haiku, GPT-4o → GPT-4o-mini). Degraded output is better than no output.
 - Set a token limit on every call. An unbounded generation can produce thousands of tokens, consume your budget, and blow your latency target. Set `max_tokens` appropriate to the expected output size.
 - Never pass raw, unsanitized user input directly into a system prompt. This is prompt injection — the LLM equivalent of SQL injection. User content goes in the user message, clearly separated from your instructions.
+- Anything you put in a prompt has left your control. Don't send secrets, and don't send personal or regulated data to a model provider that isn't covered by an appropriate agreement — a Data Processing Agreement for personal data (see `rules/privacy.md`), or a BAA for health data (see `rules/compliance.md`). Prefer providers that contractually don't train on your API data.
 
 ## Prompt Management
 

@@ -50,6 +50,13 @@
 - Implement rate limiting on all public-facing endpoints. Without it, one abusive client can overwhelm your server or inflate your cloud bill.
 - Return `429 Too Many Requests` with a `Retry-After` header when a client hits the limit.
 - Use stricter limits for sensitive endpoints (login, password reset, account creation) than for read-only endpoints.
+- **In-memory rate limiting does not work on serverless or multi-instance deploys.** A per-process counter resets on every cold start and isn't shared across instances, so an attacker isn't actually limited. Use shared state (Redis/Upstash), your platform's rate-limit primitive, or a WAF/CDN layer. See `guides/infrastructure/serverless-and-edge.md`.
+
+## Webhooks and Payments
+
+- **Verify webhook signatures before trusting any webhook payload.** An unverified webhook endpoint lets anyone POST a fake "payment succeeded" or "subscription active" event. Check the provider's signature header against your signing secret first.
+- **Grant paid access on the verified webhook, never on a client success-redirect.** Users can open the `/success` URL without paying. Fulfil orders and unlock features only when you receive and verify the server-to-server event (e.g. `checkout.session.completed`).
+- Make webhook handlers idempotent — providers retry and may deliver the same event more than once. Dedupe on the event ID. See `guides/api/payments.md`.
 
 ## Pagination
 

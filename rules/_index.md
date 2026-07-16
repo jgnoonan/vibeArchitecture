@@ -12,6 +12,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/security.md`
 - `rules/data.md`
 - `rules/testing.md`
+- `rules/privacy.md` *(load when the app stores personal data about other people, or any users are in the EU / UK / California)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
 
@@ -23,9 +24,10 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/testing.md`
 - `rules/api.md`
 - `rules/accessibility.md`
+- `rules/privacy.md` *(load when the app stores personal data about other people, or any users are in the EU / UK / California)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
-- `rules/compliance.md` *(load when the app serves EU users — only the GDPR and EU AI Act sections apply below Regulated tier)*
+- `rules/compliance.md` *(load when EU users interact with an AI feature — only the EU AI Act section applies below Regulated tier)*
 
 ## Business
 
@@ -39,10 +41,11 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/infrastructure.md`
 - `rules/observability.md`
 - `rules/performance.md`
+- `rules/privacy.md` *(load when the app stores personal data about other people, or any users are in the EU / UK / California)*
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
-- `rules/compliance.md` *(load when the app serves EU users — only the GDPR and EU AI Act sections apply below Regulated tier)*
+- `rules/compliance.md` *(load when EU users interact with an AI feature — only the EU AI Act section applies below Regulated tier)*
 
 ## Regulated
 
@@ -56,6 +59,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/infrastructure.md`
 - `rules/observability.md`
 - `rules/performance.md`
+- `rules/privacy.md`
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*

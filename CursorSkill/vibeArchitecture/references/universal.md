@@ -29,7 +29,7 @@ These apply to EVERY project regardless of tier. No exceptions.
 ## Data Safety
 
 - Have a backup plan, even for personal projects. Know how to export and restore your database.
-- Prefer soft delete (marking records as deleted) over permanent deletion until you're certain the data isn't needed.
+- Prefer soft delete (marking records as deleted) over permanent deletion until you're certain the data isn't needed. This guards against *accidental* loss — it is not a substitute for real deletion when a user asks you to erase their personal data (see `rules/privacy.md` if that applies).
 - Never run destructive operations (DROP TABLE, bulk DELETE) without a confirmed backup.
 
 ## Dependencies

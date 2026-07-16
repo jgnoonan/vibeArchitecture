@@ -61,6 +61,8 @@ Copy this into Claude, Cursor, Copilot, Codex, or any other AI coding tool:
 
 That's it. Your AI will ask you a few questions about what you're building, then write code with proper guardrails automatically.
 
+> **Note:** this option relies on your AI tool being able to fetch a URL. Some tools can't (or won't) read from the web. If your AI says it can't open the link, use **Option C** below — download the framework into your project and point the AI at the local `BOOTSTRAP.md` or `ARCHITECT.md` instead.
+
 ### Option C: Full setup (more features, detailed guides)
 
 For the complete framework with detailed explanations, checklists, and IDE-specific integrations:
@@ -168,7 +170,7 @@ These are real patterns in AI-generated code:
 - **No error handling** — one failed API call crashes the entire app
 - **No rate limiting** — a bot hits your API 10,000 times per minute and you get a $2,000 cloud bill
 
-vibeArchitecture prevents all of these. Automatically.
+vibeArchitecture is built to stop these before they ship — by making your AI apply the right guardrails as it writes the code. It steers the AI; it isn't a scanner bolted on afterward, so reviewing what the AI produces still matters.
 
 ---
 
@@ -181,10 +183,12 @@ Not every project needs the same rigor. The intake conversation determines the r
 | **Personal** | Just you | A todo app, a personal dashboard | Basic hygiene |
 | **Shared** | People you know | A family app, a team tool | + Security, data protection, testing |
 | **Public** | Anyone online | A blog, a community forum | + API design, accessibility |
-| **Business** | Paying customers | A SaaS product, an e-commerce store | + Reliability, infrastructure, monitoring |
+| **Business** | Paying customers | A SaaS product, an e-commerce store | + Reliability, infrastructure, monitoring, performance, system design |
 | **Regulated** | Legal requirements | Healthcare, finance | + Compliance, audit logging |
 
 Each level builds on the one below it.
+
+**Plus a privacy overlay.** Independent of tier, if your app stores personal data about other people — or any of your users are in the EU, UK, or California — the AI also applies data-subject-rights rules (data export, deletion on request, consent). GDPR and CCPA are triggered by *who your users are*, not by how big the app is, so even a small Public app gets these.
 
 ---
 
@@ -196,7 +200,7 @@ Each level builds on the one below it.
 vibeArchitecture is a set of Markdown files your AI agent reads. No dependencies, no build step, no lock-in.
 
 - **Rules layer** (~80–120 lines per file): Compact rules loaded into the AI's context every session. Uses 3–6% of a 200K context window for typical projects.
-- **Guides layer** (~30 files): Detailed explanations loaded only when the AI or user needs deeper context. Never loaded preemptively.
+- **Guides layer** (40+ files): Detailed explanations loaded only when the AI or user needs deeper context. Never loaded preemptively.
 - **Intake system**: Adaptive questionnaire that determines project tier and generates a `PROJECT_PROFILE.md`.
 - **Integration files**: Drop-in configs for Claude Code, Cursor, Copilot, Codex, Xcode, and Android Studio.
 
@@ -204,17 +208,17 @@ vibeArchitecture is a set of Markdown files your AI agent reads. No dependencies
 
 | Tier | Est. tokens | % of 200K window |
 |------|-------------|-------------------|
-| Personal | ~3,050 | ~1.5% |
-| Shared | ~6,450 | ~3.2% |
-| Public | ~7,300 | ~3.7% |
-| Business | ~12,400 | ~6.2% |
+| Personal | ~3,000 | ~1.5% |
+| Shared | ~6,900 | ~3.5% |
+| Public | ~8,000 | ~4.0% |
+| Business | ~13,500 | ~6.8% |
 | Regulated | ~15,600 | ~7.8% |
 
-Guides average ~1,560 tokens each and are loaded on demand. A typical session pulls one or two at most.
+The privacy overlay (`rules/privacy.md`) adds ~1,300 tokens when it applies. Guides average ~1,560 tokens each and are loaded on demand. A typical session pulls one or two at most.
 
 ### What's Covered
 
-Rules and guides exist for: security, data integrity, testing, API design, accessibility, reliability, infrastructure, observability, performance, system design, multi-agent/LLM systems (including OWASP LLM Top 10 and MCP patterns), mobile-native apps, supply chain security, and compliance (GDPR, EU AI Act, EU Cyber Resilience Act, HIPAA, PCI-DSS, SOC 2).
+Rules and guides exist for: security (including SSRF, CSRF, MFA, auth with passkeys/OAuth, and abuse/bot controls), data integrity, data privacy (GDPR/CCPA data-subject rights), testing, API design, payment/webhook integration, accessibility, reliability, infrastructure (including serverless/edge realities), observability, performance, system design, multi-agent/LLM systems (including the OWASP LLM Top 10 2025, MCP patterns, and agent sandboxing), mobile-native apps (including app-store review), email deliverability, supply chain security (including SBOM and SAST), and compliance (GDPR, EU AI Act, EU Cyber Resilience Act, HIPAA, PCI-DSS, SOC 2). See `appendices/standards-mapping.md` for how the rules line up with OWASP, ASVS, and NIST SSDF.
 
 ### File Structure
 
@@ -223,14 +227,16 @@ vibeArchitecture/
 ├── ARCHITECT.md                          # AI reads this first (version in file header)
 ├── BOOTSTRAP.md                          # Condensed one-file version
 ├── CHANGELOG.md                          # Framework version history
+├── CONTRIBUTING.md                        # How to contribute + the sync workflow
+├── ARCHITECTURAL_FRAMEWORK_OUTLINE.md    # Historical design notes (reference only)
 ├── PROJECT_PROFILE.template.md         # Template for intake (saved as PROJECT_PROFILE.md in projects)
 ├── intake/                               # Adaptive intake questionnaire
-├── rules/                                # Compact rules by tier (canonical source)
+├── rules/                                # Compact rules by tier (canonical source; includes privacy overlay)
 ├── guides/                               # Detailed explanations (on demand)
 ├── checklists/                           # Human-readable action items
 ├── appendices/                           # Anti-patterns, glossary, standards mapping, ADR template
 ├── integrations/                         # Drop-in configs for AI tools
-├── scripts/sync.sh                       # Keeps skill packages in sync with rules/
+├── scripts/sync.sh                       # Keeps skill packages + integration files in sync
 ├── examples/                             # Walkthrough, sample profile, before/after
 ├── ClaudeSkill/                          # Installable Claude.ai Skill
 └── CursorSkill/                          # Installable Cursor Agent Skill
