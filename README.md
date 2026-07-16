@@ -112,6 +112,25 @@ The AI handles everything from there.
 
 ---
 
+## Updating From a Previous Version
+
+vibeArchitecture is versioned — see [CHANGELOG.md](CHANGELOG.md) for what's new. Your installed copy shows its version at the top of `ARCHITECT.md` (or `BOOTSTRAP.md`). How you update depends on how you installed:
+
+| How you use it | How to update |
+|---|---|
+| **ChatGPT GPT (Option A)** | Nothing to do — the GPT is updated centrally. |
+| **Claude Skill (Option A+)** | Installed skills are snapshots — they don't update themselves. Re-download `ClaudeSkill/vibeArchitecture/`, re-zip it, and upload the new ZIP in **Settings > Capabilities**, replacing the old skill. |
+| **Cursor Skill (Option A++)** | Replace the folder at `~/.cursor/skills/vibeArchitecture/` (or `.cursor/skills/vibeArchitecture/`) with the latest from this repo. |
+| **Paste one prompt (Option B)** | Nothing to do — the prompt reads `BOOTSTRAP.md` live from GitHub, so every new session gets the latest version. |
+| **Full setup, git submodule (Option C)** | Run `git submodule update --remote vibeArchitecture`, then commit the updated submodule pointer. |
+| **Full setup, ZIP (Option C)** | Download the ZIP again and replace your project's `vibeArchitecture/` folder. Your `PROJECT_PROFILE.md` lives in your project root, not inside the framework folder, so it's untouched. |
+
+Integration files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`) are thin pointers into the framework folder — you don't need to re-copy them unless the CHANGELOG says so.
+
+After updating, ask your AI: *"vibeArchitecture was updated — read the CHANGELOG and tell me what's new for this project's tier."*
+
+---
+
 ## See It In Action
 
 New here? These three files show exactly what changes after vibeArchitecture is active:
@@ -209,7 +228,7 @@ vibeArchitecture/
 ├── rules/                                # Compact rules by tier (canonical source)
 ├── guides/                               # Detailed explanations (on demand)
 ├── checklists/                           # Human-readable action items
-├── appendices/                           # Anti-patterns, glossary, resources
+├── appendices/                           # Anti-patterns, glossary, standards mapping, ADR template
 ├── integrations/                         # Drop-in configs for AI tools
 ├── scripts/sync.sh                       # Keeps skill packages in sync with rules/
 ├── examples/                             # Walkthrough, sample profile, before/after
@@ -259,7 +278,7 @@ The `AGENTS.md` file is loaded automatically for any configured AI provider.
 
 **GitHub** is a website where people store and share code — like Google Drive for code. **Git** is a tool on your computer that tracks changes to your files so you can undo mistakes.
 
-**Do you need git to use vibeArchitecture?** No. Download the ZIP (Option B, Step 1) and skip git entirely.
+**Do you need git to use vibeArchitecture?** No. Download the ZIP (Option C, Step 1) and skip git entirely.
 
 **Should you use git for your project?** Yes, when you're ready. It protects you from losing work and is required for most hosting platforms. Ask your AI: *"Help me set up git for this project."*
 

@@ -90,4 +90,4 @@ These apply to EVERY project, regardless of tier:
 | `rules/` | Compact architectural rules by tier | Every session — loaded based on project tier |
 | `guides/` | Detailed explanations and tradeoffs | When the user asks "why?" or deeper context is needed |
 | `checklists/` | Plain-English action items | At project milestones (start, pre-deploy, production launch, incidents) |
-| `appendices/` | Anti-patterns, glossary, ADR template, resources | Reference material as needed |
+| `appendices/` | Anti-patterns, glossary, ADR template, standards mapping, resources | Reference material as needed |
