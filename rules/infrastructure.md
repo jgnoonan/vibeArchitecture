@@ -23,6 +23,7 @@
 - Every deployment must be reproducible from a specific git commit. You should be able to answer "what code is running in production right now?" at any moment.
 - Deploy frequently in small increments rather than rarely in large batches. Small deployments are easier to test, easier to understand, and easier to roll back.
 - Run automated tests before deployment. If tests fail, the deployment stops. No exceptions, no "we'll fix it after."
+- Prefer OIDC-federated ("keyless") deploys where your platform supports them: the CI job authenticates to the cloud with a short-lived identity token instead of a long-lived key stored in CI secrets. Long-lived CI credentials are among the most-stolen secrets. See `guides/security/supply-chain.md`.
 
 ## Rollback
 

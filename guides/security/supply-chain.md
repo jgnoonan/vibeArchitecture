@@ -61,6 +61,7 @@ AI assistants love adding dependencies. Push back when the cost outweighs the be
 - Limit who can approve workflow runs on fork PRs (prevent secret exfiltration)
 - Store CI secrets in the platform's secret manager — never in workflow YAML
 - Use least-privilege tokens for deployment (scoped to one environment)
+- **Prefer keyless, OIDC-federated deploys over stored cloud keys.** GitHub Actions (and GitLab CI, Bitbucket Pipelines) can authenticate to AWS, GCP, or Azure with short-lived OIDC tokens: the CI job proves its identity to the cloud provider and assumes a role — no long-lived secret stored anywhere. Long-lived cloud keys sitting in CI secrets are among the most-stolen credentials; a leaked one works for anyone, from anywhere, until you notice.
 
 ---
 
