@@ -11,6 +11,12 @@
 - Any agent or tool that fetches URLs (web browsing, RAG ingestion, link previews) must follow the SSRF rules in `rules/security.md` — validate the URL, block private IP ranges, and re-check after redirects.
 - Start with a single agent doing everything. Extract into multiple agents only when you have evidence of a clear boundary — different models needed, different tool access, different retry strategies, or the single agent's prompt is becoming unwieldy. This is the "monolith first" principle applied to agents.
 
+## Execution Isolation
+
+- Agent-executed code runs in a sandbox — a container, VM, or your platform's sandbox — never on the host with the app's credentials. An agent that writes and runs code will eventually run something you didn't intend.
+- Restrict agent network egress to the hosts it actually needs. An agent that can't reach the internet can't exfiltrate what it reads.
+- Apply the "lethal trifecta" rule of thumb: an agent that combines (1) access to private data, (2) exposure to untrusted content, and (3) an exfiltration channel (network access, email sending, posting) is an incident waiting to happen. Remove at least one leg, or put human approval in front of the third. See `guides/multi-agent/mcp-tool-patterns.md`.
+
 ## Shared State and Handoffs
 
 - Prefer explicit handoff over shared memory. When Agent A finishes and Agent B needs to continue, pass a structured message with the relevant context — don't have both agents reading and writing to a shared scratchpad.

@@ -61,6 +61,20 @@ Don't run a filesystem MCP server pointed at your home directory "for convenienc
 
 ---
 
+## Execution Sandboxing and the Lethal Trifecta
+
+If an agent writes and executes code — or you expose a code-execution tool — run that code in a sandbox: a container, a microVM, or your platform's sandbox, with its own credentials, never on the host with the app's credentials. Restrict the sandbox's network egress to the hosts the task actually needs.
+
+Then audit every agent against the **lethal trifecta**:
+
+1. **Access to private data** — database, files, email, customer records
+2. **Exposure to untrusted content** — web pages, uploaded documents, incoming messages; anything an attacker can write
+3. **An exfiltration channel** — open network access, email sending, posting anywhere public
+
+An agent with all three is an incident waiting to happen: an attacker plants instructions in content the agent will read, and the agent obediently sends the private data out. Prompt injection is not reliably solvable, so don't bet on filtering alone — remove at least one leg, or put human approval in front of the exfiltration step.
+
+---
+
 ## Logging and Correlation
 
 Log every tool invocation: tool name, sanitized arguments, result status, latency, correlation ID linking back to the user request. When something goes wrong at 2 AM, you need to replay what the agent did.

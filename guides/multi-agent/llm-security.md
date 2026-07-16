@@ -14,6 +14,8 @@ Reference: [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top
 
 **Rules:** Never concatenate user content into the system prompt. Keep instructions and user data in separate message roles. Validate and sanitize before any tool execution.
 
+**Indirect injection:** Retrieved documents, web pages, and tool results can carry hostile instructions just like direct user input — treat all of it as untrusted. If an agent that reads untrusted content also has access to private data and a channel to send data out, that's the "lethal trifecta" — assume injection will eventually succeed and remove one of the three legs. See `guides/multi-agent/mcp-tool-patterns.md`.
+
 **Test it:** Run adversarial inputs in your test suite. If the model can be talked into calling a delete tool, your guardrails failed.
 
 ---
@@ -98,4 +100,6 @@ Reference: [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top
 - [ ] Rate limits and token budgets in place
 - [ ] RAG respects user/document permissions
 - [ ] Destructive actions require confirmation or human review
+- [ ] Agent-executed code runs in a sandbox; egress restricted
+- [ ] Lethal trifecta audited: private data + untrusted content + exfiltration channel never all present without human approval
 - [ ] Prompt injection tests in CI or eval suite
