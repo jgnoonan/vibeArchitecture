@@ -63,6 +63,25 @@ query = "SELECT * FROM users WHERE email = '" + user_input + "'"
 
 ---
 
+### Mass Assignment
+
+**What it looks like:**
+```javascript
+// Update profile endpoint
+await User.update(req.params.id, req.body);
+```
+
+**Why it's bad:** The client controls the entire request body. If the `users` table has an `is_admin` or `role` column, a user can add `"is_admin": true` to their profile update request — and make themselves an admin. Nothing in the code looks broken, which is exactly why AI tools generate this constantly.
+
+**Do this instead:** Explicitly pick the fields a client is allowed to set:
+```javascript
+const { name, bio, avatarUrl } = req.body;
+await User.update(req.params.id, { name, bio, avatarUrl });
+```
+Server-controlled fields (role, is_admin, balance, verified, owner_id) are set only by server code, never from request input.
+
+---
+
 ## Data Anti-Patterns
 
 ### No Foreign Keys

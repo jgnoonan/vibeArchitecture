@@ -11,6 +11,8 @@
 - Never build database queries by concatenating user input into the query string. Use parameterized queries or your framework's ORM. This prevents SQL injection — one of the most common and dangerous attacks.
 - Never insert user-provided content directly into HTML without encoding it first. This prevents cross-site scripting (XSS), where attackers inject code that runs in other users' browsers.
 - Never use user input to build file paths or system commands. This prevents path traversal and command injection attacks.
+- Never bind a request body directly to a database model (`User.update(req.body)` style). This is mass assignment — the client controls every field, including ones they shouldn't. Explicitly allowlist the fields a client may set on each endpoint.
+- Server-controlled fields (role, is_admin, balance, verified, owner_id) must never be settable from request input. Set them in server code only.
 
 ## Server-Side Requests (SSRF)
 
