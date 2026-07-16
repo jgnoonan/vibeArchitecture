@@ -2,6 +2,38 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
+## [1.2.0] - 2026-07-16
+
+Gap-analysis release: closes coverage gaps against OWASP Top 10 / ASVS / LLM Top 10 (2025), NIST SSDF, SLSA, CIS Controls, GDPR, the EU AI Act, and the EU Cyber Resilience Act.
+
+### Added
+
+- **SSRF rules** (`rules/security.md` Server-Side Requests) with attack explainer in `guides/security/input-validation.md` and an agent cross-reference in `rules/multi-agent.md`
+- **MFA requirements** — mandatory for admin accounts at Shared tier and above; second-factor, recovery-code, and support-bypass guidance in `guides/security/authentication.md`
+- **OAuth/OIDC flow rules** — authorization code flow with PKCE only, token validation, exact-match redirect URIs, `state` parameter
+- **Mass assignment rules** (`rules/security.md`) and anti-pattern example (`appendices/anti-patterns.md`)
+- **SAST requirements** (`rules/universal.md` Code Scanning) — CodeQL/Semgrep in CI, merge blockers at Public tier and above; setup guidance in `guides/security/supply-chain.md`
+- **RTO/RPO disaster-recovery objectives** (`rules/reliability.md` Disaster Recovery)
+- **GDPR lawful bases and DPIA guidance** (`rules/compliance.md` GDPR section)
+- **EU AI Act section** (`rules/compliance.md`) — transparency obligations, prohibited practices, provider vs. deployer, high-risk escalation
+- **EU Cyber Resilience Act paragraph** (`rules/compliance.md`)
+- **SBOM, artifact provenance, and SLSA** guidance (`guides/security/supply-chain.md`)
+- **Agent execution isolation rules and the "lethal trifecta"** (`rules/multi-agent.md`, `guides/multi-agent/mcp-tool-patterns.md`, `guides/multi-agent/llm-security.md`)
+- **OpenTelemetry as the Business-tier instrumentation standard** (`rules/observability.md`, `guides/observability/monitoring.md`)
+- **IaC scanning rules** (`rules/infrastructure.md`) — Checkov/tfsec/Trivy in CI
+- **Branch protection and PR review rules** (`rules/universal.md` Version Control)
+- **Modern security headers** — `Referrer-Policy`, `Permissions-Policy`, `__Host-` cookie prefix, Subresource Integrity (`rules/security.md`)
+- **Load testing requirement** at Business tier (`rules/testing.md`, `checklists/production-readiness.md`)
+- **Field-level envelope encryption guidance** at Business tier (`rules/data.md`)
+- **Standards traceability appendix** (`appendices/standards-mapping.md`) mapping rules to OWASP Top 10, ASVS v5, OWASP LLM Top 10, and NIST SSDF
+- **Keyless CI/CD deploys** — OIDC federation preferred over long-lived cloud keys (`rules/infrastructure.md`, `guides/security/supply-chain.md`)
+
+### Changed
+
+- `rules/compliance.md` applicability widened: the GDPR and EU AI Act sections now apply at Public tier and above whenever the app serves EU users (`rules/_index.md` and both skill manifests updated)
+- Checklists (`before-you-deploy.md`, `production-readiness.md`) gained SAST, IaC scanning, and load-testing line items
+- README token estimates updated for grown rules files
+
 ## [1.1.0] - 2026-06-13
 
 ### Added

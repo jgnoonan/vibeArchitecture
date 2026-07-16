@@ -1,6 +1,6 @@
 # vibeArchitecture
 
-**Framework version:** 1.1.0
+**Framework version:** 1.2.0
 
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 

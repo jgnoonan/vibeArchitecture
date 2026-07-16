@@ -185,17 +185,17 @@ vibeArchitecture is a set of Markdown files your AI agent reads. No dependencies
 
 | Tier | Est. tokens | % of 200K window |
 |------|-------------|-------------------|
-| Personal | ~2,850 | ~1.4% |
-| Shared | ~5,550 | ~2.8% |
-| Public | ~6,400 | ~3.2% |
-| Business | ~11,100 | ~5.6% |
-| Regulated | ~13,800 | ~6.9% |
+| Personal | ~3,050 | ~1.5% |
+| Shared | ~6,450 | ~3.2% |
+| Public | ~7,300 | ~3.7% |
+| Business | ~12,400 | ~6.2% |
+| Regulated | ~15,600 | ~7.8% |
 
 Guides average ~1,560 tokens each and are loaded on demand. A typical session pulls one or two at most.
 
 ### What's Covered
 
-Rules and guides exist for: security, data integrity, testing, API design, accessibility, reliability, infrastructure, observability, performance, system design, multi-agent/LLM systems (including OWASP LLM Top 10 and MCP patterns), mobile-native apps, supply chain security, and compliance (GDPR, HIPAA, PCI-DSS, SOC 2).
+Rules and guides exist for: security, data integrity, testing, API design, accessibility, reliability, infrastructure, observability, performance, system design, multi-agent/LLM systems (including OWASP LLM Top 10 and MCP patterns), mobile-native apps, supply chain security, and compliance (GDPR, EU AI Act, EU Cyber Resilience Act, HIPAA, PCI-DSS, SOC 2).
 
 ### File Structure
 

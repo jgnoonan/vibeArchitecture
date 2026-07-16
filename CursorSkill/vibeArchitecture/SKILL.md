@@ -108,6 +108,7 @@ Load and follow the rules for the determined tier AND all tiers below it. The ru
 - Load `multi-agent.md` when ai_usage is `single-llm` or `multi-agent`
 - Load `system-design.md` when tier is Business or Regulated AND `experience_level` is `experienced`, or when architecture complexity is detected in an existing codebase
 - Load `mobile.md` when building native mobile apps (iOS, Android, React Native, or Flutter)
+- Load `compliance.md` at Public tier and above when the app serves EU users — only the GDPR and EU AI Act sections apply below Regulated tier
 
 Read the relevant rule files from `references/` and follow them for every piece of code you write.
 

@@ -25,6 +25,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/accessibility.md`
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
+- `rules/compliance.md` *(load when the app serves EU users — only the GDPR and EU AI Act sections apply below Regulated tier)*
 
 ## Business
 
@@ -41,6 +42,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - `rules/system-design.md` *(load when experience_level is `experienced`, or when architecture complexity is detected in an existing codebase)*
 - `rules/multi-agent.md` *(load when ai_usage is `single-llm` or `multi-agent`)*
 - `rules/mobile.md` *(load when building native mobile apps — iOS, Android, React Native, or Flutter)*
+- `rules/compliance.md` *(load when the app serves EU users — only the GDPR and EU AI Act sections apply below Regulated tier)*
 
 ## Regulated
 
