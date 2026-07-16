@@ -37,6 +37,12 @@
   - **Saturation**: How full are your resources? CPU, memory, disk, database connections, queue depth. Know when you're approaching limits before you hit them.
 - Track business metrics alongside technical metrics: sign-ups, orders, revenue, active users. A technical dashboard that shows "everything green" while orders have dropped to zero is useless.
 
+## Instrumentation Standard
+
+- At Business tier, prefer OpenTelemetry for traces, metrics, and logs over bespoke instrumentation. It's vendor-neutral — every major monitoring platform ingests it — so you can switch vendors without re-instrumenting your code.
+- Your correlation IDs (already required above) map directly to OpenTelemetry trace and span IDs. If you adopt tracing, use the trace ID as the correlation ID rather than maintaining two systems.
+- Tracing pays off as soon as a request crosses more than one service — or one agent. See `guides/observability/monitoring.md`.
+
 ## Alerting
 
 - Alert on symptoms, not causes. Alert on "error rate exceeded 5%" not "CPU is at 80%." High CPU with happy users is fine. Low CPU with failing requests is not.

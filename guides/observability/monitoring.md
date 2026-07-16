@@ -163,3 +163,7 @@ Everything above, plus:
 3. Database monitoring (query performance, connection pool, replication lag)
 4. Structured dashboards for operations and business teams
 5. On-call rotation with escalation policies
+
+### When Distributed Tracing Pays Off
+
+Tracing shows you a single request's full journey — every service it touched, every call it made, how long each step took. For a single-service app, logs with correlation IDs give you most of that. The moment a request crosses more than one service — or flows through an agent pipeline where Agent A calls Agent B calls a tool — tracing becomes the only practical way to answer "where did these 4 seconds go?" Instrument with OpenTelemetry: it's vendor-neutral, supported by every major platform, and its trace/span IDs serve as your correlation IDs. Start with auto-instrumentation (one library import for most frameworks) before writing custom spans.
