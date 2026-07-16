@@ -11,6 +11,8 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Never commit secrets — API keys, passwords, database credentials, tokens, or private keys must never appear in any committed file. This includes source code, config files, documentation, and comments.
 - Use `.gitignore`. At minimum ignore: `.env` files, dependency directories (`node_modules/`, `venv/`, etc.), build output, IDE settings, OS files (`.DS_Store`, `Thumbs.db`).
 - If a secret is accidentally committed, it is compromised. Removing it from current code is not enough — it lives in git history. Rotate (change) the secret immediately.
+- Once an app is deployed, protect the main branch: no direct pushes, and deploy only from main through CI. "What's in main" and "what's in production" should be the same answer.
+- At Shared tier and above with collaborators, require pull request review before merging. At Business tier, use CODEOWNERS so changes to sensitive areas (auth, payments, infrastructure) automatically request the right reviewer.
 
 ## Secrets and Configuration
 
