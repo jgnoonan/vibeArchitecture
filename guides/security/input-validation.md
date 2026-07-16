@@ -84,6 +84,19 @@ They might get your server's password file.
 
 **The fix:** Never use user input directly in file paths. Validate against an allowlist of permitted files, or resolve the path and verify it stays within the expected directory.
 
+### Server-Side Request Forgery (SSRF)
+
+**What it is:** The attacker gives your server a URL to fetch, and the URL points somewhere your server can reach but the attacker can't — internal services, admin dashboards, or your cloud provider's metadata endpoint.
+
+**Example:** A "summarize this page" feature fetches whatever URL the user submits. The attacker submits:
+```
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+```
+
+On many cloud platforms, that address returns the server's own cloud credentials. The attacker now has your cloud keys without ever touching your code.
+
+**The fix:** Validate URLs before fetching: `https` only, allowlist destination hosts where possible, resolve the hostname and reject private/reserved IP ranges, and re-check after every redirect. Also beware DNS rebinding: a hostname can resolve to a safe public IP during your validation check and to an internal IP moments later when the fetch happens — resolve once and connect to the IP address you validated. This matters doubly for LLM apps, which fetch user-supplied URLs constantly (RAG ingestion, link previews, webhook callbacks). See `rules/security.md` (Server-Side Requests).
+
 ## Validation Strategy
 
 ### Allowlists Over Denylists

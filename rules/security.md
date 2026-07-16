@@ -12,6 +12,16 @@
 - Never insert user-provided content directly into HTML without encoding it first. This prevents cross-site scripting (XSS), where attackers inject code that runs in other users' browsers.
 - Never use user input to build file paths or system commands. This prevents path traversal and command injection attacks.
 
+## Server-Side Requests (SSRF)
+
+- Never fetch a user-supplied URL without validating it first. When your server fetches URLs (link previews, "summarize this page", RAG ingestion, webhook callbacks), an attacker can point it at things only your server can reach — internal services, admin panels, cloud metadata endpoints.
+- Allow only the `https` scheme. Reject `file://`, `ftp://`, and plain `http://` URLs.
+- Where possible, allowlist destination hosts. If a feature only needs to reach a few known services, reject everything else.
+- Resolve the hostname and reject private and reserved IP ranges: 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, and 169.254.0.0/16 — especially the cloud metadata endpoint 169.254.169.254, which hands out your server's cloud credentials.
+- Re-check the destination after every redirect. A safe-looking URL can redirect to an internal address.
+- Set timeouts and response size limits on all fetched content. One fetch must not hang your server or fill your disk.
+- Where the platform allows, run URL-fetching features with egress-restricted networking so a validation bypass has nowhere to go.
+
 ## Authentication
 
 - Never store passwords in plain text or with reversible encryption. Use bcrypt, argon2, or scrypt. These are intentionally slow, making stolen password databases extremely hard to crack.

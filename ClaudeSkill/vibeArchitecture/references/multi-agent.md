@@ -8,6 +8,7 @@
 - Each agent has one clear job. A "research agent" researches. A "writing agent" writes. A "review agent" reviews. If an agent is doing five unrelated things, it's not an agent — it's a monolith with an API key.
 - Define what each agent is allowed to do and — equally important — what it is NOT allowed to do. An agent that can read customer data should not also be able to delete it unless that's explicitly its job.
 - Apply the principle of least privilege to tool access. Give each agent only the tools it needs. A summarization agent doesn't need database write access. A classification agent doesn't need to send emails.
+- Any agent or tool that fetches URLs (web browsing, RAG ingestion, link previews) must follow the SSRF rules in `rules/security.md` — validate the URL, block private IP ranges, and re-check after redirects.
 - Start with a single agent doing everything. Extract into multiple agents only when you have evidence of a clear boundary — different models needed, different tool access, different retry strategies, or the single agent's prompt is becoming unwieldy. This is the "monolith first" principle applied to agents.
 
 ## Shared State and Handoffs
