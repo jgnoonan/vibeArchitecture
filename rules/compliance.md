@@ -1,6 +1,6 @@
 # Compliance Rules
 
-> Applies to: Regulated tier only.
+> Applies to: Regulated tier. Exception: the GDPR section applies at Public tier and above whenever your app serves EU users.
 > This file is self-contained — compliance requirements are specific enough that a separate guide directory is not needed. Cross-references to other rules and guides are inline.
 > This file covers architectural implications of common regulations. It is NOT legal advice. Consult a qualified professional for your specific regulatory obligations.
 
@@ -66,6 +66,9 @@ If your application processes personal data of EU residents:
   - **Right to data portability:** Export data in a machine-readable format.
 - Collect only what you need. Every data point collected must have a stated purpose.
 - Obtain clear, affirmative consent for data processing beyond what's necessary for the service. Pre-checked boxes don't count.
+- Know your lawful basis. GDPR has six lawful bases for processing, and consent is only one of them — often the wrong one. Contract and legitimate interest usually cover core service functionality (account data, order processing, transactional email, fraud prevention). Reserve consent for what genuinely needs it — marketing, non-essential tracking — because consent can be withdrawn at any time, and anything built on it must be able to stop.
+- Don't show consent banners for processing that doesn't require consent. A banner asking permission for strictly necessary cookies is noise that trains users to click through everything.
+- High-risk processing — large-scale profiling, sensitive data (health, biometrics), systematic monitoring — triggers a Data Protection Impact Assessment (DPIA). Document it before building, not after.
 - Maintain a Record of Processing Activities (ROPA) documenting what data you process, why, and how.
 - Implement data protection by design: privacy considerations in architecture decisions, not as an afterthought.
 - Appoint a Data Protection Officer (DPO) if required (large-scale processing of sensitive data).
