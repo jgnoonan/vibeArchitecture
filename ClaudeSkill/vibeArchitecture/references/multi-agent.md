@@ -40,6 +40,7 @@
 - For factual claims, cross-check against your own data when possible. If an agent says "the customer's order total is $142.50," verify that against the database — don't take the model's word for it.
 - Before passing LLM output to tools, databases, or external APIs, sanitize it with the same rigor you'd apply to user input. An LLM can produce SQL, shell commands, or API calls that are subtly wrong or dangerous.
 - For user-facing content, check for PII leakage (did the model accidentally include someone's email or phone number from its training data?) and inappropriate content.
+- For EU-facing AI features (chatbots, AI-generated content), the EU AI Act section in `rules/compliance.md` applies — users must be told they are interacting with AI.
 
 ## Cost Controls
 

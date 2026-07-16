@@ -1,6 +1,6 @@
 # Compliance Rules
 
-> Applies to: Regulated tier. Exception: the GDPR section applies at Public tier and above whenever your app serves EU users.
+> Applies to: Regulated tier. Exception: the GDPR and EU AI Act sections apply at Public tier and above whenever your app serves EU users.
 > This file is self-contained — compliance requirements are specific enough that a separate guide directory is not needed. Cross-references to other rules and guides are inline.
 > This file covers architectural implications of common regulations. It is NOT legal advice. Consult a qualified professional for your specific regulatory obligations.
 
@@ -72,6 +72,16 @@ If your application processes personal data of EU residents:
 - Maintain a Record of Processing Activities (ROPA) documenting what data you process, why, and how.
 - Implement data protection by design: privacy considerations in architecture decisions, not as an afterthought.
 - Appoint a Data Protection Officer (DPO) if required (large-scale processing of sensitive data).
+
+## EU AI Act (AI Systems Serving EU Users)
+
+If EU users interact with an AI system in your application:
+
+- Users must be told they are interacting with AI. Chatbots and AI assistants must identify themselves as such unless it's obvious from context. This transparency obligation applies from August 2026.
+- AI-generated or AI-manipulated content — synthetic text published to inform the public, images, audio, video — must be disclosed as AI-generated, in a machine-readable form where feasible.
+- Know the prohibited practices: emotion recognition in workplaces and schools, social scoring, and manipulative techniques that exploit vulnerabilities. Don't build them for the EU market.
+- Understand your role. **Providers** (who build or substantially modify an AI system) carry heavier obligations than **deployers** (who use one). Building a product on a model API typically makes you a deployer of the model but can make you a provider of your overall system.
+- High-risk categories — AI used for hiring, credit scoring, education access, essential services, law enforcement — carry heavy obligations (risk management, human oversight, documentation, registration). If your AI feature touches one of these, stop and get professional advice.
 
 ## SOC 2 (SaaS / Service Organizations)
 
