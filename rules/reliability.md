@@ -58,6 +58,11 @@
 - Health checks must not require authentication. Load balancers and monitoring systems need to call them without credentials.
 - Don't report healthy when a critical dependency is unreachable. If the database is down and your app can't serve any requests, the health check should reflect that.
 
+## Disaster Recovery
+
+- Pick two numbers explicitly at Business tier: **RTO** (Recovery Time Objective — how long can you afford to be down?) and **RPO** (Recovery Point Objective — how much data can you afford to lose?). These two numbers determine your backup frequency, replication, and failover architecture. Don't let them be decided by accident.
+- Test that a real restore meets them. If your RPO is 1 hour but backups run daily, or your RTO is 15 minutes but a restore takes 3 hours, your objectives are fiction. The backup rules in `rules/data.md` apply; see `guides/reliability/high-availability.md` for typical RTO/RPO values by scenario.
+
 ## Dependency Isolation
 
 - Separate connection pools or thread pools for critical vs. non-critical operations. A slow analytics query shouldn't exhaust the connection pool that serves user requests.
