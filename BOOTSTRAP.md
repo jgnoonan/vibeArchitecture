@@ -1,6 +1,6 @@
 # vibeArchitecture — Bootstrap
 
-**Framework version:** 1.1.0
+**Framework version:** 1.2.0
 
 You are an AI coding assistant with architectural guardrails active. Follow these instructions for every project.
 
@@ -50,21 +50,28 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Handle errors gracefully.** Every network call can fail. Every external service will go down. Show users a helpful message, not a stack trace.
 - **Structure your project.** Separate concerns: routes, business logic, data access, configuration. Don't put everything in one giant file.
 - **Commit lock files.** Use dependency audits before deploy. Enable secret scanning on the repository if possible.
+- **Scan your own code.** Enable static analysis in CI (CodeQL is free for public GitHub repos, or Semgrep). Fix high-severity findings before deploying.
+- **Protect the main branch once deployed.** No direct pushes; deploy only from main via CI. With collaborators, require pull request review.
 
 ### Shared and above (add these)
 
 - **Hash passwords** with bcrypt or argon2. Never store plain text. Never write your own crypto.
+- **Admin accounts get MFA from day one.** Prefer passkeys or authenticator apps over SMS codes.
+- **OAuth sign-in ("Sign in with Google" etc.): authorization code flow with PKCE only.** Never the implicit flow. Never tokens in URLs. Exact-match redirect URIs.
 - **Use HTTPS everywhere.** No exceptions.
+- **Never fetch a user-supplied URL blindly (SSRF).** `https` only, block private/reserved IP ranges (especially 169.254.169.254 — the cloud metadata endpoint), re-check after redirects.
+- **Never bind a request body straight to a database model** (`User.update(req.body)`). Allowlist the fields per endpoint; role, is_admin, and balance are never client-settable.
 - **Back up your database.** Automated, tested. A backup you've never restored is not a backup.
 - **Add basic tests** for business logic — the code that handles money, permissions, and core workflows.
-- **If using AI/LLM services:** separate user content from system instructions, validate model output before acting on it, set timeouts and token limits, track costs per request.
+- **If using AI/LLM services:** separate user content from system instructions, validate model output before acting on it, set timeouts and token limits, track costs per request. Run agent-executed code in a sandbox, and never combine private-data access + untrusted content + an outbound channel in one agent without human approval.
 
 ### Public and above (add these)
 
 - **Rate limit your API.** Without limits, one bot can overwhelm your server or drain your budget.
-- **Set security headers:** Content-Security-Policy, X-Frame-Options, X-Content-Type-Options.
+- **Set security headers:** Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
 - **Design your API consistently.** Use standard HTTP methods and status codes. Validate request bodies.
 - **Use semantic HTML.** `<button>` for buttons, `<label>` for labels, proper heading hierarchy. Accessibility is a legal requirement for public apps.
+- **EU users?** GDPR: know your lawful basis for each processing purpose — consent is often the wrong one; don't consent-banner everything. If they interact with AI, they must be told it's AI (EU AI Act).
 
 ### Business and above (add these)
 
@@ -73,7 +80,9 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Graceful shutdown.** Finish in-progress requests before stopping.
 - **Timeouts on all external calls.** No call should wait indefinitely.
 - **Run at least two instances** behind a load balancer. One instance is a single point of failure.
-- **Automated deployment pipeline.** Tests run before deploy. No manual SSH.
+- **Automated deployment pipeline.** Tests run before deploy. No manual SSH. Prefer OIDC-federated ("keyless") deploys over long-lived cloud keys in CI secrets. Scan infrastructure code (Checkov, tfsec, or Trivy).
+- **Pick recovery objectives explicitly:** how long can you be down (RTO), how much data can you lose (RPO)? Test that a real restore meets them.
+- **Load test before launch** (k6, Locust) against staging — verify the app survives expected peak concurrency.
 - **Experienced developers:** default to monolith architecture unless evidence supports decomposition. See full framework `rules/system-design.md`.
 
 ### Regulated (add these)

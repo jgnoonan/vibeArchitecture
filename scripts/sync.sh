@@ -54,6 +54,22 @@ for skill_dir in "${SKILL_DIRS[@]}"; do
   sync_file "$ROOT/PROJECT_PROFILE.template.md" "$skill_dir/assets/project-profile-template.md"
 done
 
+# Version stamps cannot be auto-synced (BOOTSTRAP.md is a hand-maintained
+# condensation), but they must not drift. Fail loudly if they disagree.
+ARCHITECT_VERSION=$(grep -m1 '^\*\*Framework version:\*\*' "$ROOT/ARCHITECT.md" | sed 's/.*\*\* *//')
+BOOTSTRAP_VERSION=$(grep -m1 '^\*\*Framework version:\*\*' "$ROOT/BOOTSTRAP.md" | sed 's/.*\*\* *//')
+
+if [[ -z "$ARCHITECT_VERSION" || -z "$BOOTSTRAP_VERSION" ]]; then
+  echo "Could not read framework version stamp from ARCHITECT.md or BOOTSTRAP.md" >&2
+  exit 1
+fi
+
+if [[ "$ARCHITECT_VERSION" != "$BOOTSTRAP_VERSION" ]]; then
+  echo "Version drift: ARCHITECT.md is $ARCHITECT_VERSION but BOOTSTRAP.md is $BOOTSTRAP_VERSION." >&2
+  echo "BOOTSTRAP.md is hand-maintained — update its content for the new release, then bump its version stamp." >&2
+  exit 1
+fi
+
 if $CHECK; then
   echo "All derived files in sync."
 else
