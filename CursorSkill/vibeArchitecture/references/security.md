@@ -33,6 +33,8 @@
 - Admin and privileged accounts MUST have multi-factor authentication (MFA) from day one (Shared tier and above). Offer MFA to all users at Public tier and above.
 - Prefer passkeys or authenticator apps (TOTP) over SMS codes as the second factor — SMS is vulnerable to SIM-swapping.
 - Require re-authentication or a step-up check (fresh password or MFA prompt) for sensitive actions: email or password changes, payout or bank detail changes, data exports.
+- For OAuth/OIDC ("Sign in with Google/GitHub/etc."): use the authorization code flow with PKCE. Never use the implicit flow — it's deprecated and puts tokens in URLs. Never pass tokens in URLs or query strings.
+- Validate every token you accept: issuer, audience, expiry, and signature. Register exact-match redirect URIs (no wildcards) and use the `state` parameter to protect the OAuth flow itself against CSRF.
 
 ## Authorization
 

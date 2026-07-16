@@ -103,6 +103,19 @@ Where the browser stores the authentication credential matters:
 
 **The recommendation:** httpOnly, Secure, SameSite cookies. They get the best security properties with the least effort.
 
+## OAuth / OIDC: Getting the Flow Right
+
+If you use "Sign in with Google/GitHub/Apple" or access third-party APIs on a user's behalf, you're using OAuth 2.0 — usually with OpenID Connect (OIDC) on top for identity. AI tools routinely generate deprecated OAuth patterns from older training data. The current rules:
+
+- **Authorization code flow with PKCE — always.** PKCE (Proof Key for Code Exchange) protects the code exchange even in public clients like SPAs and mobile apps. Every modern provider supports it. This is the only flow you should use for user sign-in.
+- **Never the implicit flow.** Older tutorials are full of it. It delivers tokens in the URL fragment, where they leak through browser history, referrer headers, and logs. It's deprecated for good reason.
+- **Never put tokens in URLs or query strings.** URLs get logged everywhere — server logs, proxies, browser history, analytics tools.
+- **Validate every token you accept:** issuer (`iss` — did it come from the provider you expect?), audience (`aud` — was it issued for YOUR app?), expiry (`exp`), and signature. Skipping audience validation means a token issued for someone else's app can be replayed against yours.
+- **Exact-match redirect URIs.** Register the full redirect URI with the provider; never use wildcards. A wildcard redirect lets an attacker have authorization codes sent to a domain they control.
+- **Use the `state` parameter.** A random value tied to the user's session, verified when the provider redirects back. This blocks CSRF attacks on the OAuth flow itself — an attacker silently logging you into THEIR account.
+
+As with everything in auth: your provider's official SDK handles most of this correctly. Hand-rolled OAuth callback handlers are where these bugs appear.
+
 ## Common Authentication Mistakes
 
 **Insecure Direct Object Reference (IDOR):** Your API checks that a user is logged in but not that they're accessing their own data. Example: User A calls `/api/users/123/orders` and gets User B's orders because the API didn't verify that user A is user 123. Always filter by the authenticated user's identity.
