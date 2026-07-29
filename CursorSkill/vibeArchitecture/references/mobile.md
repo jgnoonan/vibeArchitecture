@@ -2,6 +2,7 @@
 
 > Applies to: Shared tier and above, when building native or cross-platform mobile apps (iOS, Android, React Native, Flutter).
 > For detailed explanations: see `guides/security/mobile-security.md`
+> Standards baseline: **OWASP MASVS v2** is the mobile analog of ASVS — self-assess against it, and use the companion **MASTG** test guide to verify. See `appendices/standards-mapping.md`.
 
 ## Secure Storage
 
@@ -26,6 +27,11 @@
 - Request permissions (camera, location, contacts) only when needed, in context, with a plain-language explanation before the system prompt.
 - Use App Transport Security (iOS) and network security config (Android) defaults. Don't add broad exceptions for convenience.
 - Know the store-review triggers before you submit: iOS requires **in-app account deletion** if you support signup, plus a **Privacy Manifest** and justification for "required reason" APIs; Play enforces a recent **target SDK** and an accurate Data Safety form. See `guides/security/mobile-security.md`.
+
+## Push Notifications
+
+- Push payloads transit Apple's (APNs) and Google's (FCM) servers. Treat them as data shared with a third party: never put message content, names, or other personal data in the payload if your app claims any privacy posture. Send an opaque wake signal and fetch the real content on-device.
+- Push delivery is best-effort, not guaranteed. Anything critical must also be reachable by an in-app poll or sync on next open.
 
 ## Updates and Compatibility
 

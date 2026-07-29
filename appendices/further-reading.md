@@ -74,6 +74,15 @@ Scans your website for security headers and configuration. Free, quick, and give
 **Security Headers** — [securityheaders.com](https://securityheaders.com)
 Analyzes your site's HTTP security headers and grades them. Quick way to check your security header configuration.
 
+**OWASP MASVS / MASTG** — [mas.owasp.org](https://mas.owasp.org)
+The mobile application security standard and its companion testing guide. The mobile analog of ASVS — see `appendices/standards-mapping.md`.
+
+**Signal protocol documentation** — [signal.org/docs](https://signal.org/docs)
+The published specifications for X3DH, PQXDH, and the Double Ratchet — the reference patterns for end-to-end encrypted messaging. Read these before designing any E2EE protocol; see `guides/security/cryptography.md`.
+
+**NIST post-quantum standards** — [csrc.nist.gov/projects/post-quantum-cryptography](https://csrc.nist.gov/projects/post-quantum-cryptography)
+FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA), the standardized post-quantum algorithms behind hybrid key agreement.
+
 ---
 
 ## Tools Worth Knowing About

@@ -118,6 +118,19 @@ Don't try to cover everything at once. Start with this 15-minute exercise:
 
 That's a threat model. Write down what you found and what you're going to fix. You've just done something that many professional teams skip.
 
+## The Operator in the Mirror
+
+Most threat models stop at external attackers. If your product makes a privacy promise — "private," "encrypted," "we can't read your data" — you must also model the **operator**: you, your hosting provider, your database, and anyone who can compel them (a subpoena, an acquirer, a rogue admin).
+
+Ask: if someone honest-but-curious had full read access to the servers, what could they learn? Walk the actual artifacts, not the architecture diagram:
+
+- **Logs** — do they print identifiers, phone numbers, who-contacted-whom?
+- **Push notification payloads** — they transit Apple's and Google's servers; is there personal content in them?
+- **Database columns** — do invitation records, display names, or relationship tables reconstruct the social graph in cleartext?
+- **Retained "temporary" data** — what should have been deleted after delivery but wasn't?
+
+Real audits of encryption-marketed products consistently find the content encrypted and the *metadata* wide open. The metadata is part of the promise. See `rules/privacy.md` (If You Claim Privacy, Audit the Metadata).
+
 ## When to Revisit
 
 Threat modeling isn't a one-time event. Revisit it when:

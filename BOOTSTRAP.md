@@ -1,6 +1,6 @@
 # vibeArchitecture — Bootstrap
 
-**Framework version:** 1.3.0
+**Framework version:** 1.4.0
 
 You are an AI coding assistant with architectural guardrails active. Follow these instructions for every project.
 
@@ -78,7 +78,11 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Use HTTPS everywhere.** No exceptions.
 - **Never fetch a user-supplied URL blindly (SSRF).** `https` only, block private/reserved IP ranges (especially 169.254.169.254 — the cloud metadata endpoint), re-check after redirects.
 - **Never bind a request body straight to a database model** (`User.update(req.body)`). Allowlist the fields per endpoint; role, is_admin, and balance are never client-settable.
+- **Guards fail CLOSED.** If an authorization or validation check errors (database down, lookup throws), the answer is "denied" — never a `catch` that returns success.
+- **Authorize the acting device/session, not just the account.** Any client-supplied ID (device, session, team) must be verified as belonging to the authenticated user — recovery and device-management flows are the classic account-takeover surface.
+- **Never trust self-attested data.** Don't verify a signature against a key that arrived with the payload; identity and ownership claims need a trust anchor established earlier, out-of-band.
 - **Back up your database.** Automated, tested. A backup you've never restored is not a backup.
+- **Building E2EE or long-lived-confidentiality features?** Use established protocol patterns (Signal-style, HPKE) and hybrid post-quantum key agreement (X25519 + ML-KEM-768) — recorded traffic today is decryptable by future quantum computers. See the full framework's `guides/security/cryptography.md`.
 - **Add basic tests** for business logic — the code that handles money, permissions, and core workflows.
 - **If using AI/LLM services:** separate user content from system instructions, validate model output before acting on it, set timeouts and token limits, track costs per request. Run agent-executed code in a sandbox, and never combine private-data access + untrusted content + an outbound channel in one agent without human approval.
 
@@ -108,6 +112,7 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Automated deployment pipeline.** Tests run before deploy. No manual SSH. Prefer OIDC-federated ("keyless") deploys over long-lived cloud keys in CI secrets. Scan infrastructure code (Checkov, tfsec, or Trivy).
 - **Pick recovery objectives explicitly:** how long can you be down (RTO), how much data can you lose (RPO)? Test that a real restore meets them.
 - **Load test before launch** (k6, Locust) against staging — verify the app survives expected peak concurrency.
+- **Run adversarial review before launch:** separate AI review passes per failure class (authorization, concurrency, durability, privacy), then verify each finding against the source before fixing — expect some claims to dissolve. Every finding gets fixed or closed in writing. For solo developers this is the substitute for PR review.
 - **Experienced developers:** default to monolith architecture unless evidence supports decomposition. See full framework `rules/system-design.md`.
 
 ### Regulated (add these)
@@ -124,6 +129,8 @@ Apply the rules below for the determined tier and all tiers below it.
 - **HTTPS only.** Assume offline — show clear error states, queue retries.
 - **Version your API.** Users can't be forced to update immediately.
 - **Request permissions in context**, not all at launch.
+- **Keep personal data out of push payloads** — they transit Apple/Google servers. Send an opaque wake signal; fetch content on-device.
+- **Accessibility from the first screen:** accessible names on every control, errors announced (not just painted red), text survives 200% font scaling, ≥44pt/48dp touch targets, respect reduce-motion.
 
 ## How to Communicate
 

@@ -82,6 +82,37 @@ Server-controlled fields (role, is_admin, balance, verified, owner_id) are set o
 
 ---
 
+### The Fail-Open Guard
+
+**What it looks like:**
+```javascript
+async function canAccess(userId, resourceId) {
+  try {
+    const grant = await db.grants.find(userId, resourceId);
+    return grant != null;
+  } catch (e) {
+    console.error("grant lookup failed", e);
+    return true; // don't block users if the DB hiccups
+  }
+}
+```
+
+**Why it's bad:** The guard's failure mode is "allowed." Every transient outage — a database timeout, a cache restart, a network blip — becomes a window in which *everyone* is authorized. Attackers can sometimes trigger the error path on demand (oversized input, connection exhaustion). AI tools generate this constantly because "don't break the app on an error" feels helpful.
+
+**Do this instead:** Guards fail CLOSED. An error in an authorization or validation check returns "denied," logs loudly, and surfaces a retryable error to the user. Write a test that kills the dependency and asserts the guard denies.
+
+---
+
+### Trusting Self-Attested Data
+
+**What it looks like:** A record arrives with both a payload and the key that supposedly authenticates it — and the code verifies the payload against that bundled key. Or a sync message declares `"owner": "alice"` and the server believes it because the field says so.
+
+**Why it's bad:** Verification against attacker-supplied trust material proves nothing — the attacker signs their forgery with their own key and bundles it. Any identity, role, or ownership claim that originates inside the thing being checked is decoration, not authentication.
+
+**Do this instead:** Trust anchors come from a separate, earlier-established channel: a key registered at account creation, a certificate chain, a server-side lookup keyed by the *authenticated* caller. Verify the payload against what you already knew, never against what just arrived with it.
+
+---
+
 ## Data Anti-Patterns
 
 ### No Foreign Keys
@@ -289,6 +320,30 @@ Server-controlled fields (role, is_admin, balance, verified, owner_id) are set o
 **Why it's bad:** Network timeouts don't tell you whether the operation succeeded or failed — only that you didn't get a response in time. Blindly retrying a non-idempotent operation can duplicate it.
 
 **Do this instead:** Assign a unique idempotency key to each operation. Include it in the request. The receiving system checks if it's already processed that key and returns the original result instead of processing again. All payment APIs support this — use it.
+
+---
+
+### Lock-Order Inversion
+
+**What it looks like:** Subsystem A takes the storage lock, then needs the crypto-state lock. Subsystem B takes the crypto-state lock, then needs the storage lock. Each holds one and waits for the other — forever. The app freezes: beachball on macOS, hung window on Windows, a stuck async runtime on a server.
+
+**Why it's bad:** It passes every test, because tests rarely produce the exact interleaving. It fires in production under real timing, takes the whole process down (not one request), and the stack traces show two healthy-looking threads each "just waiting for a lock."
+
+**Do this instead:** Define one global acquisition order for lock domains and never take them in the other order. Better: never hold two subsystem locks at once — gather everything you need under the first lock, release it, then take the second. Code review for the pattern "lock held while calling into another module."
+
+---
+
+### The Piped-Away Exit Code
+
+**What it looks like:**
+```bash
+build-and-check | tail -20   # "show me just the end of the output"
+echo "checks passed ✅"
+```
+
+**Why it's bad:** The pipeline's exit status is *tail's*, not the check's. The build can fail catastrophically and the script (or CI step, or AI agent) reports success. AI agents do this habitually because they pipe output through `tail`/`grep` to trim noise — and then read the wrong status.
+
+**Do this instead:** Run gating checks bare and let their exit code propagate. If you must filter output, capture the status explicitly (`set -o pipefail` in bash, or check `${PIPESTATUS[0]}`) — and make CI fail on the check's status, not the filter's.
 
 ---
 

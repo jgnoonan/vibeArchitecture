@@ -51,6 +51,8 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Functions do one thing. If you can't describe a function's purpose in one sentence, split it.
 - Name things clearly. `calculateTotalPrice` beats `calc`. `userEmail` beats `x`.
 - Avoid duplication — if you copy-paste the same logic three times, extract it. But don't over-abstract code used only once.
+- Adopt the ecosystem's canonical linter and formatter (ESLint/Prettier, ruff, clippy + rustfmt, flutter_lints, golangci-lint) and treat new warnings in code you touch as blocking — even before CI enforces it. Lint rules encode exactly the plausible-looking mistakes AI-generated code repeats.
+- Know the difference between free, self-assessable standards (OWASP ASVS, MASVS, WCAG, NIST SSDF) and paid certification-grade ones (FIPS 140-3, Common Criteria, a SOC 2 *audit*). Self-assess against the free ones now; pursue certification only when a buyer or regulator actually demands it.
 
 ## Working with AI Agents
 
@@ -58,3 +60,5 @@ These apply to EVERY project regardless of tier. No exceptions.
 - "It works on my machine" is not sufficient. Test with realistic data and conditions.
 - If you don't understand what code does, ask the AI to explain it before committing.
 - Be skeptical of AI-suggested architectural decisions. The AI optimizes for "getting it done" — these rules exist to also make sure it's done right.
+- Verify exit codes, not pipes. `some-check | tail -1` returns *tail's* exit status, not the check's — a pipeline like that can mask a build-breaking failure while reporting success. Run gating checks bare and read the real status; a check whose exit code is consumed by a pipe is not a check.
+- Commit both sides of code generation. When a tool generates code (API bindings, ORM clients, serializers), the generated output is committed together with its source, and CI verifies they match (regenerate and diff). Regenerating one side and forgetting the other breaks clean checkouts in ways that don't reproduce on the machine that made the change.

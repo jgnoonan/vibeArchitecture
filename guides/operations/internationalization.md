@@ -158,6 +158,16 @@ Once you've built the i18n infrastructure, you need a process for actually trans
 
 **Key practice:** Keep your translation files in version control alongside your code. When you add a new string in the default language, it should be obvious which translations are missing.
 
+### Working Rules That Keep a Codebase Translatable
+
+Field-tested conventions worth adopting from the first string:
+
+- **Externalize user-visible strings from day one, even single-language.** Retrofitting extraction across a finished app is a multi-day slog through every screen; doing it as you go is free. This includes accessibility labels and tooltips — they're user-visible strings too.
+- **Some strings are NEVER extracted:** log messages, error strings destined for developers, internal identifiers, and anything that gets grepped during debugging. Translating your logs destroys your ability to search them, and localized exception text makes bug reports incomparable across users.
+- **Name keys by role, not by content** (`invite_accept_button`, not `yes_text`), so a wording change doesn't orphan the key — and so the same English word used in two roles can translate differently.
+- **Use your framework's plural/interpolation machinery** (ICU MessageFormat, ARB plurals) from the start. Languages disagree about plural categories; a hand-rolled `count == 1 ? … : …` is wrong in Polish and Arabic.
+- **Machine-draft, native-review.** A machine draft plus a native-speaker review pass is a realistic quality bar for a small team — but the reviewer has final say, and the review is per-locale, not "looks fine in English."
+
 ## When to Start
 
 | Tier | Recommendation |

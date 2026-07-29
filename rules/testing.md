@@ -42,6 +42,19 @@ AI-generated tests need careful review. Watch for:
 
 Ask the AI to specifically generate tests for error cases and edge cases — it usually won't unless prompted.
 
+## Silently Skipped Tests Read as Green
+
+- A test suite that skips itself when infrastructure is missing — no database configured, no API key present, no network — looks exactly like a passing suite. Locally *and* in a misconfigured CI job, "all tests pass" can mean "the only meaningful tests never ran."
+- Make skips loud: print a prominent skip count and reason, or fail outright when a suite that should run can't. Somewhere — locally against a real database, or in a CI job with the service available — the infrastructure-dependent tier must actually execute, and you must be able to tell that it did.
+- After any schema, query, or storage-layer change, explicitly confirm the database-backed tests ran. This is the change class where the skipped tier hides real breakage.
+
+## Reviewing an AI-Built Codebase
+
+- Tests catch the bugs you thought to write tests for. At Business tier and above (or before any launch you care about), also run structured **adversarial review**: separate review passes, each hunting one failure class — authorization, concurrency, data durability, failure handling, privacy/metadata, accessibility — rather than one generic "find bugs" pass.
+- Verify findings before believing them. AI reviewers produce plausible-sounding defects that don't survive being traced end-to-end against the source; expect a double-digit percentage of raw claims to dissolve under verification. An unverified finding list erodes trust and wastes fix time.
+- A review is closed when every finding — LOW severity included — is fixed or explicitly closed with a written rationale. Findings that silently expire come back.
+- For solo developers this substitutes for the pull-request review a team would have: no second human sees the code, so the adversarial pass is the second reviewer. See `guides/testing/adversarial-review.md` for the full method.
+
 ## Test Data
 
 - Use factories or fixtures to generate test data. Hard-coded test data scattered across files becomes unmaintainable.

@@ -48,6 +48,13 @@ Design the schema so these are possible from day one — retrofitting them is pa
 - **Do not send personal or regulated data to an AI/LLM provider that isn't covered by an appropriate agreement** (DPA, or a BAA for health data). Assume anything you put in a prompt has left your control. See `rules/multi-agent.md` and `guides/multi-agent/llm-security.md`.
 - Know where data leaves your region. If users are in the EU/UK, cross-border transfer of their data has extra rules.
 
+## If You Claim Privacy, Audit the Metadata
+
+- Encrypting content is not the same as protecting privacy. The failures that contradict a privacy claim almost always live in the *metadata* plane: cleartext names and messages in invitation records, personal data copied into push-notification payloads, identifiers and social-graph pairs printed in server logs, and database columns that quietly reconstruct who knows whom.
+- If your marketing says "private" or "end-to-end encrypted," review the system against a stronger threat model: an honest-but-curious, compromised, or subpoenaed **operator** — you, your hosting provider, your database. What could that operator read or infer? Logs, push payloads, analytics events, and retained columns are all part of the claim.
+- Push notifications transit Apple's and Google's servers — treat their payloads as data shared with a third party. Prefer opaque wake signals; fetch the actual content on-device over your own encrypted channel.
+- Delete transition paths, don't deprecate them. If a cleartext column or legacy endpoint contradicts the privacy model, removing it structurally is the only state in which it cannot return.
+
 ## Transparency & Retention
 
 - Publish a privacy notice that honestly matches what you actually collect, why, who you share it with, and how long you keep it. The framework can't write legal text, but the notice must not contradict the code.

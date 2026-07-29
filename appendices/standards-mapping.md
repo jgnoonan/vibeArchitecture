@@ -35,6 +35,21 @@
 | Configuration | `rules/infrastructure.md`, `rules/universal.md` (Secrets and Configuration) |
 | Logging and error handling | `rules/observability.md`, `rules/universal.md` (Error Handling) |
 
+## OWASP MASVS v2 (Mobile Application Security Verification Standard)
+
+The mobile analog of ASVS. Verify with the companion MASTG (Mobile Application Security Testing Guide).
+
+| MASVS group | Where vibeArchitecture covers it |
+|-------------|----------------------------------|
+| MASVS-STORAGE (sensitive data at rest) | `rules/mobile.md` (Secure Storage), `guides/security/mobile-security.md` |
+| MASVS-CRYPTO (cryptography) | `rules/security.md` (Cryptography), `guides/security/cryptography.md` |
+| MASVS-AUTH (authentication and session) | `rules/mobile.md` (Authentication), `rules/security.md` (Authentication) |
+| MASVS-NETWORK (secure communication) | `rules/mobile.md` (Network Security), `rules/security.md` (HTTPS and Transport Security) |
+| MASVS-PLATFORM (platform interaction, IPC, WebViews) | `rules/mobile.md` (App Store and Privacy, Push Notifications), `guides/security/mobile-security.md` |
+| MASVS-CODE (code quality and build) | `rules/universal.md` (Code Quality, Code Scanning), `rules/mobile.md` (Common AI-Generated Mistakes) |
+| MASVS-RESILIENCE (anti-tampering) | Not covered — relevant mainly to apps defending against on-device reverse engineering (DRM, fintech hardening); adopt MASTG guidance directly if required |
+| MASVS-PRIVACY (user privacy) | `rules/privacy.md` (including the metadata section), `rules/mobile.md` (App Store and Privacy, Push Notifications) |
+
 ## OWASP LLM Top 10 (2025)
 
 `guides/multi-agent/llm-security.md` maps these risks in detail; the rules live in `rules/multi-agent.md`.

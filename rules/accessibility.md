@@ -60,6 +60,20 @@
 - Support pinch-to-zoom. Never disable user scaling (`user-scalable=no` or `maximum-scale=1`). People with low vision need to zoom.
 - Ensure content is readable without horizontal scrolling at 320px viewport width (equivalent to a phone held vertically at 400% zoom).
 
+## Native Mobile Apps (Flutter, SwiftUI, Jetpack Compose, React Native)
+
+The web rules above have direct native equivalents, and AI-generated native UI skips them even more reliably than it skips `alt` text — audits of mature app codebases routinely find that almost no screen carries semantic annotations. Apply these from the first screen; retrofitting accessibility onto a finished app is a multi-day project, while building it in costs nearly nothing:
+
+- **Every interactive control has an accessible name.** Tooltips or semantic labels on icon-only buttons; a semantics label on any custom tap surface. These names are user-visible strings — localize them like any other string.
+- **No bare gesture handlers for anything actionable.** Use the platform's focusable, activatable primitives (buttons, `InkWell`/`FocusableActionDetector`, accessibility actions) so screen-reader focus and keyboard/switch activation come free. Anything long-press-only or swipe-only gets a discoverable alternative (an overflow or context menu) — that alternative is also the assistive-technology path.
+- **Errors are announced, never just painted.** Field errors go through the platform's error slot (e.g. `errorText`); screen-level errors go through a live region or accessibility announcement. A styled red `Text` inserted by a state change is invisible to a screen-reader user mid-task.
+- **Non-text content has a text alternative.** Semantic labels on meaningful images; icon-only or color-dot status also exists as text for assistive technology. Mark purely decorative images as excluded from semantics.
+- **Compute contrast, in both themes.** New color pairs are checked against 4.5:1 (text) and 3:1 (large text / UI components) with a real calculation — in light *and* dark themes, even if one theme isn't shipped yet.
+- **Touch targets ≥ 44×44pt (iOS) / 48×48dp (Android).** Don't shrink targets with compact densities or tight constraints to fix a layout.
+- **Text survives 200% OS font scaling.** Flexible layouts around text, no fixed-height containers holding text, and never pinning font size to dodge an overflow — fix the layout instead.
+- **Nothing animates indefinitely.** Looping or ambient animation needs a pause/stop affordance or must end within ~5 seconds, and it respects the OS reduce-motion setting. No flashing more than 3 times per second.
+- **Test with the platform's screen reader** (VoiceOver, TalkBack) and at maximum font scale on a real device. Ten minutes per screen catches most of what automated checks miss.
+
 ## AI-Generated Code Review
 
 AI coding agents frequently generate inaccessible code. Watch for these common issues:

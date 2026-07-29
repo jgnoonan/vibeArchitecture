@@ -2,6 +2,34 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
+## [1.4.0] - 2026-07-29
+
+Field-lessons release: distills recurring defect classes and verification practices from a year of adversarial reviews of production systems — including peer-to-peer and end-to-end-encrypted architectures — into rules, guides, and anti-patterns.
+
+### Added
+
+- **Fail-closed guards** (`rules/security.md` Authorization) — an errored authorization/validation check returns "denied," never "allowed"; matching **Fail-Open Guard** anti-pattern with code example
+- **Device/session-scoped authorization** (`rules/security.md`) — client-supplied IDs (device, session, workspace) must be verified as belonging to the authenticated principal; the multi-device sibling of IDOR and a real account-takeover class in recovery flows
+- **Self-attested data rules** (`rules/security.md` Input Validation) — never verify a signature against a key that arrived with the payload; validate untrusted input before it reaches a path, allocation, or decoder; matching **Trusting Self-Attested Data** anti-pattern
+- **Cryptography section** (`rules/security.md`) and new **`guides/security/cryptography.md`** — established E2EE protocol patterns over invented ones, **hybrid post-quantum key agreement (X25519 + ML-KEM-768)** against harvest-now-decrypt-later, security-argument comments, anti-replay persistence, context binding, cryptographic deletion, out-of-band verification, and a practical note on formal verification (ProVerif/CryptoVerif)
+- **Adversarial review method** — new **`guides/testing/adversarial-review.md`** (review by failure class, verify findings before believing them, close every finding or close it in writing, field-verify on devices) plus a "Reviewing an AI-Built Codebase" section in `rules/testing.md`; positioned as the solo developer's substitute for PR review
+- **Assurance register template** (`appendices/assurance-register-template.md`) — the found/closed evidence table auditors and buyers actually ask for
+- **Local-first & peer-to-peer guide** (`guides/system-design/local-first-and-p2p.md`) — key-loss recovery before launch, ciphertext backups, cryptographic deletion, multi-device as its own authorization plane, mobile-as-server realities, sync-conflict design
+- **Metadata-plane privacy** (`rules/privacy.md` "If You Claim Privacy, Audit the Metadata") — operator threat model for privacy-marketed products, push payloads as third-party sharing, delete-don't-deprecate transition paths; companion "The Operator in the Mirror" section in `guides/security/threat-modeling.md`
+- **Native mobile accessibility** (`rules/accessibility.md`) — Flutter/SwiftUI/Compose/React Native rules: accessible names, no bare gesture handlers, announced errors, computed contrast in both themes, 200% font-scale survival, 44pt/48dp targets, no unbounded animation
+- **OWASP MASVS v2 mapping** (`appendices/standards-mapping.md` new section; baseline note in `rules/mobile.md`) — the mobile analog of ASVS, verified with MASTG
+- **Push notification rules** (`rules/mobile.md`) — payloads transit APNs/FCM: opaque wake signals, content fetched on-device; push is best-effort
+- **Restart-safe migrations** (`rules/data.md`) — startup-run migrations crash-loop production when they fail; guard re-run DDL, add a migrate-twice test, take an advisory lock for multi-instance startup
+- **Silently-skipped tests** (`rules/testing.md`) — suites that skip without infrastructure read as green; make skips loud and confirm the database-backed tier actually ran
+- **Toolchain and CI hygiene** (`rules/universal.md`) — lint/format gates as blocking; self-assessable vs. certification-grade standards distinction; **verify exit codes, not pipes** (with a matching anti-pattern); commit both sides of code generation with a CI drift check
+- **Lock hierarchies** (`rules/reliability.md` Concurrency) — define one acquisition order across lock domains or never nest; matching **Lock-Order Inversion** anti-pattern
+- **Localization working rules** (`guides/operations/internationalization.md`) — externalize user-visible strings (including accessibility labels) from day one; never extract log/developer strings; role-based key naming; machine-draft + native-review workflow
+
+### Changed
+
+- `BOOTSTRAP.md` condensed rules updated with fail-closed guards, device-scoped authorization, self-attested data, E2EE/post-quantum pointer, adversarial review at Business tier, and mobile push-payload + accessibility lines
+- README coverage listing expanded (cryptography/E2EE/post-quantum, adversarial review, local-first/P2P, MASVS)
+
 ## [1.3.0] - 2026-07-16
 
 Gap-analysis release: closes coverage gaps against OWASP Top 10 / ASVS / LLM Top 10 (2025), NIST SSDF, SLSA, CIS Controls, GDPR, the EU AI Act, and the EU Cyber Resilience Act.

@@ -11,6 +11,8 @@
 - Never build database queries by concatenating user input into the query string. Use parameterized queries or your framework's ORM. This prevents SQL injection — one of the most common and dangerous attacks.
 - Never insert user-provided content directly into HTML without encoding it first. This prevents cross-site scripting (XSS), where attackers inject code that runs in other users' browsers.
 - Never use user input to build file paths or system commands. This prevents path traversal and command injection attacks.
+- Validate untrusted input **before** it reaches a dangerous sink: a filesystem path, an allocation size, a decompression routine, or a media/file decoder. A peer-supplied length field or filename must be bounds-checked and sanitized before any resource is committed to it.
+- Self-attested data is not authenticated data. Never verify a signature against a key that arrived alongside the thing it signs, and never trust an identity, role, or ownership claim just because the record makes it about itself. Trust anchors (keys, identities) must come from a separate, earlier-established channel.
 - Never bind a request body directly to a database model (`User.update(req.body)` style). This is mass assignment — the client controls every field, including ones they shouldn't. Explicitly allowlist the fields a client may set on each endpoint.
 - Server-controlled fields (role, is_admin, balance, verified, owner_id) must never be settable from request input. Set them in server code only.
 
@@ -44,6 +46,8 @@
 - Check permissions on the server for every request. Client-side checks improve the user experience but are trivially bypassed — they are not security.
 - Don't rely on hiding UI elements as access control. If a button is hidden but the API endpoint isn't protected, the data is exposed.
 - Verify that users can only access THEIR OWN data. "Can user A see user B's records?" is one of the most common security bugs (Insecure Direct Object Reference). Always filter queries by the authenticated user's identity.
+- Authorize the acting device or session, not just the account. Any identifier the client supplies — a device ID, session ID, workspace ID, team ID — must be verified as belonging to the authenticated principal, not merely well-formed. Account-level checks pass while a caller-supplied ID quietly points at someone else's resource; this is the multi-device sibling of IDOR and it enables full account takeover in recovery and device-management flows.
+- Guards fail CLOSED. If an authorization or validation check hits an error — the database is unreachable, the cache times out, a lookup throws — the answer is "denied," never "allowed." A `catch` block that returns success, or a default-permit fallthrough, turns every transient outage into an open door. Write the failure path first and test it.
 
 ## Cross-Site Request Forgery (CSRF)
 
@@ -71,6 +75,14 @@
 - Name session cookies with the `__Host-` prefix (e.g., `__Host-session`). The browser then enforces Secure, no Domain attribute, and Path=/ — locking the cookie to your exact host.
 - Use Subresource Integrity (SRI) for third-party scripts loaded from CDNs. The `integrity` attribute makes the browser refuse a script that doesn't match the expected hash, so a compromised CDN can't inject code into your pages.
 - Configure CORS with specific allowed origins. Never use `Access-Control-Allow-Origin: *` in production when credentials (cookies, auth headers) are involved.
+
+## Cryptography
+
+- Don't build your own cryptography. Use your platform's vetted libraries for hashing, encryption, and signatures. This rule has no tier where it stops applying.
+- If the product itself IS the cryptography — end-to-end encrypted messaging, encrypted sync, encrypted storage — don't invent a protocol. Build on established, analyzed patterns (Signal-style X3DH/PQXDH handshakes, the Double Ratchet, HPKE, age/libsodium sealed boxes). See `guides/security/cryptography.md` before designing anything.
+- **Harvest-now, decrypt-later is a today problem.** Encrypted traffic recorded now can be decrypted when quantum computers can break today's key exchange. Data whose confidentiality must last years needs **hybrid post-quantum key agreement** (X25519 combined with ML-KEM-768) — hybrid, never pure-PQ and never classical-only for new long-lived-secret designs. TLS stacks and browsers already default to hybrid groups; new application-layer protocols should too. Classical signatures remain acceptable for now; confidentiality can't wait.
+- Every cryptographic function gets a comment stating its **security argument** — what property it provides, against which attacker — not just its mechanics. "Encrypts the payload" is mechanics; "seals the payload so the relay operator can't read it, bound to the recipient's key so it can't be re-targeted" is an argument the next reader can check.
+- In end-to-end encrypted designs, deletion can be cryptographic: destroying the only key that decrypts data is deletion, and is sometimes the only deletion you can enforce on data other devices hold.
 
 ## Secrets Management (Beyond Universal Rules)
 
