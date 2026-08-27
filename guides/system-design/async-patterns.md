@@ -46,12 +46,13 @@ User Request → Application Server → [Queue] → Worker → Does the Work
 
 ### Popular Queue Services
 
-- **Redis (with Bull/BullMQ, Celery, Sidekiq):** Good starting point. You might already be running Redis for caching. Adding a queue is straightforward.
+- **Your Postgres database (pg-boss or Graphile Worker for Node, Solid Queue for Rails, Oban for Elixir, River for Go, Procrastinate for Python):** The solo-developer default when you're already on Postgres. Zero new infrastructure, jobs are enqueued in the same transaction as the data they refer to (which quietly solves the dual-write problem — see the transactional outbox in `guides/system-design/architecture-styles.md`), jobs survive restarts because they're rows, and `SELECT ... FOR UPDATE SKIP LOCKED` makes concurrent workers safe. Comfortable to thousands of jobs per minute; the database becomes the bottleneck only far later than people fear.
+- **Redis or Valkey (with BullMQ, Celery, Sidekiq):** Good when you already run Redis/Valkey or need higher throughput than Postgres queues give you. BullMQ is the maintained Node library — the older `bull` package is in maintenance mode; don't start new projects on it.
 - **Amazon SQS:** Fully managed, very reliable, pay-per-use. Good for AWS deployments.
 - **RabbitMQ:** Feature-rich, self-hosted or managed. Good when you need advanced routing.
 - **Cloud-native options:** Google Cloud Tasks, Azure Service Bus.
 
-For most applications, Redis with a queue library is the right starting point. Don't overthink this.
+For most applications, a Postgres-backed queue (if you're on Postgres) or Redis/Valkey with a queue library is the right starting point. Don't overthink this.
 
 ## Events vs. Commands
 
@@ -99,7 +100,7 @@ Messages can be delivered more than once. The network hiccupped, the worker cras
 
 Idempotency keys help: include a unique ID with every message. Before processing, check if you've already processed that ID. If you have, skip it.
 
-See `rules/reliability.md` (concurrency section) and `guides/reliability/concurrency.md` for more on idempotency.
+How to store keys (unique per principal, saved response, in-progress state, expiry) is spelled out once, in the idempotency-keys section of `guides/reliability/concurrency.md`; see also `rules/reliability.md` (concurrency section).
 
 ## Backpressure: When Work Piles Up
 
@@ -122,7 +123,7 @@ Kafka (and similar event streaming platforms) gets mentioned a lot, but it solve
 - Replaying the complete history of events
 - Multiple independent consumers reading the same stream at their own pace
 
-If you're processing hundreds or thousands of messages per minute, a simple queue (Redis, SQS, RabbitMQ) is plenty. Kafka adds significant operational complexity.
+If you're processing hundreds or thousands of messages per minute, a simple queue (Postgres, Redis/Valkey, SQS, RabbitMQ) is plenty. Kafka adds significant operational complexity.
 
 **The rule of thumb:** If you're asking "should I use Kafka?", the answer is almost certainly no. When you actually need it, you'll know — because simpler tools will be measurably failing to keep up.
 
@@ -142,7 +143,7 @@ The queue theory above assumes you have a worker running somewhere. If you're a 
 
 **Jobs run at-least-once, so make them idempotent.** Every option above can deliver the same job *twice* — a network hiccup, a retry after a timeout, a redelivery. If "send invoice email" runs twice, the customer gets two emails; if "charge the card" runs twice, that's real money. Give each job a stable idempotency key (the order ID, a UUID you generate once) and check "have I already done this one?" before acting. This is the same idea as the idempotency section above — see `guides/reliability/concurrency.md` and `rules/reliability.md`.
 
-**Retry with backoff, and have a failure path.** When a job fails, retry it — but wait longer between each attempt (backoff) so you don't hammer a service that's already struggling. And cap it: after a handful of failures, send the job to a dead-letter/failure store (as covered above) instead of retrying forever. Most hosted queues do backoff and dead-lettering for you; make sure it's turned on, and make sure *someone gets alerted* when a job lands in the failure pile.
+**Retry with backoff, and have a failure path.** When a job fails, retry it with exponential backoff and jitter (the retry rules are in `guides/reliability/resilience-patterns.md`). And cap it: after a handful of failures, send the job to a dead-letter/failure store (as covered above) instead of retrying forever. Most hosted queues do backoff and dead-lettering for you; make sure it's turned on, and make sure *someone gets alerted* when a job lands in the failure pile.
 
 **Quick decision guide:**
 - On a schedule? → platform cron.
@@ -157,7 +158,7 @@ For more on running background work without your own server, see `guides/infrast
 If your application doesn't use async processing yet and you want to add it:
 
 1. **Identify the work that doesn't need to be synchronous.** Email sending is the classic first candidate.
-2. **Pick a simple queue.** If you already use Redis, use a queue library built on Redis (Bull/BullMQ for Node.js, Celery for Python, Sidekiq for Ruby).
+2. **Pick a simple queue.** If you're on Postgres, start with a Postgres-backed queue (pg-boss, Graphile Worker, Solid Queue, Oban, River). If you already run Redis/Valkey, use a queue library built on it (BullMQ for Node.js, Celery for Python, Sidekiq for Ruby).
 3. **Write a worker that processes messages.** Start with one type of job.
 4. **Add a dead letter queue from the start.** Don't skip this.
 5. **Make your handlers idempotent.** Design them to be safely retried.

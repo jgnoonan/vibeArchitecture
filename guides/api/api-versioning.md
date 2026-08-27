@@ -124,7 +124,13 @@ When you release v2:
 
 1. **Announce the deprecation** of v1. Tell your API consumers (in documentation, in response headers, via email) that v1 will stop working on a specific date. Give them generous notice — 6 months minimum for external APIs, 3 months for internal ones.
 
-2. **Add deprecation warnings.** Include a response header like `Deprecation: true` or `Sunset: 2027-01-01` in v1 responses. Well-built clients can detect this and alert their developers.
+2. **Add deprecation warnings.** Send both standard headers on v1 responses. `Deprecation` (RFC 9745) carries the date the version *became* deprecated as a Unix timestamp in the `@` form; `Sunset` (RFC 8594) carries the date it will *stop working* as an HTTP-date:
+   ```
+   Deprecation: @1735689600
+   Sunset: Thu, 01 Jan 2027 00:00:00 GMT
+   Link: <https://api.example.com/docs/v2-migration>; rel="deprecation"
+   ```
+   Well-built clients and API gateways detect these and alert their developers. (Older tooling used `Deprecation: true` or a bare date; the RFC form is what new clients parse.)
 
 3. **Monitor v1 usage.** Before shutting it down, check who's still calling it. Reach out to active users if possible.
 

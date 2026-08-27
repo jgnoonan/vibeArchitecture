@@ -1,6 +1,6 @@
 # Your First Successful Use (5 Minutes)
 
-This walkthrough shows exactly what happens when vibeArchitecture is working. We'll use **Option B** (paste one prompt) — no install required. The same flow applies to Cursor, Claude Code, or the Cursor/Claude Skills once enabled.
+This walkthrough shows exactly what happens when vibeArchitecture is working. We'll use **Option B** (paste one prompt) — no install required. The same flow applies to Cursor, Claude Code, or the Cursor/Claude Skills once enabled. Not sure which option fits you? The "Which option?" table at the top of the README's Get Started section is the quick answer.
 
 ---
 
@@ -16,7 +16,7 @@ Optional but recommended: `git init` so the AI can commit as it goes.
 
 In your AI tool, paste:
 
-> Read the BOOTSTRAP.md file from https://github.com/jgnoonan/vibeArchitecture and follow its instructions before we start building. Ask me the intake questions first.
+> Read https://raw.githubusercontent.com/jgnoonan/vibeArchitecture/main/BOOTSTRAP.md and follow its instructions before we start building. Ask me the intake questions first.
 
 Or, if you already copied the framework into your project (Option C):
 
@@ -33,11 +33,14 @@ The AI asks a few questions — **not all at once**. Example conversation:
 | What are you building? | A recipe sharing app for my family |
 | Who will use it? | People I know — about 15 family members |
 | What data will it handle? | Names, emails, recipes, maybe photos |
+| Any users in the EU, UK, or California? | No — everyone's in Ohio |
+| How will people use it? | Web browser |
+| What happens if it goes down? | Annoying, not a disaster |
 | New or existing? | New project |
-| How do you want explanations? | Step by step (→ **beginner** experience level) |
+| What's your background? | New to this — AI does most of the coding (→ **beginner** experience level) |
 | Will it use AI services? | No |
 
-The AI determines **Shared tier** (family accounts + personal data, but not public internet or payments).
+The AI determines **Shared tier** (family accounts + personal data, but not public internet or payments) and turns on the **privacy overlay** (`rules/privacy.md`) because the app stores other people's names and emails.
 
 ---
 
@@ -77,17 +80,7 @@ Close the chat. Open a new one tomorrow. Say:
 
 A working setup finds your existing `PROJECT_PROFILE.md`, reads **Shared tier**, and **skips re-intake** — it loads the same rules and keeps going.
 
----
-
-## Quick reference: which option should I use?
-
-| If you… | Use |
-|---------|-----|
-| Want zero install, try it once | **Option B** — bootstrap prompt (above) |
-| Use Cursor daily | **Cursor Skill** + optional full framework folder |
-| Use Claude.ai in the browser | **Claude Skill** (upload ZIP) |
-| Want checklists, guides, and full intake | **Option C** — copy framework + integration file |
-| Just want a ChatGPT conversation | **Vibe Code Guardian** GPT (link in README) |
+**Caveat for the Claude.ai Skill path:** a Claude.ai chat doesn't see files from a previous chat. If you're using the Skill in the browser rather than Claude Code, keep `PROJECT_PROFILE.md` in a Claude Project (as project knowledge) or in your repo and attach it when you start the new chat — otherwise Claude will run intake again. In Claude Code, Cursor, and Option C setups, the file lives in your project folder and persists on its own.
 
 ---
 
@@ -100,7 +93,7 @@ You know vibeArchitecture is working when:
 - [ ] The AI refuses or fixes unsafe patterns (hardcoded secrets, plain-text passwords, SQL string concatenation)
 - [ ] A new chat session picks up the profile without re-asking everything
 
-If intake never runs, your integration isn't wired up — re-check README Option C or enable the Skill in Cursor/Claude settings.
+If intake never runs, your integration isn't wired up — re-check README Option C or enable the Skill (named `vibe-architecture`) in Cursor/Claude settings.
 
 ---
 

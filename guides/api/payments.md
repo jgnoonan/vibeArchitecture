@@ -16,6 +16,8 @@ They didn't. A user can type that URL directly into their browser, or bookmark i
 
 The correct source of truth is the **webhook**: a message the provider's servers send directly to your server when money actually moves. For Stripe this is the `checkout.session.completed` or `payment_intent.succeeded` event. You grant entitlement (mark the order paid, unlock the feature, extend the subscription) when you receive and **verify** that webhook — never on the redirect.
 
+**"Completed" is not always "paid."** For delayed payment methods (bank debits, some bank transfers, buy-now-pay-later), Stripe sends `checkout.session.completed` when the customer *finishes checkout*, while `payment_status` is still `"unpaid"`; the money arrives days later. Grant access only when `payment_status == "paid"` on the completed event, or when the follow-up `checkout.session.async_payment_succeeded` event arrives (and revoke or never grant on `checkout.session.async_payment_failed`). Other providers have the same distinction under different names — find it before you ship.
+
 The `/success` page should only say "Thanks, we're confirming your payment." The actual unlocking happens server-side, driven by the webhook.
 
 ```
@@ -25,8 +27,11 @@ The `/success` page should only say "Thanks, we're confirming your payment." The
 ✅ RIGHT — trusting the verified webhook
   POST /webhooks/stripe
     verifySignature(request)                       // reject forgeries
-    if event.type == "checkout.session.completed":
-        grantEntitlement(event.data.customer)      // real proof of payment
+    if event.type == "checkout.session.completed"
+       and event.data.object.payment_status == "paid":
+        grantEntitlement(event.data.object.customer)   // real proof of payment
+    if event.type == "checkout.session.async_payment_succeeded":
+        grantEntitlement(event.data.object.customer)   // delayed methods settle here
   GET /success  →  "Thanks! Confirming your payment…"  // shows status only
 ```
 
@@ -95,11 +100,11 @@ The same applies when you handle the webhook: confirm the amount and currency th
 
 ## Keep Card Data Off Your Server (PCI Scope)
 
-If raw credit card numbers ever pass through your server, you inherit the full weight of PCI-DSS — the payment card industry's security standard — with its audits and strict requirements. That is a burden you almost never want.
+If raw credit card numbers ever pass through your server, you inherit the full weight of **PCI DSS 4.0.1** — the payment card industry's security standard — with its audits and strict requirements. That is a burden you almost never want.
 
 The way out is to **never let card data touch your server.** Use the provider's **hosted checkout page** (the user is redirected to Stripe's own page) or an embedded field like **Stripe Elements / Payment Element**, where the card number is captured by an iframe owned by the provider and sent straight to them. Your server only ever sees a token or a reference — never the actual card number.
 
-This dramatically shrinks your PCI scope: you're handling references, not card data. See `rules/compliance.md` for how hosted checkout and tokenization reduce PCI-DSS scope, and when a fuller compliance obligation still applies.
+This dramatically shrinks your PCI scope: you're handling references, not card data — typically the SAQ A self-assessment. **SAQ A is smaller, not empty.** Since PCI DSS 4.0.1's requirements became mandatory (March 2025), merchants that embed the provider's iframe or redirect from their own page must meet **Requirement 6.4.3** (inventory every script on the payment page, with a written justification, and ensure its integrity — CSP, SRI, or a script-monitoring tool) and **Requirement 11.6.1** (a mechanism that detects unauthorized changes to the payment page's HTTP headers and content, checked at least weekly). This is the Magecart threat: an attacker who can inject one script onto your checkout page skims cards straight out of the iframe's parent. Keep the payment page lean, lock it down with CSP, and use your provider's or a third-party page-integrity monitor. See `rules/compliance.md` for how hosted checkout and tokenization reduce PCI DSS scope, and when a fuller compliance obligation still applies.
 
 ## Failed and Disputed Payments, and Subscriptions
 
@@ -114,6 +119,7 @@ You don't need to handle every event on day one, but design so that access is a 
 ## Quick Checklist for Payment Integrations
 
 - [ ] Entitlement is granted **only** on a verified webhook, never on the `/success` redirect
+- [ ] Entitlement requires `payment_status == "paid"` (or `checkout.session.async_payment_succeeded`) — not merely "completed"
 - [ ] Every webhook endpoint verifies the provider's signature before trusting the payload
 - [ ] Signature verification uses the **raw** request body
 - [ ] Webhook handlers are idempotent — dedupe by event ID so retries don't double-grant
@@ -121,6 +127,7 @@ You don't need to handle every event on day one, but design so that access is a 
 - [ ] Secret key lives in server-side env vars only; publishable key in the client
 - [ ] Prices, amounts, currency, and discounts are decided server-side, never trusted from the client
 - [ ] Card data never touches your server — hosted checkout or provider-owned Elements only
+- [ ] Payment page scripts are inventoried and integrity-protected, with change detection (PCI DSS 4.0.1 reqs 6.4.3 / 11.6.1)
 - [ ] Failed payments (`invoice.payment_failed`) trigger notification and eventual access revocation
 - [ ] Disputes are logged and alert a human
 - [ ] Access reflects current subscription state, not a one-time "paid" flag

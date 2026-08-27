@@ -16,7 +16,7 @@ The ten most critical web application security risks. Updated periodically. Esse
 Practical guides on web performance, accessibility, and best practices. The Core Web Vitals section is particularly useful for frontend performance.
 
 **AWS Well-Architected Framework** — [aws.amazon.com/architecture/well-architected](https://aws.amazon.com/architecture/well-architected/)
-Despite the name, the principles apply regardless of cloud provider. The five pillars (operational excellence, security, reliability, performance, cost optimization) align closely with vibeArchitecture's modules. The whitepapers are free and well-written.
+Despite the name, the principles apply regardless of cloud provider. The six pillars (operational excellence, security, reliability, performance efficiency, cost optimization, sustainability) align closely with vibeArchitecture's modules. The whitepapers are free and well-written.
 
 ---
 
@@ -50,7 +50,7 @@ Practical, concise guides on specific security topics: authentication, session m
 **PostgreSQL Documentation** — [postgresql.org/docs](https://www.postgresql.org/docs/current/)
 Arguably the best database documentation in existence. The tutorial sections are genuinely readable, and the reference sections are comprehensive.
 
-**High Scalability Blog** — [highscalability.com](http://highscalability.com)
+**High Scalability Blog** — [highscalability.com](https://highscalability.com)
 Case studies of how real companies architect their systems. Good for understanding what different scales of operation look like in practice.
 
 **Martin Fowler's Website** — [martinfowler.com](https://martinfowler.com)
@@ -78,10 +78,28 @@ Analyzes your site's HTTP security headers and grades them. Quick way to check y
 The mobile application security standard and its companion testing guide. The mobile analog of ASVS — see `appendices/standards-mapping.md`.
 
 **Signal protocol documentation** — [signal.org/docs](https://signal.org/docs)
-The published specifications for X3DH, PQXDH, and the Double Ratchet — the reference patterns for end-to-end encrypted messaging. Read these before designing any E2EE protocol; see `guides/security/cryptography.md`.
+The published specifications for X3DH, PQXDH, the Double Ratchet, and — since October 2025 — SPQR (Sparse Post-Quantum Ratchet) and the resulting Triple Ratchet, which adds ongoing post-quantum key updates rather than only a post-quantum handshake. The reference patterns for end-to-end encrypted messaging. Read these before designing any E2EE protocol; see `guides/security/cryptography.md`.
 
 **NIST post-quantum standards** — [csrc.nist.gov/projects/post-quantum-cryptography](https://csrc.nist.gov/projects/post-quantum-cryptography)
-FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA), the standardized post-quantum algorithms behind hybrid key agreement.
+FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA, the hash-based signature scheme), plus HQC, selected in 2025 as a second key-encapsulation mechanism to back up ML-KEM. These are the standardized post-quantum algorithms behind hybrid key agreement.
+
+---
+
+## AI and Agent Security
+
+**OWASP GenAI Security Project** — [genai.owasp.org](https://genai.owasp.org)
+Home of the LLM Top 10 (2026 edition), the Top 10 for Agentic Applications (2026), and related cheat sheets on agentic threats and MCP security. `guides/multi-agent/llm-security.md` and `guides/multi-agent/agentic-security.md` map both lists to this framework's rules.
+
+**NIST AI 600-1: Generative AI Profile** — [nist.gov/itl/ai-risk-management-framework](https://www.nist.gov/itl/ai-risk-management-framework)
+The companion to the AI Risk Management Framework 1.0. Practical, numbered lists of GenAI-specific risks and suggested actions — the closest thing to a checklist for "have we thought about this?"
+
+**Model Context Protocol specification** — [modelcontextprotocol.io/specification](https://modelcontextprotocol.io/specification)
+The spec itself, including the authorization section (OAuth 2.1 resource servers, resource indicators) and tool annotations. Read the current revision before building or vetting an MCP server; see `guides/multi-agent/mcp-tool-patterns.md`.
+
+**Simon Willison — "The lethal trifecta for AI agents"** — [simonwillison.net](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/)
+The clearest short explanation of why prompt injection plus private data plus an exfiltration channel is unsolvable by filtering, and what to do instead. His ongoing prompt-injection series is the best running commentary on the topic.
+
+**Provider safety and security documentation** — Anthropic, OpenAI, and Google each publish guidance on prompt-injection mitigation, tool use, computer-use agents, and data retention/training policies for their APIs. Read your provider's before shipping an agent, and re-read when they change the model.
 
 ---
 

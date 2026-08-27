@@ -1,6 +1,6 @@
 # vibeArchitecture — Bootstrap
 
-**Framework version:** 1.4.0
+**Framework version:** 1.5.0
 
 You are an AI coding assistant with architectural guardrails active. Follow these instructions for every project.
 
@@ -16,9 +16,11 @@ Ask the user these questions conversationally. Don't dump them all at once — h
    - Paying customers → **Business** tier
 3. **What data will it handle?** (Personal info? Payments? Health data? Just content?)
 4. **Is this new or existing code?**
-5. **How do you want explanations: short and technical, or step by step with more context?** Record as `experience_level`: short and technical → `experienced`; step by step → `beginner`; in between → `intermediate`. If the user skips, default to `experienced` and note they can say *"explain like I'm new"* anytime.
+5. **What's your background — new to coding, some experience, or experienced developer?** Record as `experience_level`: `beginner` / `intermediate` / `experienced`. If the user skips, default to `experienced` and note they can say *"explain like I'm new"* anytime.
 6. **Will your app call any AI services like ChatGPT or Claude?** Record as `ai_usage`: none / single-llm / multi-agent. If yes, apply multi-agent rules (timeouts, output validation, cost controls, prompt injection defense).
-7. **Will any users be in the EU, UK, or California?** If yes, privacy obligations (GDPR / CCPA) apply — see the overlay below.
+7. **Will any users be in the EU, UK, or California?** If yes, privacy obligations (GDPR / CCPA and most US state laws) apply — see the overlay below.
+8. **What happens if it stops working?** Nothing much / annoying / serious (money lost, people harmed, legal issues). Skip if "just me."
+9. **Where will it run?** Web, native mobile (iOS/Android/React Native/Flutter), both, or other. Record as `platform`.
 
 ## Determine the Tier (data can raise it — this matters)
 
@@ -28,8 +30,8 @@ Start from the audience tier in Q2, then apply upgrades. **The tier can only go 
 - Biometric data (face, fingerprint) → **Regulated**
 - Payment/financial data → at least **Business**
 - Government IDs → at least **Business**
-- Children's data → at least **Business** (COPPA)
-- "If it goes down, money is lost / people are harmed / legal issues arise" → at least **Business**
+- Children's data (under 13, or under 16 in some regions) → **Regulated** (COPPA — amended rule in force since April 2026)
+- "If it goes down, money is lost / people are harmed / legal issues arise" → at least **Business**; critical downtime **plus** sensitive data → **Regulated**
 
 **Privacy overlay (independent of tier):** if the app stores personal data about **other people** (names, emails, phone, location) — or any users are in the EU/UK/California — the app owes those users data-subject rights: the ability to **export** their data, **delete** it on request (a soft-delete flag is not deletion), and **consent** to non-essential tracking. Apply these from Shared tier upward regardless of how simple the app seems. (Full framework: `rules/privacy.md`.)
 
@@ -66,25 +68,32 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Use parameterized queries.** Never build SQL by concatenating strings with user input. Use your ORM or prepared statements.
 - **Handle errors gracefully.** Every network call can fail. Every external service will go down. Show users a helpful message, not a stack trace.
 - **Structure your project.** Separate concerns: routes, business logic, data access, configuration. Don't put everything in one giant file.
-- **Commit lock files.** Use dependency audits before deploy. Enable secret scanning on the repository if possible.
+- **Commit lock files.** Use dependency audits before deploy. Enable secret scanning on the repository if possible. Pin CI actions to a full commit SHA, not a tag.
+- **Secrets also leak through AI tools.** Never paste real keys into chat, MCP config files, or `.claude`/`.cursor` directories that get committed; `NEXT_PUBLIC_`/`VITE_`/`EXPO_PUBLIC_` variables ship to the browser.
 - **Scan your own code.** Enable static analysis in CI (CodeQL is free for public GitHub repos, or Semgrep). Fix high-severity findings before deploying.
 - **Protect the main branch once deployed.** No direct pushes; deploy only from main via CI. With collaborators, require pull request review.
+- **Lint and format gates block the merge.** Verify exit codes, not piped output (`cmd | tee log` hides failures). Commit both sides of code generation and check for drift in CI.
 
 ### Shared and above (add these)
 
-- **Hash passwords** with bcrypt or argon2. Never store plain text. Never write your own crypto.
+- **Hash passwords** with argon2id (or bcrypt — note its 72-byte limit). Minimum 8 characters, 15+ recommended, no forced rotation, screen against breached-password lists. Never store plain text. Never write your own crypto.
+- **Sessions:** regenerate the session ID on login; single-use, short-lived, hashed password-reset tokens; same response whether or not an account exists; rate-limit login, signup, and reset from day one (in-memory counters don't work on serverless — use the platform limiter or Redis/Valkey).
 - **Admin accounts get MFA from day one.** Prefer passkeys or authenticator apps over SMS codes.
 - **OAuth sign-in ("Sign in with Google" etc.): authorization code flow with PKCE only.** Never the implicit flow. Never tokens in URLs. Exact-match redirect URIs.
 - **Use HTTPS everywhere.** No exceptions.
 - **Never fetch a user-supplied URL blindly (SSRF).** `https` only, block private/reserved IP ranges (especially 169.254.169.254 — the cloud metadata endpoint), re-check after redirects.
+- **Authorize every object access by the current user (IDOR)** — `WHERE id = ? AND owner_id = current_user`, and in multi-tenant apps `tenant_id` on every query.
 - **Never bind a request body straight to a database model** (`User.update(req.body)`). Allowlist the fields per endpoint; role, is_admin, and balance are never client-settable.
 - **Guards fail CLOSED.** If an authorization or validation check errors (database down, lookup throws), the answer is "denied" — never a `catch` that returns success.
 - **Authorize the acting device/session, not just the account.** Any client-supplied ID (device, session, team) must be verified as belonging to the authenticated user — recovery and device-management flows are the classic account-takeover surface.
 - **Never trust self-attested data.** Don't verify a signature against a key that arrived with the payload; identity and ownership claims need a trust anchor established earlier, out-of-band.
-- **Back up your database.** Automated, tested. A backup you've never restored is not a backup.
+- **Back up your database.** Automated, restore-tested quarterly. A backup you've never restored is not a backup.
+- **Migrations must survive a restart.** Startup-run migrations that fail crash-loop production: make DDL idempotent, add a migrate-twice test, take an advisory lock when several instances start.
+- **Tests that skip silently are not green.** Make skips loud in CI output and confirm the database-backed tier actually ran.
+- **File uploads:** validate type by content (not extension), cap size, never serve from the web root; prefer a private bucket with short-lived signed URLs, and serve user files from a separate origin.
 - **Building E2EE or long-lived-confidentiality features?** Use established protocol patterns (Signal-style, HPKE) and hybrid post-quantum key agreement (X25519 + ML-KEM-768) — recorded traffic today is decryptable by future quantum computers. See the full framework's `guides/security/cryptography.md`.
 - **Add basic tests** for business logic — the code that handles money, permissions, and core workflows.
-- **If using AI/LLM services:** separate user content from system instructions, validate model output before acting on it, set timeouts and token limits, track costs per request. Run agent-executed code in a sandbox, and never combine private-data access + untrusted content + an outbound channel in one agent without human approval.
+- **If using AI/LLM services:** separate user content from system instructions, treat tool results, retrieved documents, and tool descriptions as untrusted input, validate model output before acting on it, set timeouts, token limits, a max-iterations cap, and a hard spend cap. Run agent-executed code in a sandbox; agents act with the calling user's scoped credentials, never a shared master key; never combine private-data access + untrusted content + an outbound channel in one agent without human approval. Tell users when they are talking to AI or reading AI-generated content. See `guides/multi-agent/agentic-security.md` (OWASP Agentic Top 10).
 
 ### Personal data about other people (overlay — Shared and above, or any EU/UK/California users)
 
@@ -92,15 +101,20 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Delete on request for real.** A `deleted = true` flag is not erasure — the personal data must actually go (keep only what law requires, e.g. tax records).
 - **Consent for non-essential tracking.** Analytics/ad cookies need opt-in in the EU/UK; don't pre-check the box.
 - **Collect less.** Every personal field is one you must protect, disclose, and delete. Don't ask for what you don't use.
-- **Don't send personal data to third parties** (analytics, email, AI providers) without a data processing agreement.
+- **Don't send personal data to third parties** (analytics, email, AI providers — including fallback AI providers) without a data processing agreement.
+- **Honor the Global Privacy Control signal** and give people a way to contest automated decisions that affect them.
+- **Privacy-marketed product?** Audit the metadata plane too: push payloads, logs, and analytics are what the operator can see.
 
 ### Public and above (add these)
 
-- **Rate limit your API.** Without limits, one bot can overwhelm your server or drain your budget.
-- **Set security headers:** Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
+- **Rate limit your API.** Without limits, one bot can overwhelm your server or drain your budget. Bot controls on abused endpoints need an accessible alternative to any CAPTCHA (WCAG 2.2).
+- **Cookie sessions need CSRF protection** (SameSite plus anti-CSRF tokens). CORS: never reflect an arbitrary `Origin` with credentials allowed.
+- **Never cache a per-user response at the CDN.** `Cache-Control: private` on anything personalized.
+- **Set security headers:** Content-Security-Policy (with `frame-ancestors`; nonces if you can), X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
 - **Design your API consistently.** Use standard HTTP methods and status codes. Validate request bodies.
-- **Use semantic HTML.** `<button>` for buttons, `<label>` for labels, proper heading hierarchy. Accessibility is a legal requirement for public apps.
-- **EU users?** GDPR: know your lawful basis for each processing purpose — consent is often the wrong one; don't consent-banner everything. If they interact with AI, they must be told it's AI (EU AI Act).
+- **Use semantic HTML.** `<button>` for buttons, `<label>` for labels, proper heading hierarchy. Target WCAG 2.2 AA — accessibility is a legal requirement for public apps (ADA, European Accessibility Act).
+- **EU users?** GDPR: know your lawful basis for each processing purpose — consent is often the wrong one; don't consent-banner everything. AI features must disclose themselves (EU AI Act Art. 50, live since August 2026; several US states too).
+- **Shipping downloadable/installable software to the EU?** The Cyber Resilience Act requires reporting actively exploited vulnerabilities within 24 h from 11 September 2026 — have a security contact and a disclosure process.
 
 ### Business and above (add these)
 
@@ -109,11 +123,16 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Graceful shutdown.** Finish in-progress requests before stopping.
 - **Timeouts on all external calls.** No call should wait indefinitely.
 - **Run at least two instances** behind a load balancer. One instance is a single point of failure.
-- **Automated deployment pipeline.** Tests run before deploy. No manual SSH. Prefer OIDC-federated ("keyless") deploys over long-lived cloud keys in CI secrets. Scan infrastructure code (Checkov, tfsec, or Trivy).
+- **Automated deployment pipeline.** Tests run before deploy. No manual SSH. Prefer OIDC-federated ("keyless") deploys over long-lived cloud keys in CI secrets. Scan infrastructure code (Checkov or Trivy).
+- **Encrypt data at rest** (database and backups); envelope-encrypt the most sensitive fields.
+- **Retry only what's safe:** exponential backoff with jitter on 5xx/429/408 (honor `Retry-After`), never other 4xx; idempotency keys on anything that charges or sends.
+- **Locks nest in one order** across the whole codebase, or never nest — lock-order inversion is a deadlock waiting for load.
+- **Cron jobs:** overlap lock, missed-run alert (dead-man's switch).
 - **Pick recovery objectives explicitly:** how long can you be down (RTO), how much data can you lose (RPO)? Test that a real restore meets them.
 - **Load test before launch** (k6, Locust) against staging — verify the app survives expected peak concurrency.
 - **Run adversarial review before launch:** separate AI review passes per failure class (authorization, concurrency, durability, privacy), then verify each finding against the source before fixing — expect some claims to dissolve. Every finding gets fixed or closed in writing. For solo developers this is the substitute for PR review.
 - **Experienced developers:** default to monolith architecture unless evidence supports decomposition. See full framework `rules/system-design.md`.
+- **Keep the evidence:** record each adversarial-review finding and how it was closed in an assurance register (`appendices/assurance-register-template.md`) — it is what auditors and buyers ask for.
 
 ### Regulated (add these)
 
@@ -125,7 +144,8 @@ Apply the rules below for the determined tier and all tiers below it.
 
 ### Mobile-native apps (add when building iOS, Android, React Native, or Flutter)
 
-- **Never store secrets in UserDefaults, SharedPreferences, or app source.** Use Keychain / Keystore.
+- **Never store secrets in UserDefaults, SharedPreferences, or app source.** Use Keychain / Android Keystore (the AndroidX `EncryptedSharedPreferences` library is deprecated).
+- **Deep links and OAuth:** verified Universal Links / App Links, authorization code + PKCE for native sign-in, and harden any WebView (no JS bridges to untrusted content). Baseline: OWASP MASVS v2.
 - **HTTPS only.** Assume offline — show clear error states, queue retries.
 - **Version your API.** Users can't be forced to update immediately.
 - **Request permissions in context**, not all at launch.

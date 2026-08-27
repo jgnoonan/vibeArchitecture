@@ -96,6 +96,13 @@ Deploy code to production but keep new features hidden behind a configuration sw
 **Disadvantages:** Adds complexity to your code (conditional logic around features). Old feature flags need cleanup.
 **Best for:** Teams that want to deploy frequently and control feature rollout independently.
 
+**Implementing flags without regret:**
+- **Where flags live.** Start with a config file or environment variable for a handful of flags; graduate to a database table or a flag service (LaunchDarkly, PostHog, Flagsmith, Unleash, GrowthBook) when you need per-user targeting or non-engineers flipping switches. Code against the **OpenFeature** SDK — a vendor-neutral API — so the provider behind it can change without touching call sites.
+- **Default off, and fail closed.** A flag the service can't evaluate (network down, misconfigured key) must resolve to the safe default — usually "off" for a new feature, "on" for a protection. Never let a flag lookup throw into the request path.
+- **Kill-switch latency.** A flag exists to turn something off *fast*. Know how long a flip takes to reach every instance: a cached config with a 5-minute TTL means a 5-minute outage after you hit the switch. Use streaming/push updates or a short cache (seconds) for kill switches; a long cache is fine for slow rollouts.
+- **Evaluate once per request** and pass the result down, so one request doesn't see the flag flip halfway through.
+- **Delete flags.** Each one is a branch in your code. Record an owner and a removal date when you create it; a quarterly sweep of stale flags keeps the codebase readable.
+
 ### What to Start With
 
 Start with rolling deployments or your platform's default strategy. Move to canary or feature flags when your application's scale or criticality demands it. Blue-green is worth considering whenever you need zero-downtime deploys.

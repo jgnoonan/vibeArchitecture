@@ -22,7 +22,7 @@ When an agent decides to call a tool (search the web, query a database, send an 
 - Did it pass the correct arguments?
 - Did it handle the tool's response appropriately?
 
-These are deterministic — either the agent called `search_database(customer_id=123)` or it didn't.
+The *check* is deterministic — either the log shows `search_database(customer_id=123)` or it doesn't. The *decision* to call it is not: the model may choose differently on another run. So assert on the check, and run it enough times (or with temperature 0 and a fixed seed) to see how stable the decision actually is.
 
 ### Routing Decisions
 
@@ -50,6 +50,9 @@ Your guardrails should be tested adversarially:
 - Ask the agent to perform an action outside its scope. Does it refuse?
 - Send input containing PII. Does the output handle it appropriately?
 - Send a request that would exceed token budget limits. Does the budget control kick in?
+- Plant an instruction in a tool result or retrieved document (indirect injection). Does the agent act on it?
+- Force a loop (mock a reviewer that always says "not good enough"). Does the iteration cap fire?
+- Flip the kill switch mid-run. Does every agent stop at the next tool boundary?
 
 These tests don't check the content of the response — they check that the safety boundaries hold.
 
@@ -90,11 +93,12 @@ Use a separate AI model to evaluate the output of the model being tested. This s
 3. Parse the judge's scores
 4. Assert that scores meet minimum thresholds
 
-**Tips:**
+**Tips** (this is the canonical list; `guides/multi-agent/agent-observability.md` links here):
 - Use a more capable model as judge than the model being tested
 - Provide a specific rubric, not an open-ended "rate this"
 - Run multiple judgments and average (reduces noise from the judge's own non-determinism)
 - Periodically validate the judge against human ratings — make sure they correlate
+- Use a judge from a different model family than the one being judged where you can; models grade their own style generously
 
 ### Comparison Testing
 
@@ -156,7 +160,7 @@ Do this weekly or after any significant change.
 
 ### Pin Model Versions in Tests
 
-If your tests pass with `claude-sonnet-4-20250514` and you upgrade to a newer version, the tests might fail — not because your code changed, but because the model behaves differently.
+If your tests pass against one dated model version and you upgrade to a newer one, the tests might fail — not because your code changed, but because the model behaves differently. Providers publish dated IDs for exactly this reason (Anthropic's `claude-haiku-4-5-20251001` is an example only; verify the current model list) — pin those, not a floating alias.
 
 Pin model versions in your test configuration so test results are stable. When you want to evaluate a model upgrade, explicitly run the evaluation suite against both versions and compare.
 

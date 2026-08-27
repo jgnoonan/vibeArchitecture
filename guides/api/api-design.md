@@ -73,26 +73,41 @@ Never return `200 OK` with an error message in the body. If something went wrong
 
 Every error response should follow the same format across your entire API. This is critical — a developer using your API shouldn't have to guess what an error response looks like.
 
-A practical format:
+Use the standard shape: **RFC 9457 Problem Details**, served as `Content-Type: application/problem+json`. It's what OpenAPI tooling, client SDK generators, and most frameworks (Spring, ASP.NET, FastAPI extensions, Node libraries) already understand, so you get parsing for free:
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "The email address is not valid",
-    "details": [
-      { "field": "email", "message": "Must be a valid email address" },
-      { "field": "name", "message": "Must not be empty" }
-    ]
-  }
+  "type": "https://api.example.com/problems/validation-error",
+  "title": "Validation failed",
+  "status": 400,
+  "detail": "The email address is not valid",
+  "instance": "/users",
+  "code": "VALIDATION_ERROR",
+  "errors": [
+    { "field": "email", "message": "Must be a valid email address" },
+    { "field": "name", "message": "Must not be empty" }
+  ]
 }
 ```
 
-Include:
-- A machine-readable error code (for programmatic handling)
-- A human-readable message (for developers debugging)
-- Field-level details for validation errors (so the UI can show errors next to the right field)
+The standard fields:
+- `type` — a URI that identifies the *kind* of problem (it can be a docs page; `about:blank` when there's nothing more to say)
+- `title` — short human-readable summary, the same for every occurrence of this type
+- `status` — the HTTP status code, repeated so the body is self-describing
+- `detail` — a human-readable explanation of *this* occurrence
+- `instance` — a URI for this specific occurrence (the request path or a request ID)
+
+Extension fields are allowed and expected — that's where your machine-readable `code` and the field-level `errors` array go, so the UI can show errors next to the right field.
 
 Never include: stack traces, database error messages, internal file paths, SQL queries. These are security leaks and belong in your logs, not in API responses.
+
+## OpenAPI: The Schema Is the Contract
+
+Write (or generate) an OpenAPI document and make it load-bearing, not decorative:
+
+- **One source of truth.** Either generate the document from your route and type definitions (FastAPI, NestJS, tsoa, Spring) or generate validators and client types *from* the document (openapi-typescript, Zod/JSON Schema generators). Hand-maintained docs next to hand-written validators drift within a month.
+- **Enforce it in CI.** Run contract tests that replay requests through the spec (Schemathesis, Dredd, Prism) so an undocumented field or a changed type fails the build.
+- **Version it with the code** and diff it in pull requests — a breaking change in the spec is a breaking change in the API, and `oasdiff`-style tools can flag it automatically.
+- **Publish it.** It powers client SDK generation, mocks for frontend teams, and the interactive docs you'd otherwise write by hand.
 
 ## Pagination
 
@@ -131,7 +146,7 @@ Use cursor-based for any dataset that might grow large. Offset-based is acceptab
 An idempotent operation produces the same result whether you execute it once or multiple times. This matters because networks are unreliable — requests can be sent twice, or a client might not get the response and retry.
 
 - **GET, PUT, DELETE** are naturally idempotent. Getting a user twice returns the same user. Deleting a user twice deletes them and then does nothing. Updating with the same data results in the same state.
-- **POST** is NOT naturally idempotent. Creating a user twice could create two users. For important POST operations (payments, order creation), use an **idempotency key**: the client generates a unique ID and sends it with the request. If the server sees the same ID twice, it returns the first response instead of processing again.
+- **POST** is NOT naturally idempotent. Creating a user twice could create two users. For important POST operations (payments, order creation), use an **idempotency key**: the client generates a unique ID and sends it in an `Idempotency-Key` header. If the server sees the same key (from the same caller) twice, it returns the stored first response instead of processing again. The storage rules — unique on `(key, principal)`, stored response, in-progress state, TTL — are in `guides/api/api-security.md` (Idempotency Keys).
 
 ## GraphQL — When REST Isn't Enough
 
@@ -141,4 +156,4 @@ GraphQL is an alternative to REST where the client specifies exactly what data i
 
 **Not worth the complexity for:** Simple CRUD applications, small teams without GraphQL experience, projects that are primarily server-rendered.
 
-If you're unsure, start with REST. You can always add GraphQL later for specific use cases.
+If you're unsure, start with REST. You can always add GraphQL later for specific use cases. If you do adopt it, read the GraphQL section of `guides/api/api-security.md` first — depth/complexity limits, alias abuse, and per-field authorization are not optional.

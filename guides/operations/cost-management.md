@@ -27,11 +27,14 @@ Log into your cloud provider's billing dashboard monthly. Know:
 
 ### Know What's Free (and What Isn't)
 
-Most cloud providers have a free tier. Know its limits:
-- **AWS Free Tier:** 12 months of limited free resources (750 hours t2.micro EC2, 20GB S3, etc.), plus always-free services (Lambda: 1M requests/month, DynamoDB: 25GB)
-- **Google Cloud:** $300 credit for 90 days, plus always-free tier (Cloud Run, Firestore, Cloud Functions with limits)
-- **Azure:** $200 credit for 30 days, plus always-free tier
-- **Vercel/Netlify/Railway:** Generous free tiers for hobby projects
+Free tiers change often — **check current terms** before planning around one. As of this writing:
+- **AWS:** New accounts (since July 2025) get a credit-based free tier — up to $200 of credits over 6 months, then pay-as-you-go — instead of the old 12-month resource allowance. Some always-free services remain (Lambda requests, DynamoDB storage, within limits).
+- **Google Cloud:** $300 credit for 90 days, plus an always-free tier (Cloud Run, Cloud Run functions, Firestore, with limits)
+- **Azure:** $200 credit for 30 days, plus an always-free tier
+- **Vercel/Netlify/Cloudflare:** Hobby/free tiers for personal projects, with usage caps
+- **Railway:** No free tier — a one-time trial credit, then a paid plan
+- **Render/Fly.io:** Render has a free tier for small services; Fly.io is pay-as-you-go with no free allowance
+- **Databases:** Neon and Supabase have free tiers (with auto-pause/inactivity limits). PlanetScale dropped its free tier and prices per instance; it now offers Postgres as well as MySQL.
 
 When you exceed free tier limits, charges start. Know where those limits are and set billing alerts.
 
@@ -43,6 +46,15 @@ Every cloud provider lets you set alerts at spending thresholds. Set them before
 - Hard alert at 100%
 
 This costs nothing and can save you from bill shock.
+
+### Set Hard Spend Caps Where You Can
+
+An alert arrives after the money is spent; a cap stops the spending. Use them wherever the platform offers one:
+- **AWS Budgets actions:** a budget can *do* something when it trips — apply a deny-all IAM policy, stop EC2/RDS instances. Configure an action at 100–120% of budget for non-production accounts at minimum.
+- **Vercel spend management:** set a spend limit on the account; deployments pause when it's reached. Cloudflare Workers can cap daily requests per Worker.
+- **GCP / Azure:** budgets are alerts only by default — pair them with a Cloud Function / Automation runbook that disables billing or scales to zero.
+- **Serverless concurrency and max-instance limits** are spend caps in disguise: a `max instances` of 10 on Cloud Run or a reserved-concurrency limit on Lambda bounds the worst case of a traffic spike or a bug in a loop.
+- **LLM APIs** are the fastest-growing surprise line item. Set monthly limits in each provider's dashboard and per-request token caps in code; the Cost Controls section of `rules/multi-agent.md` covers the mechanics.
 
 ## Where the Money Goes
 
@@ -58,8 +70,8 @@ The servers or containers running your code. Costs depend on:
 ### Database
 
 Often the largest single cost for an application.
-- **Managed databases** (RDS, Cloud SQL, PlanetScale) charge for instance size, storage, backups, and data transfer.
-- **Serverless databases** (Neon, PlanetScale serverless, DynamoDB on-demand) charge per query/read/write. Cheaper at low scale, potentially expensive at high scale.
+- **Managed databases** (RDS, Cloud SQL, PlanetScale, Supabase) charge for instance size, storage, backups, and data transfer.
+- **Serverless databases** (Neon, DynamoDB on-demand, Turso) charge per compute-hour or per read/write and scale to zero. Cheaper at low scale, potentially expensive at high scale.
 
 **Savings tips:**
 - Use the smallest instance that provides acceptable performance
@@ -70,7 +82,7 @@ Often the largest single cost for an application.
 ### Storage
 
 Where your files, images, backups, and logs live.
-- **Object storage** (S3, Cloud Storage, R2): Very cheap per GB, but charges for access (GET/PUT requests) and data transfer.
+- **Object storage** (S3, Cloud Storage, R2): Very cheap per GB, but S3/GCS charge for access (GET/PUT requests) and, above all, for data transfer out. **Egress-free storage** — Cloudflare R2, Bunny Storage, Backblaze B2 (free egress to Cloudflare/Bunny CDNs) — charges nothing per GB downloaded, which for a media-heavy app can be the difference between a $20 and a $2,000 bill.
 - **Block storage** (EBS, Persistent Disks): More expensive, used for database volumes.
 
 **Savings tips:**
@@ -100,7 +112,8 @@ Every external service adds cost. Common ones:
 - **Email:** SendGrid, Postmark, SES ($1–5 per 10,000 emails)
 - **Error tracking:** Sentry (free tier for small projects)
 - **Monitoring:** Datadog, New Relic (can get expensive — be aware of per-host or per-event pricing)
-- **AI APIs:** OpenAI, Anthropic (per-token pricing adds up fast with heavy usage)
+- **AI APIs:** OpenAI, Anthropic, Google (per-token pricing adds up fast with heavy usage; see the Cost Controls section of `rules/multi-agent.md`)
+- **Managed inference vs. self-hosted GPU:** pay-per-token managed APIs are cheaper until you have sustained, predictable volume; a rented GPU (or a self-hosted open-weights model) only wins when it's busy most of the hour, and it brings ops, scaling, and model-upgrade work with it. Start managed; revisit when the monthly token bill rivals a GPU's monthly rent.
 
 **Savings tip:** Audit your third-party services quarterly. Are you using all of them? Are you on the right pricing tier?
 
@@ -108,7 +121,7 @@ Every external service adds cost. Common ones:
 
 ### Serverless vs. Always-On
 
-**Serverless** (Lambda, Cloud Functions, Vercel Functions):
+**Serverless** (Lambda, Cloud Run functions, Vercel Functions):
 - Pro: Pay only when code runs. Zero cost when idle.
 - Con: Cold start latency. Per-execution pricing gets expensive at high volume.
 - Best for: Low to moderate traffic, bursty workloads, background tasks.

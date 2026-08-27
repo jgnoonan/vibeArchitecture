@@ -41,15 +41,21 @@ SELECT * FROM products WHERE name LIKE '%wireless headphones%'
 
 **PostgreSQL example:**
 ```sql
--- Create a text search index
-ALTER TABLE products ADD COLUMN search_vector tsvector;
-CREATE INDEX idx_search ON products USING GIN(search_vector);
+-- A generated column keeps the vector in sync automatically on every insert/update
+ALTER TABLE products ADD COLUMN search_vector tsvector
+  GENERATED ALWAYS AS (
+    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, ''))
+  ) STORED;
+CREATE INDEX idx_products_search ON products USING GIN (search_vector);
 
--- Search with ranking
+-- Search with ranking (websearch_to_tsquery accepts Google-style input: quotes, OR, -exclude)
 SELECT * FROM products
-WHERE search_vector @@ to_tsquery('wireless & headphones')
-ORDER BY ts_rank(search_vector, to_tsquery('wireless & headphones')) DESC;
+WHERE search_vector @@ websearch_to_tsquery('english', 'wireless headphones')
+ORDER BY ts_rank(search_vector, websearch_to_tsquery('english', 'wireless headphones')) DESC
+LIMIT 20;
 ```
+
+The `GENERATED ALWAYS ... STORED` column is the part people miss: without it you have to remember to populate `search_vector` in every code path that writes a product (or add a trigger), and the first forgotten path silently makes new products unsearchable. Weight fields with `setweight(to_tsvector(name), 'A') || setweight(to_tsvector(description), 'B')` so title matches rank above description matches.
 
 **Good for:**
 - Medium datasets (up to a few million records)
@@ -76,13 +82,13 @@ ORDER BY ts_rank(search_vector, to_tsquery('wireless & headphones')) DESC;
 **Elasticsearch / OpenSearch:**
 - The most powerful and flexible option
 - Handles massive datasets (billions of documents)
-- Excellent relevance tuning, faceted search, aggregations, geo search
+- Excellent relevance tuning, faceted search, aggregations, geo search, dense-vector (kNN) and hybrid search
 - Complex to operate and expensive to run (RAM-hungry)
 - Best for: large-scale applications with sophisticated search needs
 
 **Typesense:**
 - Designed to be simple — easy to set up, easy to operate
-- Built-in typo tolerance (searches work even with spelling mistakes)
+- Built-in typo tolerance (searches work even with spelling mistakes), plus vector and hybrid search
 - Fast — consistently sub-50ms response times
 - Hosted option available (Typesense Cloud)
 - Less flexible than Elasticsearch for complex queries
@@ -90,7 +96,7 @@ ORDER BY ts_rank(search_vector, to_tsquery('wireless & headphones')) DESC;
 
 **Meilisearch:**
 - Similar philosophy to Typesense — simplicity first
-- Excellent typo tolerance and relevance out of the box
+- Excellent typo tolerance and relevance out of the box; built-in vector/hybrid search
 - Easy to set up and configure
 - Hosted option available (Meilisearch Cloud)
 - Best for: applications where search UX matters and you want fast setup
@@ -116,6 +122,29 @@ ORDER BY ts_rank(search_vector, to_tsquery('wireless & headphones')) DESC;
 - Eventual consistency — there's always a brief delay between a record being saved in the database and appearing in search results
 - Additional cost (infrastructure or subscription)
 
+### Level 2b: Semantic and Hybrid Search
+
+**What it is:** Searching by *meaning* rather than by matching words. You run each document (and each query) through an embedding model, which turns text into a vector of numbers where similar meanings land close together; search becomes "find the nearest vectors." "Bluetooth earbuds" finds "wireless headphones" even though they share no words.
+
+**In PostgreSQL with pgvector:**
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+ALTER TABLE products ADD COLUMN embedding vector(1536);   -- dimension must match your model
+CREATE INDEX idx_products_embedding ON products USING hnsw (embedding vector_cosine_ops);
+
+SELECT id, name FROM products
+ORDER BY embedding <=> $1      -- $1 is the query's embedding; <=> is cosine distance
+LIMIT 20;
+```
+
+- **Storing embeddings:** one `vector(N)` column per model, next to the row it describes. Store the model name/version alongside — when you change models, every vector must be regenerated, and mixing models in one column gives garbage rankings. Embeddings for long documents are usually computed per chunk (a paragraph or a few hundred tokens) in a separate `chunks` table pointing back to the parent.
+- **HNSW vs IVFFlat:** HNSW (a graph index) is the default choice — better recall, fast queries, and it can be built on an empty table and updated incrementally. It uses more memory and builds more slowly. IVFFlat (clusters) is cheaper to build and smaller, but needs a populated table to train on, must be rebuilt as data drifts, and trades recall for speed. Start with HNSW; consider IVFFlat only when index size or build time is the constraint. Both are *approximate* — tune `ef_search` (HNSW) or `probes` (IVFFlat) up if results feel like they're missing obvious matches.
+- **Hybrid search (BM25 + vector) is what you actually want.** Pure semantic search is fuzzy about exact things — SKUs, names, error codes, part numbers — that keyword search nails. Run both: the full-text query from Level 2 (Postgres `ts_rank` is BM25-adjacent; the `pg_search`/ParadeDB extension gives true BM25) and the vector query, then merge with **Reciprocal Rank Fusion** (`score = Σ 1/(60 + rank_in_each_list)`) or a weighted blend. In SQL this is two CTEs and a `FULL OUTER JOIN`; a dozen lines. Optionally re-rank the top 50 with a cross-encoder or an LLM for quality-critical search.
+- **You may not need a vector database.** pgvector handles millions of vectors comfortably; dedicated vector stores (Pinecone, Qdrant, Weaviate, Milvus) earn their place at tens of millions of vectors or when vector search is the core workload. And the Level 3 engines below — Typesense, Meilisearch, Elasticsearch/OpenSearch, Algolia — all ship vector and hybrid search now, so "I need semantic search" is not by itself a reason to add a separate system.
+- **Cost and freshness:** embedding every write costs an API call (or a local model) and adds latency — do it in a background job, not in the request path. Cache query embeddings for common searches.
+
+**When to use:** natural-language queries over prose (support docs, product descriptions, notes), "find similar items," and retrieval for LLM features (RAG). Not for exact-match lookups, and not before Level 2 — a well-tuned full-text search with synonyms beats a badly-tuned semantic one.
+
 ## How to Choose
 
 | Situation | Recommendation |
@@ -123,6 +152,7 @@ ORDER BY ts_rank(search_vector, to_tsquery('wireless & headphones')) DESC;
 | Under 100K records, simple filtering | Level 1: Database WHERE clause |
 | Under 1M records, need relevance ranking | Level 2: PostgreSQL/MySQL full-text search |
 | Need typo tolerance and you're using PostgreSQL | Try Level 2 first with `pg_trgm` extension |
+| Natural-language or "similar items" search, already on PostgreSQL | Level 2b: pgvector (HNSW) + hybrid with full-text |
 | Need faceted search, instant search-as-you-type | Level 3: Typesense or Meilisearch |
 | Large scale, complex relevance needs | Level 3: Elasticsearch |
 | Search is your core product feature, don't want to operate infrastructure | Level 3: Algolia or Typesense Cloud |

@@ -26,15 +26,15 @@ Thank you for your interest in improving vibeArchitecture. This framework exists
 
 | Canonical source | Generates |
 |------------------|-----------|
-| `rules/*.md` | `{Claude,Cursor}Skill/vibeArchitecture/references/*.md` |
+| `rules/*.md` (all except `_index.md`) | `{Claude,Cursor}Skill/vibe-architecture/references/*.md` |
 | `intake/tier-definitions.md` | both skills' `assets/tier-definitions.md` |
 | `PROJECT_PROFILE.template.md` | both skills' `assets/project-profile-template.md` |
-| `ClaudeSkill/vibeArchitecture/SKILL.md` | `CursorSkill/vibeArchitecture/SKILL.md` (Claude body + Cursor install appendix) |
+| `ClaudeSkill/vibe-architecture/SKILL.md` | `CursorSkill/vibe-architecture/SKILL.md` (Claude body + Cursor install appendix) |
 | `integrations/AGENTS.md` | `integrations/CLAUDE.md`, `integrations/android-studio/AGENTS.md`, `integrations/cursor/vibeArchitecture.mdc` |
 
-`integrations/cursorrules` is intentionally **not** generated — the legacy `.cursorrules` format can't use the `@./…` import, so it's a small standalone file maintained by hand.
+`integrations/cursorrules` is intentionally **not** generated — the legacy (deprecated) `.cursorrules` format can't use the `@./…` import, so it's a small standalone file maintained by hand. Note that `@./…` imports are a Claude Code / Gemini CLI feature, not a universal one; that's why `integrations/AGENTS.md` opens with a plain-text "read `vibeArchitecture/ARCHITECT.md`" line that every tool understands.
 
-The intake logic exists in three forms — the full `intake/questionnaire.md`, the condensed `BOOTSTRAP.md`, and the two `SKILL.md` packages. These are not auto-synced; if you change tier-determination logic, update all of them together.
+The intake logic exists in five places — the full `intake/questionnaire.md`, `intake/tier-definitions.md`, the condensed `BOOTSTRAP.md`, the `SKILL.md` package (Cursor copy is generated), and `CodeGuardian/gpt-instructions.md`. These are not auto-synced; if you change tier-determination logic, update all of them together. `scripts/sync.sh --check` also verifies that the version stamps in `ARCHITECT.md`, `BOOTSTRAP.md`, and `SKILL.md` agree and that the GPT instructions stay under the 8,000-character limit.
 
 ### What Makes a Good Pull Request
 
@@ -49,6 +49,49 @@ This project recommends **verified signed commits** on `main` — a reasonable t
 To enable locally, see GitHub's guide: [Signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). SSH signing (`git config gpg.format ssh`) is the simplest path on modern macOS.
 
 To require verified commits on the default branch, a repo admin can enable **Branch protection → Require signed commits** in GitHub repository settings.
+
+## Local Checks
+
+CI runs three jobs on every push and pull request (`.github/workflows/validate.yml`). Run the same checks locally before opening a PR:
+
+| Check | Command | Notes |
+|-------|---------|-------|
+| Sync + version stamps + GPT length | `./scripts/sync.sh --check` | Bash 3.2 compatible; no dependencies |
+| Markdown lint | `npx markdownlint-cli2 "**/*.md" "#node_modules"` | Uses `.markdownlint.json`; needs Node (`npx` fetches the tool on first run) |
+| Link check (optional) | `lychee --no-progress --exclude-loopback --exclude 'mailto:*' '**/*.md'` | Only if [lychee](https://github.com/lycheeverse/lychee) is installed (`brew install lychee`); `.lycheeignore` lists URLs CI can't verify. CI also runs this weekly to catch link rot |
+
+All GitHub Actions in the workflow are pinned to a full commit SHA (with the version tag in a trailing comment). Dependabot (`.github/dependabot.yml`) opens a weekly PR when a pinned action has a newer release — review the diff and merge; don't hand-edit the SHA.
+
+## Release Procedure (maintainers)
+
+Releases are tagged `vX.Y.Z` and follow [Semantic Versioning](https://semver.org/): patch for corrections, minor for new rules/guides or changed tier logic, major only if the file layout or integration contract changes in a way that breaks existing installs.
+
+1. **Bump the three version stamps** — the `**Framework version:**` line in `ARCHITECT.md`, `BOOTSTRAP.md`, and `ClaudeSkill/vibe-architecture/SKILL.md` (the Cursor `SKILL.md` is regenerated). `./scripts/sync.sh --check` fails if any of them disagree.
+2. **Update the condensations** — `BOOTSTRAP.md` and `CodeGuardian/gpt-instructions.md` are hand-maintained summaries of the rules. Fold in every rule change that matters at intake or in the first session, then confirm `gpt-instructions.md` is still under 8,000 characters (`wc -m CodeGuardian/gpt-instructions.md`; `sync.sh --check` enforces the limit).
+3. **Re-measure the README token table** ("Token Usage" under *For developers*). Tokens are estimated as file bytes ÷ 4, summed over the rule files each tier loads (`rules/_index.md` lists them):
+   ```bash
+   for f in rules/*.md; do printf "%-28s %6d\n" "$f" $(( $(wc -c < "$f") / 4 )); done
+   ```
+   Update the per-tier totals, the conditional-set line, and the "Measured … at release X.Y.Z" sentence.
+4. **Sync and verify** — `./scripts/sync.sh`, then `./scripts/sync.sh --check`, then `npx markdownlint-cli2 "**/*.md" "#node_modules"` (see Local Checks).
+5. **Write the CHANGELOG entry** — a new `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md` with Added / Changed / Fixed subsections. Note anything users must do by hand (renamed files, new profile fields, integration files to re-copy) so the README's "Updating From a Previous Version" table can point at it.
+6. **Commit and tag** — commit on `main` (signed if you can), then:
+   ```bash
+   git tag vX.Y.Z
+   git push origin main --tags
+   ```
+7. **Build the skill ZIP** — zip the Claude skill folder so `SKILL.md` sits at `vibe-architecture/SKILL.md` inside the archive (Claude.ai rejects a ZIP whose top level is loose files):
+   ```bash
+   (cd ClaudeSkill && zip -r ../vibe-architecture.zip vibe-architecture -x '*.DS_Store')
+   unzip -l vibe-architecture.zip | head   # first entry must be vibe-architecture/
+   ```
+   Don't commit the ZIP; it's a release asset only.
+8. **Create the GitHub Release** for the tag, paste the CHANGELOG entry as the body, and attach `vibe-architecture.zip`. With the GitHub CLI:
+   ```bash
+   gh release create vX.Y.Z vibe-architecture.zip --title "vX.Y.Z" --notes-file <(sed -n '/^## \[X.Y.Z\]/,/^## \[/p' CHANGELOG.md | sed '$d')
+   ```
+9. **Update the GPT** — follow the update procedure in `CodeGuardian/README.md` (diff the two tags to see which knowledge files changed, re-upload those, paste the refreshed instructions, test one intake conversation).
+10. **Announce** — the README "Updating From a Previous Version" table should already describe any manual migration steps; if not, add them now and push a follow-up commit.
 
 ## Writing Standards
 
@@ -82,7 +125,7 @@ All content in vibeArchitecture follows these principles:
 ## Structure Conventions
 
 - **Rules files** go in `rules/` and are named for their domain: `security.md`, `data.md`, etc. This is the **canonical source** for rule content.
-- **Claude Skill and Cursor Skill** `references/` directories are **generated** from `rules/` via `./scripts/sync.sh` — edit `rules/` first, then sync. The same script also generates the Cursor `SKILL.md` and the derived integration files (see "Canonical sources" above).
+- **Claude Skill and Cursor Skill** (`ClaudeSkill/vibe-architecture/`, `CursorSkill/vibe-architecture/`) `references/` directories are **generated** from `rules/` via `./scripts/sync.sh` — edit `rules/` first, then sync. The same script also generates the Cursor `SKILL.md` and the derived integration files (see "Canonical sources" above).
 - **Guide files** go in `guides/{domain}/` and are named for their specific topic: `guides/security/authentication.md`.
 - **Each rules file references its corresponding guides** with a note at the top: `> For detailed explanations: see guides/{domain}/`
 - **Each guide starts with a note** explaining when to read it: `> This guide explains... Read it when...`
@@ -103,4 +146,4 @@ If a rule only matters for projects with paying customers, it belongs in Busines
 
 ## Questions?
 
-Open an issue with the "question" label. We're happy to discuss contributions before you invest time writing them.
+Open an issue using the "Question" template (it applies the "question" label). We're happy to discuss contributions before you invest time writing them.

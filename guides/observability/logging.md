@@ -18,8 +18,8 @@ Good logs let you:
 ### Unstructured (The Old Way)
 
 ```
-[2024-03-15 14:23:01] ERROR: Failed to process order for user john@example.com - payment declined
-[2024-03-15 14:23:01] INFO: Retrying payment for order #12345
+[2026-03-15 14:23:01] ERROR: Failed to process order for user john@example.com - payment declined
+[2026-03-15 14:23:01] INFO: Retrying payment for order #12345
 ```
 
 This is readable by humans. But try searching for "all payment errors in the last hour" or "all errors for user john@example.com" across thousands of log lines. You're reduced to text searching with regex patterns, which is fragile and slow.
@@ -28,24 +28,30 @@ This is readable by humans. But try searching for "all payment errors in the las
 
 ```json
 {
-  "timestamp": "2024-03-15T14:23:01.456Z",
+  "timestamp": "2026-03-15T14:23:01.456Z",
   "level": "error",
   "message": "Payment processing failed",
-  "service": "order-service",
-  "correlation_id": "req-abc-123",
-  "user_id": "user_456",
+  "service.name": "order-service",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "http.request.method": "POST",
+  "http.route": "/orders/{id}/pay",
+  "http.response.status_code": 502,
+  "user.id": "user_456",
   "order_id": "order_12345",
-  "error_code": "PAYMENT_DECLINED",
+  "error.type": "PAYMENT_DECLINED",
   "payment_provider": "stripe",
   "duration_ms": 2340
 }
 ```
 
+The field names follow the **OpenTelemetry semantic conventions** (`service.name`, `http.request.method`, `http.response.status_code`, `user.id`, `error.type`, plus `trace_id`/`span_id` as the correlation fields). Using the standard names means your logs line up with your traces and metrics in any OTel-aware backend without a mapping layer; your own domain fields (`order_id`, `payment_provider`) sit alongside them. The rules file's shorthand (`correlation_id`, `request_path`) maps onto `trace_id` and `http.route`.
+
 This is machine-parseable. Your log aggregation tool can:
-- Filter by any field: `level == "error" AND service == "order-service"`
+- Filter by any field: `level == "error" AND service.name == "order-service"`
 - Aggregate: "How many payment errors per hour this week?"
 - Alert: "Notify me when the error rate exceeds 5%"
-- Correlate: "Show me everything that happened for correlation_id req-abc-123"
+- Correlate: "Show me everything that happened for trace_id 4bf92f35..."
 
 ### How to Implement
 
@@ -142,8 +148,8 @@ With a correlation ID, you search for one string and see every log entry related
 
 ### How to Implement
 
-1. **Generate it early:** At the first point of entry (API gateway, load balancer, or the first middleware in your application), generate a UUID or similar unique ID.
-2. **Pass it through:** Include the ID in every internal call — as a header (`X-Request-ID`), as a field in message queue payloads, as a parameter to background jobs.
+1. **Generate it early:** At the first point of entry (API gateway, load balancer, or the first middleware in your application), generate a UUID or similar unique ID. If you use OpenTelemetry, the trace ID *is* this ID — don't maintain two.
+2. **Pass it through:** Include the ID in every internal call — as the W3C `traceparent` header (what OTel propagates automatically) or `X-Request-ID`, as a field in message queue payloads, as a parameter to background jobs.
 3. **Log it everywhere:** Every log entry includes the correlation ID as a field.
 4. **Return it to the client:** Include it in the API response as a header. When a user reports a problem, ask for this ID — it's the key to finding their specific request in your logs.
 

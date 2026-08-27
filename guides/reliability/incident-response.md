@@ -13,7 +13,7 @@ The `something-broke.md` checklist helps you triage in the moment. This guide is
 
 Every incident follows the same basic pattern, whether it lasts 5 minutes or 5 hours:
 
-**1. Detect** — Know something is wrong. This should come from your monitoring, not from an angry user email. Set up alerts for error rates, response time spikes, and health check failures.
+**1. Detect** — Know something is wrong. This should come from your monitoring, not from an angry user email. Which alerts to set up, and at what severity, is defined in `guides/observability/monitoring.md` (Alert Design); this guide assumes those exist.
 
 **2. Triage** — How bad is it? Is the whole app down or just one feature? Are users affected right now? This determines how urgently you respond.
 
@@ -123,7 +123,7 @@ If people depend on your application, they need to know when something is wrong 
 
 **For small projects:** A simple status page or a pinned message in your community channel is enough. "We're aware of the issue and working on it. Updates every 30 minutes."
 
-**For business applications:** Use a status page service (Instatus, Betterstack, Atlassian Statuspage). Post updates at regular intervals even if there's no new information — "Still investigating, no further impact identified."
+**For business applications:** Use a status page service (Instatus, Better Stack, Atlassian Statuspage). Post updates at regular intervals even if there's no new information — "Still investigating, no further impact identified."
 
 **What to communicate:**
 - We know about the problem

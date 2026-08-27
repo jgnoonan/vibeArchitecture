@@ -27,15 +27,21 @@ Even with exponential backoff, if 100 clients all started at the same time, they
 **Retry these:**
 - Network timeouts
 - Connection errors
-- HTTP 500, 502, 503, 504 (server errors that might be transient)
+- HTTP 408 (request timeout — the server gave up waiting; try again)
+- HTTP 429 (rate limited — but wait at least as long as the `Retry-After` header says, and count it as a signal to slow down, not just a retry)
+- HTTP 500, 502, 503, 504 (server errors that might be transient; honor `Retry-After` on 503 too)
 - Database connection failures
 
 **Don't retry these:**
 - HTTP 400 (bad request — your data is wrong, retrying won't fix it)
 - HTTP 401/403 (authentication/authorization — retrying won't grant access)
 - HTTP 404 (not found — the resource doesn't exist)
+- HTTP 409 (conflict — resolve it, don't replay it)
 - HTTP 422 (validation error — the data fails business rules)
-- Any error where retrying can't possibly help
+- HTTP 501/505 (not implemented / version unsupported — the server will never accept this request as sent)
+- Any other 4xx, and any error where retrying can't possibly help
+
+The status code meanings are the ones defined in `rules/api.md`. This is the canonical retry list for the framework — other guides link here rather than restating it.
 
 ### Implementation Rules
 
@@ -59,6 +65,8 @@ An electrical circuit breaker trips when there's too much current, preventing a 
 **Half-Open (testing recovery):** After a cooldown period, the circuit breaker allows a single test request through. If it succeeds, the circuit closes (back to normal). If it fails, the circuit opens again.
 
 ### Configuration
+
+This is the canonical circuit-breaker configuration; `rules/reliability.md` and `guides/reliability/failure-modes.md` point here.
 
 - **Failure threshold:** How many failures before opening. Too low and it trips on normal noise. Too high and it doesn't protect you. Start with 5 consecutive failures or 50% failure rate in a 60-second window.
 - **Cooldown period:** How long to stay open before trying half-open. Start with 30 seconds.
@@ -141,17 +149,23 @@ When the primary approach fails, fall back to something that still provides valu
 
 The key insight: a degraded experience is almost always better than a broken experience. Users tolerate "some features are slow right now" much better than "the whole thing is down."
 
+### Read-Only Mode and Feature Flags
+
+Two fallbacks worth designing before you need them. A **read-only mode** for write-path failures: when the primary database is failing over or a write dependency is down, users can still browse, search, and view; writes return a clear "temporarily unavailable" instead of a stack trace. It needs a flag the request path checks and a UI that hides or disables the write actions. **Feature flags** for non-critical features: when the recommendation engine, the chat widget, or the export job is causing trouble, flip it off without a deploy, fix it, flip it back. Both are cheaper than a rollback and far cheaper than an outage.
+
+The same principle drives the timeout rule for user-facing requests: if a user is waiting, the total budget is seconds, not minutes. Work that legitimately takes longer (report generation, bulk import, video processing) becomes asynchronous: accept the request, return immediately with a job ID, process in the background, and notify when done (`guides/system-design/async-patterns.md`).
+
 ## Health Checks
 
-### Shallow Health Check
+### Shallow Health Check (public, for liveness)
 
 ```
 GET /health → 200 OK { "status": "healthy" }
 ```
 
-Confirms the application process is running and can respond to HTTP requests. Used by load balancers to decide whether to route traffic to this instance.
+Confirms the application process is running and can respond to HTTP requests. Used by load balancers and uptime monitors to decide whether to route traffic to this instance.
 
-Fast, cheap, always available. Doesn't check dependencies.
+Fast, cheap, always available, and safe to leave unauthenticated on the public internet because it reveals nothing beyond "up." Doesn't check dependencies.
 
 ### Deep Health Check
 
@@ -167,10 +181,11 @@ GET /health/detailed → 200 OK
 }
 ```
 
-Verifies connectivity to critical dependencies. Used by monitoring systems to detect degraded state before users notice.
+Verifies connectivity to critical dependencies. Used by orchestrators (as a readiness check) and monitoring systems to detect degraded state before users notice.
 
 **Rules:**
 - Keep it fast — don't run expensive queries. A simple `SELECT 1` is enough for the database.
-- Don't require authentication (monitoring systems need to call it freely).
+- Don't require authentication — but **do restrict the network**. That JSON above tells an attacker you run a cache, which payment provider you use, and which dependency is currently limping. Serve the deep check on an internal path, a separate port, or a load-balancer target that only your VPC, orchestrator, and monitoring agent can reach. If your monitoring is an external SaaS that must call it over the internet, put it behind an IP allowlist or a static bearer token, and strip the per-dependency detail from what a public caller gets back.
 - Return unhealthy if a hard dependency is unreachable.
 - Include latency information — a dependency that's technically responding but taking 5 seconds is a problem worth knowing about.
+- Don't wire the *deep* check into the load balancer's liveness probe. If the database blips, every instance reports unhealthy at once and the LB drains all of them — turning a degraded state into a full outage. Liveness = shallow; readiness/monitoring = deep.

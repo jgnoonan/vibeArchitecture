@@ -91,7 +91,7 @@ Ensures references between tables are valid. If the `orders` table references `c
 ### When to Use Hard Delete
 
 - Temporary or ephemeral data (session records, temporary tokens)
-- Data you're legally required to actually delete (GDPR right to erasure, in some interpretations)
+- Personal data subject to an erasure request (GDPR right to erasure, CCPA deletion). A soft-delete flag does **not** satisfy this — a row marked `deleted_at` still holds the person's email. Soft-delete for the undo window, then run a real purge or anonymization step. See `rules/data.md` and `rules/privacy.md`.
 - Data that accumulates volume with no retention value (old log entries, expired caches)
 
 ### Soft Delete Implementation Notes
@@ -99,7 +99,7 @@ Ensures references between tables are valid. If the `orders` table references `c
 - Add a `deleted_at` timestamp column (not a boolean — the timestamp tells you when)
 - Add a default filter to all queries: `WHERE deleted_at IS NULL`
 - Be aware: UNIQUE constraints on email/username need to account for soft-deleted rows. A common pattern is a partial unique index that only covers non-deleted rows
-- Periodically hard-delete old soft-deleted records to manage table size
+- Periodically hard-delete old soft-deleted records to manage table size — and purge or anonymize soft-deleted personal data on a fixed schedule, because "still queryable" means "not erased"
 
 ## Handling NULL
 

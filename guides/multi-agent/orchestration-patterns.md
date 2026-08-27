@@ -85,7 +85,9 @@ The supervisor has a loop: assign work, review results, decide if more work is n
 
 **When to use:** Complex tasks where the workflow can't be pre-determined. The supervisor adapts based on intermediate results — "the research wasn't detailed enough, send it back" or "we need a different approach, try this instead."
 
-**Watch out for:** Runaway loops. A supervisor that keeps saying "not good enough" can cycle indefinitely. Always set a maximum number of iterations. Also, the supervisor consumes tokens on every review cycle — this pattern is more expensive than a fixed pipeline.
+**Watch out for:** Runaway loops. A supervisor that keeps saying "not good enough" can cycle indefinitely. Always set a maximum number of iterations and a wall-clock limit (`rules/multi-agent.md`, Agentic Systems). Also, the supervisor consumes tokens on every review cycle — this pattern is more expensive than a fixed pipeline.
+
+**Orchestrator hijack:** the supervisor reads every worker's output — so a worker that browsed a poisoned web page can carry an injected instruction straight into the agent that holds the most tools. Treat worker output as untrusted input (see Trust Between Agents below).
 
 ### Human-in-the-Loop
 
@@ -103,13 +105,15 @@ Agent A (Draft) → Human Review → Agent B (Revise based on feedback) → Resu
 
 Several frameworks exist to help you build multi-agent systems. None of them are required — you can build multi-agent systems with direct API calls. But they handle common patterns so you don't reinvent them.
 
-### CrewAI
+**Verify current maintenance status before adopting any of these.** This space moves fast: projects get merged, renamed, or put into maintenance mode within a year. Check the repository's recent commits and release notes, not just its star count.
 
-**Approach:** Role-based teams. You define agents with roles ("Senior Researcher," "Content Writer"), goals, and tools. Agents collaborate on tasks with defined dependencies.
+### Provider SDKs (OpenAI Agents SDK, Claude Agent SDK, Google ADK)
 
-**Good for:** Projects where the agent roles map naturally to human job roles. Marketing teams, research teams, content production pipelines.
+**Approach:** Each major model provider now ships its own agent toolkit — an agent loop, tool calling, handoffs between agents, sessions, and guardrail hooks — tuned to that provider's models and features (prompt caching, structured output, computer use).
 
-**Consider when:** You want a high-level abstraction and don't need fine-grained control over every agent interaction.
+**Good for:** Teams committed to one provider who want the thinnest layer that still handles the loop, retries, and tool plumbing correctly.
+
+**Consider when:** You'd otherwise write the agent loop yourself. Watch for lock-in: keep prompts, tool schemas, and evaluation data in your own files so a provider switch is a port, not a rewrite.
 
 ### LangGraph
 
@@ -119,13 +123,33 @@ Several frameworks exist to help you build multi-agent systems. None of them are
 
 **Consider when:** You need precise control over agent flow, state management, and conditional logic.
 
-### AutoGen
+### CrewAI
 
-**Approach:** Conversational agents. Agents "talk" to each other in a structured conversation. Good for scenarios that naturally map to multi-party discussions.
+**Approach:** Role-based teams. You define agents with roles ("Senior Researcher," "Content Writer"), goals, and tools. Agents collaborate on tasks with defined dependencies.
 
-**Good for:** Iterative refinement workflows (draft → review → revise), debate-style analysis, scenarios where agents benefit from back-and-forth.
+**Good for:** Projects where the agent roles map naturally to human job roles. Marketing teams, research teams, content production pipelines.
 
-**Consider when:** Your problem benefits from agents having a conversation rather than a rigid pipeline.
+**Consider when:** You want a high-level abstraction and don't need fine-grained control over every agent interaction.
+
+### Microsoft Agent Framework (successor to AutoGen and Semantic Kernel)
+
+**Approach:** In October 2025 Microsoft folded AutoGen (conversational multi-agent) and Semantic Kernel (enterprise orchestration) into a single Agent Framework for .NET and Python. AutoGen is in maintenance mode; new work goes to the Agent Framework. It keeps AutoGen's conversation-style patterns (draft → review → revise, debate) and Semantic Kernel's workflow/graph style.
+
+**Good for:** .NET shops, Azure-centric deployments, iterative-refinement or debate-style workflows.
+
+**Consider when:** You're already on the Microsoft stack. If you find AutoGen tutorials, note they describe the older project.
+
+### Pydantic AI
+
+**Approach:** Type-first agents in Python. Tool schemas and outputs are Pydantic models, so structured output validation is built in rather than bolted on.
+
+**Good for:** Python teams that already use Pydantic and want validation of every model output as a first-class feature.
+
+### Vercel AI SDK and Mastra (TypeScript)
+
+**Approach:** Vercel's AI SDK is the de-facto TypeScript layer for streaming, tool calling, and provider abstraction in web apps; Mastra builds agents, workflows, and memory on top of it.
+
+**Good for:** Next.js / Node applications where the agent is part of a web product and streaming UI matters.
 
 ### Direct API Calls (No Framework)
 
@@ -140,12 +164,28 @@ Several frameworks exist to help you build multi-agent systems. None of them are
 | Situation | Recommendation |
 |-----------|---------------|
 | 1–2 agents, simple pipeline | Direct API calls |
+| Single provider, want the loop handled | That provider's agent SDK |
 | Role-based team, clear handoffs | CrewAI |
 | Complex branching and state | LangGraph |
-| Iterative refinement or debate | AutoGen |
+| Iterative refinement or debate, Microsoft stack | Microsoft Agent Framework |
+| Python, validation-heavy | Pydantic AI |
+| TypeScript web app | Vercel AI SDK (+ Mastra for workflows/memory) |
 | Not sure yet | Start with direct API calls. Migrate to a framework when the orchestration logic gets painful to maintain. |
 
 Don't pick a framework first and then design your agents around it. Design your agents first — their roles, tools, and interactions — and then pick the framework (or no framework) that fits.
+
+### Agents Talking Across Systems (A2A)
+
+When agents built by different teams or vendors need to cooperate, the Agent2Agent (A2A) protocol (started by Google, now under the Linux Foundation) standardizes discovery (an "agent card"), task exchange, and streaming between agents over HTTP. It is to agent-to-agent calls roughly what MCP is to agent-to-tool calls. Treat a remote agent as you would any third-party API — authenticated, rate-limited, and untrusted — and see Trust Between Agents below.
+
+## Trust Between Agents
+
+The same rules that protect you from a malicious user apply between your own agents:
+
+- **Another agent's output is untrusted input.** Validate structure and scope before acting on it, exactly as you would a user message. A worker that read a poisoned document will faithfully pass the poison up the chain; if the orchestrator treats worker output as instructions, the attacker now controls the agent with the most tools. This is *orchestrator hijack via worker output*, and it's the multi-agent form of indirect prompt injection (`guides/multi-agent/llm-security.md`, LLM01).
+- **Authenticate inter-agent messages.** When agents run as separate services (or over A2A), each message carries an identity you can verify — a signed token, mTLS, or at minimum a per-agent credential — and the correlation ID of the originating user request. An agent should be unable to forge a message that looks like it came from the supervisor.
+- **Least privilege per hop.** An agent's credentials should be scoped to *its* job, delegated from the user's session, and short-lived. A compromised summarizer must not be able to call the payments tool just because the orchestrator can. See `guides/multi-agent/agentic-security.md` (Agent Identity and Delegated Credentials).
+- **Don't let agents talk each other into loops.** Cap total iterations across the whole pipeline, not just per agent.
 
 ## Agent Communication and Context
 
@@ -188,4 +228,4 @@ Prefer explicit handoffs over shared memory whenever possible.
 
 **Context overload.** Passing the entire conversation history to every agent in the pipeline. By Agent D, the context is 10,000 tokens of accumulated noise, and the agent can't find the actual instructions. Summarize and filter.
 
-**No cost visibility.** You built a beautiful 5-agent pipeline and it works great. It also costs $0.50 per run, and you're running it 10,000 times a day. That's $5,000/day you didn't budget for. Log costs from day one.
+**No cost visibility.** A pipeline that works beautifully but costs more per run than you assumed, multiplied by real traffic, is a budget incident. `guides/multi-agent/llm-architecture.md` (Token Budget Management) walks through the arithmetic; the fix is the same either way — log costs from day one and enforce a hard cap.

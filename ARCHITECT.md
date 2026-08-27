@@ -1,6 +1,6 @@
 # vibeArchitecture
 
-**Framework version:** 1.4.0
+**Framework version:** 1.5.0
 
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 
@@ -8,7 +8,7 @@ Architectural guidance for AI-assisted development. This file is the entry point
 
 If this is the first session, ensure the project is configured correctly:
 
-- **Add `vibeArchitecture/` to the project's `.gitignore`.** The framework is a development tool, not part of the project's codebase. Add a line with `vibeArchitecture/` to the project's root `.gitignore` file (create the file if it doesn't exist). Do this before any other work.
+- **Add `vibeArchitecture/` to the project's `.gitignore` — unless it was installed as a git submodule.** The framework is a development tool, not part of the project's codebase. If the folder was copied in (the default), add a line with `vibeArchitecture/` to the project's root `.gitignore` file (create the file if it doesn't exist). If it is a submodule (a `.gitmodules` entry exists), leave it tracked. Do this before any other work. Never gitignore `PROJECT_PROFILE.md`, `CLAUDE.md`, or `AGENTS.md` — those belong to the project.
 - **The project profile lives at the project root.** When generated, `PROJECT_PROFILE.md` is saved in the project root directory (next to `vibeArchitecture/`), NOT inside the `vibeArchitecture/` folder. This way the profile is committed to the project's repository while the framework itself is not.
 
 ## Step 2: Check for a Project Profile
@@ -30,6 +30,8 @@ Read `rules/_index.md` to determine which rule files apply based on the project'
 - `rules/system-design.md` loads when `experience_level` is `experienced` or architecture complexity is detected
 - `rules/multi-agent.md` loads when `ai_usage` is `single-llm` or `multi-agent`
 - `rules/mobile.md` loads when building native mobile apps (iOS, Android, React Native, or Flutter)
+- `rules/compliance.md` loads in full at Regulated tier; at Public tier and above it also loads when EU users interact with an AI feature — only the EU AI Act section applies below Regulated
+- `guides/operations/*` (cost management, day-2 operations, email deliverability, internationalization) are not tier-gated rules, but consult them from Public tier upward when the topic comes up
 
 ### Confirm what's active before writing code
 
@@ -102,5 +104,9 @@ These apply to EVERY project, regardless of tier:
 | `intake/` | Project intake questionnaire | Before any code is written |
 | `rules/` | Compact architectural rules by tier | Every session — loaded based on project tier |
 | `guides/` | Detailed explanations and tradeoffs | When the user asks "why?" or deeper context is needed |
+| `guides/operations/` | Cost management, day-2 operations, email deliverability, internationalization | Public tier and above, when the topic comes up |
+| `guides/multi-agent/agentic-security.md` | Securing agents that hold tools and credentials | Any project where `ai_usage` is `multi-agent`, or agents can act on the user's behalf |
+| `guides/testing/adversarial-review.md` | Structured adversarial review of an AI-built codebase | Business tier and above, before launch |
 | `checklists/` | Plain-English action items | At project milestones (start, pre-deploy, production launch, incidents) |
-| `appendices/` | Anti-patterns, glossary, ADR template, standards mapping, resources | Reference material as needed |
+| `appendices/` | Anti-patterns, glossary, ADR template, assurance register template, standards mapping, further reading | Reference material as needed; `assurance-register-template.md` at Business tier and above |
+| `examples/` | Walkthrough, sample profile, before/after code | When the user wants to see what a finished intake or guarded code looks like |

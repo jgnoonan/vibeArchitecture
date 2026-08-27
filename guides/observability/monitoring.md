@@ -45,7 +45,7 @@ Track these percentiles:
 - **5xx errors** (server errors) are almost always your problem. These need investigation.
 - **4xx errors** (client errors) are usually normal (invalid input, unauthorized access). A spike in 401s might indicate a broken auth flow, though.
 
-**Alert on:** 5xx error rate exceeding a threshold (e.g., > 1% for 5 minutes). Sudden spike in 4xx errors (might indicate a broken client or a misconfigured deployment).
+**Alert on:** 5xx error rate exceeding a threshold — page at > 5% for 5 minutes, ticket at a sustained 1–5% (the severity bands below). Sudden spike in 4xx errors (might indicate a broken client or a misconfigured deployment).
 
 ### 4. Saturation — How Full Are Your Resources
 
@@ -75,6 +75,8 @@ A dashboard showing "all systems green" while orders have dropped to zero is not
 
 ## Alert Design
 
+This is the canonical alerting guidance for the framework. `rules/observability.md` carries the compact version; `guides/reliability/incident-response.md` and `guides/operations/day2-operations.md` link here rather than restating it.
+
 ### The Critical Principle: Every Alert Must Be Actionable
 
 If an alert fires and the response is "ignore it," that alert should not exist. Alert fatigue — too many alerts, too many false positives — is the #1 failure mode of monitoring systems. When everything alerts all the time, nothing gets noticed.
@@ -99,15 +101,17 @@ Not all problems are equal. Match the alert severity to the impact:
 
 **Page (wake someone up at 2 AM):**
 - Service is completely down
-- Error rate > 10% of requests
+- Error rate > 5% of requests for 5 minutes (the same 5% example used in `rules/observability.md`)
 - Data loss is occurring
 - Security breach detected
 
 **Ticket (fix within the next business day):**
-- Error rate elevated but under 5%
+- Error rate elevated but under 5% — sustained anywhere in the 1–5% band
 - Performance degraded but functional
 - Disk usage approaching limits
 - A non-critical service is down
+
+Below 1% is normal background noise for most services; tune the numbers to your SLO, but keep the shape: one line that pages, one that tickets, and nothing in between left undefined.
 
 **Inform (FYI, review during normal hours):**
 - An unusual pattern that doesn't indicate a clear problem
@@ -125,6 +129,10 @@ Begin with 3–5 critical alerts:
 5. Disk or database storage approaching capacity
 
 Add more alerts as you learn what problems actually occur. Remove alerts that consistently fire without requiring action.
+
+### SLO Burn-Rate Alerts (Business Tier)
+
+Static thresholds ("> 5% for 5 minutes") are the right start. Once you have an SLO, upgrade the error-rate alert to **burn rate**: the ratio between your current failure rate and the rate that would spend exactly your error budget over the SLO window. A 99.9% SLO allows 0.1% failures; a 1.44% error rate is a 14.4× burn — it would empty a 30-day budget in about two days — and should page. A 0.6% rate (6×) should page only if it lasts six hours. A 0.1% rate (1×) sustained for three days is a ticket. Each alert uses a long window to decide and a short window (1/12 of the long one) to reset quickly once the problem is fixed. Every major platform (Grafana SLO, Datadog SLOs, Google Cloud Monitoring, Sloth for Prometheus) generates these rules from an SLO definition, so you rarely write them by hand. The reasoning behind error budgets is in `guides/reliability/high-availability.md`.
 
 ## Dashboards
 
@@ -166,4 +174,23 @@ Everything above, plus:
 
 ### When Distributed Tracing Pays Off
 
-Tracing shows you a single request's full journey — every service it touched, every call it made, how long each step took. For a single-service app, logs with correlation IDs give you most of that. The moment a request crosses more than one service — or flows through an agent pipeline where Agent A calls Agent B calls a tool — tracing becomes the only practical way to answer "where did these 4 seconds go?" Instrument with OpenTelemetry: it's vendor-neutral, supported by every major platform, and its trace/span IDs serve as your correlation IDs. Start with auto-instrumentation (one library import for most frameworks) before writing custom spans.
+Tracing shows you a single request's full journey — every service it touched, every call it made, how long each step took. For a single-service app, logs with correlation IDs give you most of that. The moment a request crosses more than one service — or flows through an agent pipeline where Agent A calls Agent B calls a tool — tracing becomes the only practical way to answer "where did these 4 seconds go?" Instrument with OpenTelemetry: it's vendor-neutral, supported by every major platform, and its trace/span IDs serve as your correlation IDs. Start with auto-instrumentation (one library import for most frameworks) before writing custom spans. All three OTel signals — traces, metrics, and logs — are now stable, so one SDK and one collector can carry everything; route logs through it too and they arrive with `trace_id`/`span_id` already attached (see `guides/observability/logging.md`).
+
+### Sampling: You Don't Need Every Trace
+
+Tracing 100% of requests is fine at a few requests per second and ruinous at a few thousand — trace backends bill per span or per GB ingested, and a busy service emits tens of spans per request. Sample:
+
+- **Head sampling** decides at the start of a request ("keep 10%"), in the SDK, with no extra infrastructure. Simple and cheap, but it decides before it knows whether the request will be interesting, so 90% of your errors are never traced.
+- **Tail sampling** decides after the trace completes, in an OpenTelemetry Collector: keep 100% of traces with an error or above a latency threshold, and 5–10% of the boring successful ones. This is what you want once you run a collector; it costs a little memory to buffer in-flight traces.
+- Whatever you do, **keep every error and every slow trace**, and make sure the sampling decision propagates with the trace context so a request isn't half-sampled across services.
+
+Logs are usually kept at 100% at INFO and above, with DEBUG off in production; metrics are aggregated and cheap. If the bill still hurts, sample the *logs* of high-volume, low-value endpoints (health checks, static assets) before touching error traces.
+
+## Trace Sampling
+
+Trace storage is billed per span, and at volume it dominates the observability bill, so nobody traces 100% of requests in production. Two strategies:
+
+- **Head sampling** decides at the start of a request (keep 10%, say) and is simple to run: the SDK flips a coin and every downstream service honors the decision carried in the trace context. The cost is that you keep 10% of the interesting traces too, and drop 90% of the errors.
+- **Tail sampling** decides after the trace completes, so it can keep every error and every slow trace and a small fraction of the boring ones. It needs a collector that buffers whole traces (the OpenTelemetry Collector's tail-sampling processor), which is more infrastructure but far better signal per dollar.
+
+Whichever you use, keep 100% of errors. Logs are the third stable OpenTelemetry signal alongside traces and metrics, so one SDK and one collector can carry all three; pick the sampling policy in the collector rather than in each service.

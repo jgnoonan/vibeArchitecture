@@ -17,12 +17,32 @@ A web app runs in a browser with some built-in protections. A mobile app runs on
 | Storage | Safe for secrets? | Notes |
 |---------|-------------------|-------|
 | iOS Keychain | Yes | Encrypted, OS-managed |
-| Android Keystore / EncryptedSharedPreferences | Yes | Use AndroidX Security library |
+| Android Keystore + Tink AES-GCM | Yes | Keystore holds the key; Tink encrypts the data. `EncryptedSharedPreferences` / `androidx.security:security-crypto` is deprecated — don't start new code on it |
 | UserDefaults / SharedPreferences (plain) | No | Readable on rooted/jailbroken devices |
 | AsyncStorage (React Native) | No | Not encrypted by default |
 | App bundle / source code | Never | Extractable from the APK/IPA |
 
-**Rule of thumb:** If losing the phone would expose it, don't store it on the phone unencrypted.
+**Rule of thumb:** If losing the phone would expose it, don't store it on the phone unencrypted — and ask first whether you need to store it at all. A short-lived access token that's refreshed from the server is often the better answer than a long-lived secret in secure storage.
+
+**Bind the most sensitive items to biometrics.** Keychain items created with `kSecAccessControlBiometryCurrentSet` and Keystore keys with `setUserAuthenticationRequired(true)` can only be read after a fresh Face ID / fingerprint check, and are invalidated if the enrolled biometrics change. Use this for refresh tokens and local encryption keys, not for everything — every read prompts the user.
+
+**Protect what's on screen and on the clipboard.** Set `FLAG_SECURE` on Android activities that show sensitive data (blocks screenshots and appears black in the app switcher); on iOS, blank sensitive views when the app resigns active and watch `UIScreen.capturedDidChangeNotification`. When you copy a one-time code or key, use the platform's sensitive-clipboard flags (`UIPasteboard` expiration / `localOnly`, Android `EXTRA_IS_SENSITIVE`) and clear it after a short timeout.
+
+---
+
+## OAuth, Deep Links, and WebViews
+
+**Use PKCE through the system browser.** Native OAuth means the authorization-code flow with PKCE (RFC 9700 / OAuth 2.1), opened in `ASWebAuthenticationSession` (iOS) or a Custom Tab (Android). Never load the provider's login page in an embedded WebView — the user can't verify the URL, and your app could read their password.
+
+**Custom URL schemes can be hijacked.** Any app can register `myapp://`, so if your OAuth redirect is `myapp://callback`, a malicious app installed on the same phone can receive the authorization code. Use **Universal Links** (iOS, `apple-app-site-association`) and **verified App Links** (Android, `assetlinks.json`) for redirects and any deep link that carries a token or code — the OS verifies your domain ownership before routing. PKCE limits the damage from a stolen code, but don't rely on it alone.
+
+**Treat every deep link as untrusted input.** Validate parameters, never execute an action (transfer, delete, link account) from a deep link without the user confirming in-app, and never let a deep link choose which URL a WebView loads.
+
+**Harden WebViews.** Disable `file://` access and JavaScript unless the feature requires it, don't expose JavaScript bridges (`addJavascriptInterface`, `WKScriptMessageHandler`) to pages you don't control, restrict navigation to an allowlist of hosts, and don't inject auth tokens into pages that can navigate elsewhere.
+
+**App attestation.** Play Integrity (Android) and App Attest + DeviceCheck (iOS) let your server check that a request came from your genuine app on an unmodified device. It raises the cost of scripted abuse of your API and is worth enabling when the API is valuable — but it is a bot-control measure, not authentication or authorization; the server still checks the user and the resource.
+
+---
 
 ---
 
@@ -54,7 +74,7 @@ Background fetch and silent push can wake your app with stale credentials. Re-va
 
 ## Platform Privacy Requirements
 
-**iOS:** Privacy Nutrition Labels, App Tracking Transparency for cross-app tracking, Sign in with Apple if you offer other social logins for account creation.
+**iOS:** Privacy Nutrition Labels, App Tracking Transparency for cross-app tracking, and — if you offer third-party social login for account creation — App Store guideline 4.8 requires you to also offer a login option with equivalent privacy (limits data collection to name and email, lets users hide their email, no tracking). Sign in with Apple satisfies this, but it is no longer specifically required.
 
 **Android:** Data Safety section, runtime permissions, scoped storage for file access.
 
@@ -64,7 +84,7 @@ Both platforms reject or penalize apps that over-collect or misdeclare data use.
 
 ## App Store Review: Rejections That Actually Bite
 
-Getting your code working is only half the battle. Apple and Google review every app, and they reject or pull apps for privacy and policy reasons an AI assistant won't warn you about until it's too late. These are the high-frequency 2026 triggers. Check every one before you submit.
+Getting your code working is only half the battle. Apple and Google review every app, and they reject or pull apps for privacy and policy reasons an AI assistant won't warn you about until it's too late. These are the current high-frequency triggers. Check every one before you submit, and re-check the store guidelines each release — they change.
 
 **In-app account deletion (iOS, required).** If your app lets users create an account, Apple requires a way to delete that account *from inside the app* — not "email us to close your account." A settings screen link that starts the deletion is enough. This is one of the most common rejections for apps with sign-up. (Android has similar expectations and a required "delete account" link in your Play listing.)
 

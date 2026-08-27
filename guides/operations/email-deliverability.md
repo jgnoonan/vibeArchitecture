@@ -37,7 +37,7 @@ Mail providers won't trust you just because you signed up with a provider. You h
 
 Think of it like a signed, sealed letter on official letterhead. SPF says which post offices may mail on your behalf, DKIM is the tamper-proof wax seal, and DMARC is the instruction on file telling the recipient what to do if the seal is broken.
 
-**Without these records, Gmail and Outlook will route you to spam or reject you outright.** And as of February 2024, Gmail and Yahoo *require* SPF, DKIM, and DMARC for bulk senders (roughly 5,000+ messages a day) — but the same signals decide trust for small senders too, so set them up regardless of volume.
+**Without these records, Gmail and Outlook will route you to spam or reject you outright.** As of February 2024, Gmail and Yahoo *require* SPF, DKIM, and DMARC for bulk senders (roughly 5,000+ messages a day), and since May 2025 Microsoft (Outlook.com, Hotmail, Live) enforces the same three for senders over 5,000/day — plus a valid reply-to address and honored unsubscribes — routing non-compliant mail to Junk and eventually rejecting it. The same signals decide trust for small senders too, so set them up regardless of volume.
 
 Your email provider generates the exact record values and gives you copy-paste instructions. You add them to your domain's DNS. This is usually three records and takes about fifteen minutes.
 
@@ -60,7 +60,7 @@ Why: marketing email gets spam complaints and unsubscribes; that's normal. But t
 Deliverability is earned over time and easily lost. A few habits:
 
 - **Warm up gradually.** Don't go from zero to 50,000 emails overnight on a brand-new domain. Ramp volume up over days or weeks so providers see a steady, trustworthy pattern. (Most transactional apps grow naturally and never need to think about this — it matters mainly for large launches or migrations.)
-- **Watch bounce and complaint rates.** Your provider's dashboard shows these. High **bounces** (mail to addresses that don't exist) and high **complaints** (people marking you as spam) signal to providers that you're a bad sender. Keep complaint rates well under 0.3% — Gmail's stated threshold.
+- **Watch bounce and complaint rates.** Your provider's dashboard shows these. High **bounces** (mail to addresses that don't exist) and high **complaints** (people marking you as spam) signal to providers that you're a bad sender. Gmail's guidance: keep the spam-complaint rate **below 0.1%**, and never let it reach **0.3%** — at 0.3% sustained, Gmail starts filtering you regardless of authentication, and recovery takes weeks. Register your domain in Google Postmaster Tools (free) to see the number Gmail actually uses.
 - **Honor unsubscribes immediately.** For any non-essential mail, include a working unsubscribe link and stop sending the moment someone opts out. Since 2024, bulk senders must support one-click unsubscribe. Ignoring opt-outs generates complaints and, in many places, breaks the law.
 - **Don't repeatedly email unverified addresses.** If someone typed their address wrong, hammering it with retries just piles up bounces. Send the verification once (with a resend option), and stop mailing an address that hard-bounces.
 

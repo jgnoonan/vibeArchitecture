@@ -32,11 +32,19 @@ A CDN is a network of servers around the world that cache your content. When a u
 
 **Best for:** Static files (images, CSS, JavaScript, fonts), public API responses that are the same for all users.
 
-**Popular CDNs:** Cloudflare (free tier), AWS CloudFront, Vercel Edge Network (automatic for Vercel deployments), Fastly.
+**Popular CDNs:** Cloudflare (free tier), AWS CloudFront, Vercel Edge Network (automatic for Vercel deployments), Fastly, Bunny.
+
+**Never CDN-cache a per-user response.** The CDN keys its cache on the URL (plus whatever you put in `Vary`). If `/api/me` is cacheable, the first user's profile is served to everyone who asks next. Send `Cache-Control: private, no-store` on every authenticated or personalized response, and add `Vary: Cookie` / `Vary: Authorization` (or a `Vary` on whatever header changes the output) as a second line of defense. This is a security rule as much as a performance one — see `rules/api.md` and `rules/security.md`.
+
+**Invalidating what the CDN holds.** Content-hashed static assets never need purging — the filename changes. Everything else does:
+- **Purge by URL** for a single page or API response (`/products/42`).
+- **Purge by cache tag** for "everything that includes product 42": tag responses on the way out (`Cache-Tag: product-42, category-7` on Cloudflare, `Surrogate-Key` on Fastly, tags in Vercel/Next.js `revalidateTag`) and purge the tag when the product changes. Tags are what make event-based invalidation practical at the CDN layer — one purge call instead of guessing every URL that embedded the product.
+- **`stale-while-revalidate`** — `Cache-Control: max-age=60, stale-while-revalidate=300` tells the CDN to keep serving the cached copy for up to 5 minutes past expiry while it fetches a fresh one in the background. Users never wait on a refresh, and your origin never sees a stampede when a popular entry expires. Pair it with `stale-if-error` so a brief origin outage serves stale content instead of a 502.
+- Wire the purge into the same write path as your application-cache invalidation (below), so a product update clears Redis/Valkey *and* the CDN in one place.
 
 ### Application Cache
 
-Your application stores frequently-accessed data in a fast in-memory store like Redis or Memcached. Instead of querying the database for every request, the application checks the cache first.
+Your application stores frequently-accessed data in a fast in-memory store like Redis (or Valkey, its open-source fork — managed offerings such as ElastiCache and Memorystore are now Valkey-first) or Memcached. Instead of querying the database for every request, the application checks the cache first.
 
 **Example workflow:**
 1. Request comes in for user profile
@@ -46,7 +54,7 @@ Your application stores frequently-accessed data in a fast in-memory store like 
 
 **Best for:** Database query results that are read frequently and change infrequently (product catalogs, user profiles, configuration), computed values that are expensive to calculate (leaderboards, aggregated statistics).
 
-**Tools:** Redis (most popular, also useful for sessions and queues), Memcached (simpler, pure caching).
+**Tools:** Redis or Valkey (most popular, also useful for sessions and queues), Memcached (simpler, pure caching).
 
 ### Database Query Cache
 
@@ -114,7 +122,7 @@ A popular cache entry expires. At that exact moment, 1,000 users request it. All
 
 **Background refresh:** A background job refreshes popular cache entries before they expire. The cache never goes empty for high-traffic data.
 
-**Stale-while-revalidate:** Serve the stale cached data immediately while refreshing the cache in the background. The user gets a fast response (possibly slightly stale), and the cache is refreshed for the next request.
+**Stale-while-revalidate:** Serve the stale cached data immediately while refreshing the cache in the background. The user gets a fast response (possibly slightly stale), and the cache is refreshed for the next request. At the CDN layer this is a single header (see the CDN section above).
 
 ## What to Cache (and What Not To)
 
@@ -154,5 +162,5 @@ Track:
 
 1. Begin with HTTP cache headers for static assets — zero infrastructure, immediate benefit
 2. Add a CDN if your users are geographically distributed
-3. Add Redis/application caching for specific slow queries you've identified through profiling
+3. Add Redis/Valkey application caching for specific slow queries you've identified through profiling
 4. Don't cache everything "just in case" — cache what you've measured to be slow

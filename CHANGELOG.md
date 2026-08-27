@@ -2,6 +2,71 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
+## [1.5.0] - 2026-08-27
+
+Standards-refresh and agentic-security release: an end-to-end review of the framework against mid-2026 standards, correction of every verified defect, one new domain (agentic AI security), and tooling that catches drift automatically.
+
+### Added
+
+- **Agentic AI security** — new `guides/multi-agent/agentic-security.md` mapped to the OWASP Top 10 for Agentic Applications (2026), plus an "Agentic Systems" rule section in `rules/multi-agent.md`: agent identity and delegated scoped credentials (no shared master key), inter-agent trust boundaries, memory/context poisoning, tool-description poisoning and MCP server vetting, computer-use/browser agents, hard spend caps with a kill switch, loop caps, streaming (never act on a partial tool call), guardrail/moderation layer, prompt-caching cost mechanics; matching anti-patterns (The God Key, Trusting the Other Agent, Memory That Anyone Can Write, No Kill Switch)
+- **MCP spec currency** (`guides/multi-agent/mcp-tool-patterns.md`) — revision 2026-07-28: OAuth 2.1 resource servers (RFC 9728/8707/9207), Dynamic Client Registration deprecated, tool annotations as untrusted hints, elicitation, structured output, tasks
+- **Security rules and guide sections** (`rules/security.md`, `rules/api.md`, `guides/security/*`, `guides/api/*`): session fixation and log-out-everywhere, password-reset and email-change flows, account-enumeration defenses, NIST SP 800-63B-4 password policy, WebAuthn configuration, JWT validation per RFC 8725, OAuth per RFC 9700 / OAuth 2.1 with refresh-token rotation, DPoP, device authorization and token exchange flows, API key hygiene, multi-tenancy isolation (tenant_id + Postgres RLS), open redirect, prototype pollution, ReDoS, XXE/deserialization, request smuggling, cache poisoning/deception, GraphQL hardening, WebSocket Origin checks, `Idempotency-Key` storage rules, RFC 9457 Problem Details, IETF `RateLimit` headers, OpenAPI as contract, batch per-item authorization, outbound webhook signing, file-upload hardening (zip-slip, decompression bombs, polyglots, separate origin, presigned URLs), CSP nonces/`strict-dynamic`, COOP/CORP, subdomain takeover, secrets leaking through AI tool surfaces and client-exposed env prefixes
+- **Mobile** (`rules/mobile.md`, `guides/security/mobile-security.md`): deep-link/Universal Link hijacking, PKCE via system browser, WebView hardening, Play Integrity / App Attest, biometric-bound Keychain items, screenshot/clipboard protection
+- **Data and infrastructure** (`rules/data.md`, `rules/infrastructure.md`, `rules/reliability.md`, `rules/observability.md`, `rules/performance.md`, `rules/system-design.md` and guides): multi-tenancy, `timestamptz`/UTC and money rules, UUIDv7 primary keys, partial indexes, zero-downtime migration mechanics, transactional outbox, event sourcing/CQRS "don't by default", object storage with presigned URLs, CDN cache invalidation and `Cache-Control: private`, idempotency-key implementation, cron reliability (overlap locks, dead-man's switch), domain/DNS hygiene, build-image secrets, SLO error budgets and burn-rate alerts, trace sampling, chaos/game days, read-your-own-writes on replicas, feature-flag implementation, semantic/hybrid search with pgvector, Postgres-native queues, hard cloud spend caps
+- **Compliance and privacy** (`rules/compliance.md`, `rules/privacy.md`): COPPA amended rule (compliance deadline 22 Apr 2026), US state AI laws (Colorado, Texas, California SB 243/SB 942, CCPA ADMT), EU AI Act timeline after the Digital Omnibus (Art. 50 transparency live 2 Aug 2026; high-risk deferred to Dec 2027 / Aug 2028), EU CRA reporting obligations from 11 Sep 2026, HIPAA Security Rule NPRM note, EU-US Data Privacy Framework, model-API data residency, Global Privacy Control, automated-decision rights, AI disclosure to all users at Public tier, training-data opt-out disclosure, NIST AI RMF / AI 600-1 and ISO/IEC 42001 references
+- **Accessibility** (`rules/accessibility.md`, `guides/accessibility/accessibility-basics.md`): WCAG 2.2 AA target (2.4.11, 3.3.7, 3.3.8 Accessible Authentication, 2.5.8), EN 301 549, ADA Title II deadlines (Apr 2027 / Apr 2028), Section 508, CI accessibility gates
+- **Standards mapping** (`appendices/standards-mapping.md`): OWASP Top 10 2025, OWASP LLM Top 10 2026, OWASP Agentic Top 10 2026, NIST AI RMF, ISO 42001, NIST SSDF v1.1 + SP 800-218A, SLSA v1.1, CIS Controls v8.1, GDPR/CCPA, EU CRA tables; MASVS-PLATFORM row corrected
+- **Glossary**: MCP, RAG, embeddings/vector database, lethal trifecta, DPA, DPIA, SBOM, correlation ID, sandbox, SSRF, CSRF, passkey, agentic, tool poisoning
+- **Operations guides** now reachable from `rules/universal.md` (Operations section) and `rules/_index.md`; `guides/operations/*` were previously orphaned
+- **Checklists**: admin MFA, CSRF, fail-closed guards, migrate-twice test, loud skipped tests, RTO/RPO, keyless deploys, SHA-pinned Actions, adversarial review + assurance register, AI disclosure, CRA readiness, ADA Title II
+- **Repo hygiene**: `SECURITY.md`, `.github/CODEOWNERS`, `.github/dependabot.yml`, issue and PR templates, `.editorconfig`, `.markdownlint.json`, `.lycheeignore`; CI now has least-privilege `permissions`, SHA-pinned actions, a weekly link check, a markdownlint job; `scripts/sync.sh` derives the rule list from `rules/*.md`, rejects unknown arguments, checks the skill version stamp and the 8,000-character GPT instruction limit
+- Integrations: plain "Read `vibeArchitecture/ARCHITECT.md` first" line in `AGENTS.md` for tools that don't expand `@` imports; README rows for GitHub Copilot (`.github/copilot-instructions.md`), Gemini CLI (`GEMINI.md`), Windsurf, and any AGENTS.md-aware tool; Claude Code skill install path; "which option?" table and "project root" definition at the top of the README
+
+### Changed
+
+- **Claude/Cursor skill renamed** to `vibe-architecture` (directories `ClaudeSkill/vibe-architecture/`, `CursorSkill/vibe-architecture/`) to satisfy the Agent Skills naming rules; skill version stamp now tracked by `sync.sh`
+- **Tier decisions made consistent across every file**: children's data → Regulated; admin MFA at Shared; login/signup/reset throttling at Shared (general API rate limiting at Public); encryption at rest at Business; secrets manager preferred at Shared and required at Business; JWT access tokens 15 min–1 h; ordinary GDPR/EU users → privacy overlay, not Regulated; critical downtime + sensitive data → Regulated; tier-upgrade logic identical in questionnaire, skill, tier definitions, BOOTSTRAP, and GPT
+- **Password hashing**: argon2id first (bcrypt 72-byte limit noted); account lockout replaced by progressive per-IP + per-account throttling
+- **Retries**: retry 5xx/429/408 honoring `Retry-After`; never other 4xx or 501/505 (was "never retry 4xx", contradicting the 429 rule)
+- **Health checks**: shallow public liveness; deep dependency checks network-restricted
+- **Alerting**: Page = >5% errors for 5 min; Ticket = sustained 1–5%, fix next business day (undefined band removed)
+- **Decomposition signals**: guide aligned to the rule's four signals, "2+ → seriously evaluate; modular monolith first"
+- **Composite-index rule** rewritten (equality before range, left-prefix) — "most selective column first" was wrong
+- **Security headers**: CSP `frame-ancestors` primary, `X-Frame-Options` legacy fallback; Permissions-Policy in the baseline
+- **CI pinning**: GitHub Actions by full commit SHA, not tag; `tfsec` dropped (merged into Trivy); "Terraform or OpenTofu"; "Redis or Valkey"
+- **Tooling refresh**: Node 24/22 and Postgres 18 in examples; `npm ci --omit=dev`; Supavisor; Cloudflare TCP/Hyperdrive and Vercel Fluid Compute caveats; PlanetScale/Railway/AWS free-tier descriptions; Cloud Run functions; BullMQ; Microsoft Agent Framework replaces AutoGen; current agent SDKs listed; Outlook.com sender requirements; Gmail 0.1% spam target
+- **Model references**: dated model IDs replaced with tier language plus one "example only" ID; fallback providers must be under the same DPA/BAA and residency constraints
+- **Supply chain**: current incident examples (xz-utils, polyfill.io, tj-actions/changed-files, Shai-Hulud), npm trusted publishing, install cooldowns, `--ignore-scripts`, workflow `permissions:`
+- **Rules layer compressed ~17%** (37.6K → 31.2K tokens across `rules/*.md`) by moving rationale, RFC lists, and regulatory timelines into the guides (notably a new "Regulatory Timelines (checked August 2026)" section in `guides/infrastructure/regulated-deployment.md` and "WCAG 2.2 Criteria Behind the Rules" in `guides/accessibility/accessibility-basics.md`); every rule line is preserved
+- **Release procedure and local checks** documented in `CONTRIBUTING.md`; releases are tagged `vX.Y.Z` and ship a pre-built `vibe-architecture.zip`; README gains a "Coming from 1.4.0 or earlier" migration section
+- **Deduplication**: single canonical homes for sessions-vs-JWT and token storage (`state-management.md`), prompt injection (`llm-security.md` LLM01), LLM-as-judge tips, budget alerts, retry/circuit-breaker config (`resilience-patterns.md`), idempotency (`concurrency.md`), alerting (`monitoring.md`), connection pooling (`database-performance.md`), incident lifecycle (`incident-response.md`); `regulated-deployment.md` no longer restates `rules/compliance.md`; the "confirm what's active" paragraph lives in `ARCHITECT.md`
+- `ARCHITECTURAL_FRAMEWORK_OUTLINE.md` moved to `docs/history/` (it described a layout that never shipped and was the largest file at the repo root)
+- README install guidance: copy-and-gitignore is the default, submodule the alternative (do not gitignore a submodule); Option B prompt uses the raw `BOOTSTRAP.md` URL; token-usage table re-measured; "What's Covered" lists every guide topic
+- `BOOTSTRAP.md` and `CodeGuardian/gpt-instructions.md` condensed rules updated for 1.4.0 items that were missing (restart-safe migrations, loud skipped tests, exit codes, lock hierarchies, metadata-plane privacy) and for 1.5.0; GPT knowledge-file list now includes `rules/mobile.md`
+- Intake: platform and downtime-impact questions asked everywhere the profile records them; Q0 wording unified; question list-order and duplicate step numbers fixed; AI SDK list refreshed
+
+### Fixed
+
+- `LICENSE`: copyright holder name and year corrected
+- `guides/api/api-security.md`: same-origin policy explanation (SOP blocks reading responses, not sending them; CORS does not prevent CSRF); the real CORS bug is a reflected `Origin` with credentials, not `*` with credentials (also in `rules/security.md`, `rules/api.md`, `appendices/anti-patterns.md`)
+- `guides/security/authentication.md`: in-memory JS tokens are not "safe from XSS"
+- `guides/api/api-versioning.md`: `Sunset` takes an HTTP-date; `Deprecation` is RFC 9745 (`@unix-timestamp`)
+- `guides/api/payments.md`: grant entitlement only when `payment_status == "paid"` or on `checkout.session.async_payment_succeeded`; PCI DSS 4.0.1 and SAQ A script-integrity requirements named
+- `guides/infrastructure/containers.md`: multi-stage build no longer ships devDependencies
+- `guides/performance/search-architecture.md`: `tsvector` column is now a generated column (the previous example never populated it)
+- `guides/performance/database-performance.md`: Postgres syntax for the year example; `= ANY($1)` for large IN lists
+- `guides/system-design/real-time-patterns.md`: cookies do work on the WebSocket handshake; the actual risk is cross-site WebSocket hijacking (validate `Origin`); `?token=` in URLs lands in logs; the six-connection limit is HTTP/1.1 only
+- `guides/multi-agent/llm-architecture.md`: cost arithmetic; "log everything" contradiction with the observability rules; duplicate table rows
+- `guides/multi-agent/testing-ai-systems.md`: tool-call checks are deterministic, tool-call decisions are not
+- `guides/infrastructure/regulated-deployment.md`: Supabase BAA is Team plan and above; Render, Vercel, and Fly.io do offer BAAs on higher plans
+- `rules/compliance.md`: HIPAA six-year rule applies to documentation, not audit logs; breach-notification thresholds; CRA timeline made concrete
+- `rules/mobile.md`: AndroidX `EncryptedSharedPreferences` is deprecated; Sign in with Apple guideline 4.8 wording
+- `guides/data/data-integrity.md`: soft delete does not satisfy GDPR/CCPA erasure (matches the rules)
+- `appendices/glossary.md`: corrupted "Horizontal scaling"/"HSTS" and "Integration test"/"Jitter" entries repaired; alphabetical order restored
+- `appendices/further-reading.md`: six Well-Architected pillars; Signal SPQR/Triple Ratchet; FIPS 205 and HQC; HTTPS link
+- `examples/sample-PROJECT_PROFILE.md`: privacy overlay is on (it stores other people's names and emails)
+- `intake/tier-definitions.md`: ordinary EU personal data no longer listed as Regulated; Shared tier no longer told it needn't worry about rate limiting
+
 ## [1.4.0] - 2026-07-29
 
 Field-lessons release: distills recurring defect classes and verification practices from a year of adversarial reviews of production systems — including peer-to-peer and end-to-end-encrypted architectures — into rules, guides, and anti-patterns.

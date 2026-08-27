@@ -11,7 +11,7 @@ Accessibility (often shortened to "a11y" — the "11" represents the 11 letters 
 - **Hearing impairments:** People who are deaf or hard of hearing and need captions for audio/video content
 - **Cognitive differences:** People who benefit from clear language, consistent navigation, and predictable interfaces
 
-About 15% of the world's population has some form of disability. That's over a billion people. Many more have temporary impairments (a broken arm, an eye infection) or situational ones (using a phone in bright sunlight, watching a video in a noisy room).
+The World Health Organization estimates about 16% of the world's population — 1.3 billion people — live with a significant disability. Many more have temporary impairments (a broken arm, an eye infection) or situational ones (using a phone in bright sunlight, watching a video in a noisy room).
 
 ## Why Should I Care?
 
@@ -19,7 +19,7 @@ Three reasons, in order of importance:
 
 **1. It's the right thing to do.** Your application excludes real people when it's inaccessible. A blind user who can't read your signup form can't use your product. A person who can't use a mouse and can't Tab through your navigation is locked out.
 
-**2. It's the law.** In the United States, the ADA (Americans with Disabilities Act) applies to websites and apps. The European Accessibility Act takes effect in 2025. Canada, Australia, and many other countries have similar laws. Lawsuits over inaccessible websites are common — thousands are filed each year in the US alone.
+**2. It's the law.** In the United States, the ADA (Americans with Disabilities Act) applies to websites and apps; the DOJ's ADA Title II web rule requires state and local government websites and apps (including contractors building for them) to meet WCAG 2.1 AA — by 26 April 2027 for governments serving 50,000+ people and 26 April 2028 for smaller ones (the DOJ extended the original deadlines in April 2026). Section 508 applies the same standard to federal agencies and what they buy. In the EU, the European Accessibility Act has applied since 28 June 2025 to consumer-facing products and services (e-commerce, banking, e-books, transport apps), measured against EN 301 549. Canada, Australia, and many other countries have similar laws. Lawsuits over inaccessible websites are common — thousands are filed each year in the US alone.
 
 **3. It's better design for everyone.** Keyboard navigation helps power users who prefer the keyboard. Captions help people watching video in a noisy coffee shop. High contrast helps everyone read in bright sunlight. Clear labels help everyone fill out forms faster. Accessible design is good design.
 
@@ -127,7 +127,38 @@ WCAG (Web Content Accessibility Guidelines) is the international standard for we
 - **Level AA:** The standard most laws require and most organizations target. This is the right goal for your project.
 - **Level AAA:** The highest level. Nice to have but not required for most applications.
 
-**For vibeArchitecture projects:** Target WCAG 2.1 Level AA. The rules in `rules/accessibility.md` cover the AA requirements.
+**For vibeArchitecture projects:** Target WCAG 2.2 Level AA. The rules in `rules/accessibility.md` cover the AA requirements, including the criteria added in 2.2: focus not obscured by sticky UI, no redundant data entry within a process, accessible authentication (no puzzle-style CAPTCHA without an alternative), and minimum target size. Legal standards that still cite 2.1 AA (EN 301 549, the ADA Title II rule) are satisfied by 2.2 AA, since 2.2 is a superset.
+
+## WCAG 2.2 Criteria Behind the Rules
+
+`rules/accessibility.md` cites success criteria by number. This is what each one means and why the rule is shaped the way it is.
+
+- **Structure (1.3.1 Info and Relationships, 2.4.6 Headings and Labels).** Screen readers build a page outline from semantic elements: headings, landmarks (`<nav>`, `<main>`), lists ("list of 5 items"). A `<div>` styled as a heading is invisible to that outline, and skipping from `<h1>` to `<h4>` for a smaller font tells the reader a whole section is missing. One `<h1>` per page gives users a single "what is this page" anchor to jump to. A `<div>` used as a button is worse still: it has no role, no keyboard handling, and no focus, and adding all three by hand is more work than typing `<button>`.
+- **Text alternatives (1.1.1 Non-text Content).** `alt` describes what the image conveys, not what it literally shows, because the screen-reader user needs the information the sighted user gets from it. Decorative images get `alt=""` so the reader skips them instead of announcing a filename. Captions (1.2.2) and transcripts (1.2.1) do the same job for video and audio.
+- **Keyboard (2.1.1 Keyboard, 2.1.2 No Keyboard Trap, 2.4.3 Focus Order, 2.4.7 Focus Visible).** Custom widgets (date pickers, sliders, comboboxes) have no built-in keyboard behavior, which is why the rule points to the WAI-ARIA Authoring Practices: each widget pattern there specifies the expected keys (arrows within a listbox, Home/End, type-ahead) so users get the behavior they already know from native controls.
+- **2.4.11 Focus Not Obscured (Minimum), new in 2.2.** A keyboard user tabs to a link and it is under the sticky header, cookie banner, or chat widget: they can't see where they are. The focused element must be at least partially visible; the rule asks for fully visible because partial is rarely usable.
+- **Contrast (1.4.3 Contrast Minimum, 1.4.11 Non-text Contrast).** 4.5:1 for normal text and 3:1 for large text (18px bold or 24px regular) come from the readability threshold for moderately low vision; 1.4.11 extends 3:1 to UI component boundaries and states (an input border, a focus ring, a toggle) so controls can be found at all. Both apply separately in light and dark themes, which is why the rule says to check both.
+- **1.4.1 Use of Color.** About 8% of men and 0.5% of women are colorblind; "fields in red are required" or red/green status dots carry no information for them. Add an icon, a text label, or a pattern alongside the color.
+- **Forms (1.3.1, 3.3.1 Error Identification, 3.3.2 Labels or Instructions, 4.1.3 Status Messages).** A placeholder disappears as soon as the user types, so it can't serve as the label; `<label for>` also enlarges the click target. Errors need to be associated with the field (`aria-describedby`) and announced (`aria-live`) because a screen-reader user mid-form otherwise hears nothing when submission fails. `<fieldset>`/`<legend>` tell the reader that "Yes" and "No" belong to the question above them.
+- **3.3.7 Redundant Entry, new in 2.2.** Asking for information the user already entered in the same process (billing address after shipping address, email twice) is a barrier for people with cognitive or motor disabilities. Auto-populate or offer "same as", except where re-entry is itself the security control (confirming a password).
+- **3.3.8 Accessible Authentication (Minimum), new in 2.2.** Login must not depend on a cognitive function test (memorizing, transcribing, solving a puzzle, identifying objects in images) unless an alternative exists. Password managers and paste must work; object-recognition CAPTCHAs need an alternative such as a non-puzzle challenge (Cloudflare Turnstile style), email or passkey login. This is why the bot controls in `rules/security.md` always require an accessible alternative.
+- **2.5.8 Target Size (Minimum), new in 2.2.** Requires 24x24 CSS pixels or equivalent spacing. The rules ask for 44x44 because that is what Apple's and Google's platform guidance specify and what people with tremor or limited dexterity can reliably hit.
+- **1.4.10 Reflow and 1.4.4 Resize Text.** Content must be usable at 320 CSS pixels wide without horizontal scrolling, which is a desktop page at 400% zoom or a phone held vertically. Disabling pinch-to-zoom (`user-scalable=no`, `maximum-scale=1`) removes the one tool low-vision users rely on most; never set it.
+- **ARIA (4.1.2 Name, Role, Value).** ARIA adds names, roles, and states to things HTML can't express, and nothing else: it doesn't add keyboard handling or focus. A `role="button"` on a `<div>` announces a button the user can't press, which is worse than announcing nothing, hence "no ARIA is better than bad ARIA" and the preference for native elements.
+
+## Native Mobile Apps
+
+The web rules have direct native equivalents in Flutter, SwiftUI, Jetpack Compose, and React Native, and AI-generated native UI skips them even more reliably than it skips `alt` text: audits of mature app codebases routinely find that almost no screen carries semantic annotations. The cost asymmetry is the same as on the web. Building accessibility in from the first screen costs nearly nothing; retrofitting it onto a finished app is a multi-day project because every custom tap surface, icon button, and error state has to be revisited.
+
+- **Names.** Icon-only buttons and custom tap surfaces need a tooltip or semantics label, or the screen reader announces "button" with no hint of what it does. Those names are user-visible strings, so they are localized like any other.
+- **Gestures.** A bare `GestureDetector` or `onTapGesture` on a container is invisible to screen-reader focus and to switch access. The platform's focusable, activatable primitives (buttons, `InkWell`, `FocusableActionDetector`, accessibility actions) give focus and activation for free. Anything that is long-press-only or swipe-only needs a discoverable alternative (an overflow or context menu), and that alternative is also the assistive-technology path.
+- **Errors.** A red `Text` widget inserted by a state change is a visual event only; a screen-reader user mid-task hears nothing. Field errors go through the platform's error slot (`errorText`, `.accessibilityValue`), screen-level errors through a live region or an accessibility announcement.
+- **Images and status.** Meaningful images get semantic labels; status conveyed by an icon or a colored dot also exists as text; purely decorative images are excluded from semantics so they aren't announced.
+- **Contrast in both themes.** New color pairs are checked against 4.5:1 (text) and 3:1 (large text, UI components) with a real calculation, in light and dark even if one theme isn't shipped yet, because the second theme arrives later with the same untested pairs.
+- **Targets.** 44x44pt on iOS and 48x48dp on Android; compact densities and tight constraints that shrink targets to fix a layout are fixing the wrong thing.
+- **Font scaling.** Text must survive 200% OS font scaling: flexible layouts around text, no fixed-height containers holding text, and never pinning font size to dodge an overflow. Fix the layout instead.
+- **Motion.** Looping or ambient animation needs a pause/stop affordance or must end within about 5 seconds (2.2.2 Pause, Stop, Hide), respects the OS reduce-motion setting, and never flashes more than 3 times per second (2.3.1).
+- **Testing.** VoiceOver and TalkBack on a real device, at maximum font scale, ten minutes per screen, catches most of what automated checks miss.
 
 ## Testing Accessibility
 
@@ -142,6 +173,8 @@ Run an automated scanner. These catch about 30–40% of accessibility issues —
 - **pa11y** (command line): `npx pa11y https://your-site.com`
 
 Ask your AI: *"Run an accessibility check on this component and fix any issues."*
+
+**In CI (Business tier and above):** add `@axe-core/playwright` to your end-to-end tests, or `jest-axe` / `vitest-axe` to component tests, and fail the build on new violations. This turns the 5-minute manual scan into something that runs on every pull request.
 
 ### Keyboard Testing (10 minutes)
 

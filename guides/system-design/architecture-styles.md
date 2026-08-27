@@ -36,7 +36,7 @@ Shopify runs on a monolith. Stack Overflow runs on a monolith. Basecamp runs on 
 
 ## The Decision Matrix
 
-Don't decompose proactively. Decompose when you have evidence. Score your situation:
+Don't decompose proactively. Decompose when you have evidence. These are the same four signals as the checklist in `rules/system-design.md`; count how many are true:
 
 | Signal | Score |
 |--------|-------|
@@ -44,11 +44,11 @@ Don't decompose proactively. Decompose when you have evidence. Score your situat
 | Parts of the system have radically different scaling needs | +1 |
 | Regulatory/security boundary requires strict isolation (PCI, HIPAA) | +1 |
 | A specific seam causes measurable delivery friction (not theoretical) | +1 |
-| The monolith has shipped and the domain boundaries are proven | +1 |
 
-**Score 0–1:** Monolith. Improve internal structure if needed.
-**Score 2:** Modular monolith. Define hard boundaries between modules. This prepares for future extraction without paying the distributed-systems tax now.
-**Score 3–5:** Services may be justified. But extract from a working monolith using the Strangler Fig pattern — don't design services from scratch.
+**Score 0–1:** Stay a monolith. Improve internal structure if needed.
+**Score 2+:** Service decomposition deserves serious evaluation — but **modular monolith first**: define hard boundaries between modules, prove them for a few months, then extract the one seam that is actually hurting using the Strangler Fig pattern. Don't design services from scratch, and don't extract a boundary that hasn't shipped and been proven inside the monolith.
+
+A precondition, not a signal: the monolith has shipped and its domain boundaries are known. If you're still discovering what the domains are, no score justifies services.
 
 ### Signals That Are NOT on the Matrix
 
@@ -86,6 +86,26 @@ Named after a tropical vine that gradually grows around a host tree: you don't r
 - **Boundaries are proven, not guessed.** You're extracting a module that already works — you know its interface, its data requirements, and its edge cases. You're not designing a service from imagination.
 - **You can stop at any point.** Extracted two services and the rest of the monolith is fine? Stop. Not every module needs to become a service.
 
+## Event Sourcing and CQRS: Don't, by Default
+
+**Event sourcing** stores every change as an immutable event (`OrderPlaced`, `ItemAdded`, `OrderShipped`) and derives current state by replaying them. **CQRS** splits the write model from the read model, often with the read side rebuilt from those events. They're frequently pitched together as "the scalable architecture."
+
+For most applications they're a tax with no refund. You lose the simplest fact about a database — the row *is* the truth — and gain: projections that must be rebuilt when they drift, schema versioning for events you can never delete, eventual consistency between the thing you just wrote and the thing you read back, and debugging that starts with "replay 40,000 events." Reporting, ad-hoc queries, GDPR erasure (you can't delete an immutable log without crypto-shredding), and onboarding all get harder.
+
+What people actually want is usually one of: an **audit log** (append an `audit_events` row in the same transaction as the write — done), **undo** (soft deletes and versioned rows), or a **fast read path** (a materialized view or a denormalized table refreshed by the outbox below). Reach for real event sourcing only when replayability is the product — ledgers, trading systems, collaborative editing with full history — and you can name the requirement.
+
+## The Transactional Outbox: Fixing the Dual-Write Problem
+
+The moment you have both a database and a queue (or an event bus, a search index, a webhook), you hit the **dual-write problem**: your code writes the order to Postgres, then publishes `OrderPlaced` to the queue. If the process dies between the two, the order exists and nobody hears about it. If you publish first and the transaction then rolls back, consumers act on an order that doesn't exist. Wrapping both in a try/catch doesn't help — there's no transaction that spans a database and a queue.
+
+The **transactional outbox** pattern fixes it with one table:
+
+1. In the same database transaction as the business write, insert a row into `outbox` (`id`, `event_type`, `payload`, `created_at`, `published_at NULL`). Now the order and its event commit or roll back together.
+2. A relay publishes unpublished outbox rows to the queue and marks them published. The relay is either a small polling worker (`SELECT ... WHERE published_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED`) or change data capture (Debezium reading the write-ahead log).
+3. Consumers dedupe on the outbox row's ID, because the relay can publish twice if it crashes after sending but before marking — this is at-least-once delivery, the same idempotency requirement as everywhere else (`guides/reliability/concurrency.md`).
+
+If your queue *is* Postgres (pg-boss, Graphile Worker, Solid Queue, Oban, River — see `guides/system-design/async-patterns.md`), you get the outbox for free: enqueueing the job in the same transaction as the write is the whole pattern. That's a strong reason to keep the queue in the database until you have a reason not to.
+
 ## The Distributed Monolith Anti-Pattern
 
 The worst outcome: you've split into services but gained none of the benefits. Signs you've built a distributed monolith:
@@ -104,7 +124,7 @@ If you recognize these patterns, you don't have microservices — you have a mon
 | Personal | Monolith | Never |
 | Shared | Monolith | Never |
 | Public | Monolith | Rarely — only if scaling a specific component is proven necessary |
-| Business | Monolith, evaluate with Q11–Q14 | When the decision matrix scores 2+ |
+| Business | Monolith, evaluate with Q11–Q14 | When 2+ signals are true — modular monolith first |
 | Regulated | Monolith, evaluate with Q11–Q14 | When compliance requires isolation (PCI scope reduction) or the decision matrix scores 2+ |
 
 ## Common Questions

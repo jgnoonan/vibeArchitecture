@@ -35,7 +35,7 @@ The most important backup practice that almost everyone skips:
 
 **A backup you've never restored from is a backup you can't trust.**
 
-- Schedule a test restore at least once. Ideally quarterly.
+- Schedule a test restore at least once, then quarterly (the same cadence `rules/data.md` and `guides/operations/day2-operations.md` use).
 - Restore to a separate environment (never to production).
 - Verify the data is complete and usable.
 - Measure how long the restore takes — this is your actual recovery time.
@@ -44,7 +44,7 @@ The most important backup practice that almost everyone skips:
 
 Most managed databases support PITR (Point-in-Time Recovery). It lets you restore the database to any specific moment — not just the last backup.
 
-This is invaluable when the problem isn't a total loss but a specific mistake: "We need the database as it was at 2:47 PM, before that bad migration ran." Enable PITR if your database supports it.
+This is invaluable when the problem isn't a total loss but a specific mistake: "We need the database as it was at 2:47 PM, before that bad migration ran." It is also what turns a daily-snapshot RPO of "up to 24 hours of data" into minutes: the write-ahead log is shipped continuously, so you can replay to any second. Enable PITR if your database supports it.
 
 ## Data Retention
 

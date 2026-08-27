@@ -24,6 +24,8 @@ See `intake/tier-definitions.md` for what this tier means.
 | Who is this for? | People I know — extended family (~15 people) |
 | User accounts required? | Yes — each family member has their own login |
 | Data sensitivity | Names, emails, optional recipe photos (no payments, no health data) |
+| Stores personal data about other people? | yes — family members' names and emails |
+| Any users in EU / UK / California? | no |
 | Access method | Web app in the browser |
 | Hosting | Small VPS or PaaS (Railway/Fly.io), ~$5–10/month |
 | Expected users | 15–30 at most |
@@ -45,6 +47,7 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/infrastructure.md`
 - [ ] `rules/observability.md`
 - [ ] `rules/performance.md`
+- [x] `rules/privacy.md` *(stores names and emails of other people — data export and deletion on request apply even at Shared tier)*
 - [ ] `rules/system-design.md`
 - [ ] `rules/multi-agent.md`
 - [ ] `rules/mobile.md`
@@ -52,7 +55,7 @@ Based on the tier, these rule files are enforced:
 
 ## Warnings and Flags
 
-- Storing names and emails → privacy policy recommended before inviting family outside the household
+- Storing names and emails → privacy overlay is on (`rules/privacy.md`); a short privacy policy is recommended before inviting family outside the household
 - Recipe photos may include people in the background — consider optional blur/crop guidance in the UI
 
 ## Cost Estimate

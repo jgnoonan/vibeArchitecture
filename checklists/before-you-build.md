@@ -47,14 +47,14 @@ Things to decide before you (or your AI) write the first line of code. You don't
 ## Accessibility (If the Public Will Use Your App)
 
 - [ ] Will people with disabilities use your app? (If it's public, the answer is yes — even if you don't realize it.)
-- [ ] Are you aware that accessibility is a legal requirement in many jurisdictions? (ADA in the US, European Accessibility Act in the EU.)
+- [ ] Are you aware that accessibility is a legal requirement in many jurisdictions? (ADA in the US, European Accessibility Act in the EU.) If you're building for a US state or local government — or as their contractor — the ADA Title II web rule requires WCAG 2.1 AA by April 2027 (larger governments) or April 2028 (smaller). See `guides/accessibility/accessibility-basics.md`.
 - [ ] Plan to use semantic HTML from the start — `<button>` for buttons, `<label>` for form labels, proper headings. It's almost free to do now and very expensive to fix later.
 
 ## Internationalization (If Your Users May Speak Different Languages)
 
 - [ ] Will your app need to support multiple languages — now or in the future? (If there's even a reasonable chance, set up i18n from the start.)
 - [ ] Will your app display dates, numbers, or currency to users in different regions? (These formats vary — 03/26/2026 vs. 26.03.2026, $1,234.56 vs. 1.234,56 €.)
-- [ ] Plan to externalize all user-facing strings from day one. Never hardcode text in templates. It's almost free to do now and very expensive to fix later.
+- [ ] Plan to externalize all user-facing strings from day one. Never hardcode text in templates. It's almost free to do now and very expensive to fix later. See `guides/operations/internationalization.md`.
 
 ## Deployment (Where It Will Live)
 

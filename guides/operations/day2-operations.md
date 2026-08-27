@@ -25,7 +25,7 @@ Your application depends on libraries and frameworks that receive security patch
 
 - **Monitor storage growth.** Is the database growing as expected, or is something filling up faster than anticipated?
 - **Review slow query logs.** As data grows, queries that were fast might become slow. Review monthly.
-- **Verify backups.** Don't just trust that automated backups are running — periodically check that they are, and test a restore.
+- **Verify backups.** Don't just trust that automated backups are running — check that they are, and run a test restore quarterly.
 - **Clean up stale data.** Expired sessions, old logs, soft-deleted records past their retention period. Set up automated cleanup jobs.
 
 ### Certificate and Secret Rotation
@@ -33,6 +33,26 @@ Your application depends on libraries and frameworks that receive security patch
 - **TLS certificates** expire. If you're using Let's Encrypt (via your hosting platform), renewal is usually automatic. Verify it's working — an expired certificate means your site shows a scary warning.
 - **API keys and secrets** should be rotated periodically. Set calendar reminders if the rotation isn't automated.
 - **Review access.** Periodically check who has access to your hosting platform, database, and other services. Remove access for people who no longer need it.
+
+### Scheduled Jobs (Cron) That Actually Run
+
+Nightly backups, cleanup jobs, digest emails, trial-expiry checks — cron is the quietest way for a system to break, because a job that stops running produces no error. Three habits:
+
+- **Overlap locks.** If tonight's job is still running when tomorrow's starts, you get two copies fighting over the same rows (or double-sending the digest). Take a lock at the start — `pg_try_advisory_lock(<job id>)` in Postgres, `SET NX` with an expiry in Redis/Valkey, or your job library's `unique`/`singleton` option — and exit immediately if it's held. Give the lock a TTL so a crashed run doesn't block forever.
+- **Missed-run detection with a dead-man's switch.** Alerting on failure doesn't catch a job that never started (the scheduler died, the deploy dropped the cron entry, the timezone shifted). Instead, have the job *ping* a heartbeat URL when it finishes — healthchecks.io, Cronitor, Better Stack heartbeats, or your monitor's "expect a check-in every N hours" feature — and let the monitor alert when the ping *doesn't* arrive. Pair it with a start ping and a fail ping to get duration and failure alerts for free.
+- **Idempotent work.** A job that dies at 60% will run again. Make it safe: process in batches with a stable cursor, mark rows as done, skip what's already handled. The idempotency mechanics are in `guides/reliability/concurrency.md`.
+
+Also: pin the schedule's timezone explicitly (UTC, usually), and put the job list in code (`crontab` in the repo, `vercel.json` crons, `pg_cron` migrations) so a new host runs the same schedule. The compact rule is in `rules/reliability.md` under Scheduled Jobs.
+
+### Domain, DNS, and Certificates
+
+The cheapest outage is the one where everything is running and nobody can reach it.
+
+- **Domain expiry.** Expired domains take down the site, the email, *and* the password resets — and squatters buy them within hours. Enable auto-renew on a payment method that won't expire, register the domain under a company account with 2FA and registrar lock (transfer lock) turned on, and put the renewal date on a calendar that more than one person sees. Renew for multiple years.
+- **DNS provider risk.** Your DNS host is a single point of failure for everything. Use a provider with a real track record and an API (Cloudflare, Route 53, DNSimple, NS1) — ideally separate from the registrar, so one compromised account can't both transfer the domain and rewrite records. Keep an export of your zone file in the repo.
+- **DNSSEC.** Signs your DNS answers so resolvers can detect forged records. Enable it if both your registrar and DNS host support it (most do); it's a checkbox plus a DS record. Test with a validator afterward — a botched DNSSEC rollout makes the domain unresolvable, which is worse than not having it.
+- **Lower TTLs before migrations.** Records with a 24-hour TTL take up to a day to change everywhere. A day *before* moving hosts, CDNs, or DNS providers, drop the affected records' TTL to 60–300 seconds; do the cutover; keep the old target alive until the old TTL has fully expired; then raise the TTL back. This makes the rollback as fast as the cutover.
+- **Certificates** (below) usually renew automatically; the DNS `CAA` record limits which CAs may issue for your domain.
 
 ### Monitoring Review
 
@@ -42,31 +62,7 @@ Your application depends on libraries and frameworks that receive security patch
 
 ## Handling Incidents
 
-### When Something Breaks
-
-Refer to `checklists/something-broke.md` for the immediate triage steps. This section covers the broader process.
-
-### The Incident Response Flow
-
-1. **Detect:** Something alerts you — monitoring, user reports, error notifications
-2. **Assess severity:** Is this affecting users? How many? Is data at risk?
-3. **Communicate:** If users are affected, acknowledge the problem. A simple status update ("We're aware of an issue and investigating") builds trust.
-4. **Mitigate:** Stop the bleeding. Rollback a bad deployment, restart a crashed service, switch to a fallback. Mitigation first, root cause later.
-5. **Investigate:** Once the immediate problem is resolved, find the root cause.
-6. **Fix:** Implement a proper fix (not just a band-aid).
-7. **Learn:** Write a brief postmortem.
-
-### Postmortems
-
-After every significant incident, write a short document:
-
-- **What happened:** Timeline of events
-- **Impact:** How many users were affected, for how long, what was the business impact
-- **Root cause:** Why it happened (not "who messed up" — focus on systems, not people)
-- **What we did:** Steps taken to detect, mitigate, and resolve
-- **What we'll change:** Action items to prevent recurrence, with owners and deadlines
-
-Postmortems are not about blame. They're about learning. If a human made a mistake, the question is "what about our system made it easy to make that mistake?" not "who should be punished?"
+For the in-the-moment triage steps, use `checklists/something-broke.md`. The incident lifecycle (detect → triage → mitigate → resolve → learn), runbooks, the postmortem template, and status-page communication are all in `guides/reliability/incident-response.md` — this guide doesn't restate them. Which alerts should wake you is defined in `guides/observability/monitoring.md`. The Day 2 habit is simply: after every significant incident, write the short blameless postmortem that guide describes, turn its action items into tickets with owners, and add a runbook if the failure could recur.
 
 ## Evolving Your Application
 

@@ -1,6 +1,6 @@
 # State Management: Where Your App Remembers Things
 
-> For the compact rules, see `rules/security.md` (session management) and `rules/reliability.md` (stateless design).
+> For the compact rules, see `rules/security.md` (session management) and `rules/reliability.md` (stateless design). This is the canonical sessions-vs-JWT and token-storage guide; `guides/security/authentication.md` summarizes it and links here.
 
 ## What Is "State"?
 
@@ -40,7 +40,7 @@ When a user logs in, you need to remember who they are for subsequent requests. 
 - **Good for APIs consumed by third parties.** External clients can authenticate with a token without needing cookies.
 
 **Disadvantages:**
-- **Hard to revoke.** This is the biggest problem. A JWT is valid until it expires. If a user's account is compromised and you need to log them out immediately, you can't — the token is still valid. Workarounds exist (token blocklists, short expiry times) but they add the complexity that JWTs were supposed to eliminate.
+- **Hard to revoke.** This is the biggest problem. A JWT is valid until it expires. If a user's account is compromised and you need to log them out immediately, you can't — the token is still valid. Workarounds exist (token blocklists, a per-user token-version claim, short expiry of 15 minutes to 1 hour plus rotated refresh tokens) but they add the complexity that JWTs were supposed to eliminate.
 - **Larger than session cookies.** A JWT carrying user data can be 1–2KB. Not huge, but it's sent with every request.
 - **Token contents are readable.** JWTs are signed but not encrypted by default. Anyone can decode the token and read the contents. Never put sensitive data (passwords, secrets, detailed permissions) in a JWT.
 - **Complex to implement correctly.** Token rotation, refresh tokens, secure storage on the client, handling expiration — there are many ways to get this wrong.
@@ -58,6 +58,27 @@ Sessions are simpler, more secure (easy revocation), and the "scaling problem" i
 
 **The common mistake:** Choosing JWTs "because they're modern" or "because I don't want to manage sessions." JWTs are not simpler — they shift the complexity to token management, refresh flows, and the revocation problem. For a browser-based web app with one backend, sessions are the better default.
 
+### Session Hygiene (Either Model)
+
+- **Regenerate the session ID on login and on every privilege change** (session fixation). A session ID issued to an anonymous visitor must not survive into the authenticated session.
+- **Expire sessions:** 30 minutes idle and 24 hours absolute are the defaults; low-risk consumer apps may extend them if the decision is documented.
+- **"Log out everywhere":** one action revokes every session and refresh token for the account. Trigger it on password change and MFA reset. With JWTs, this needs server-side state (a revocation list or token-version claim checked on each request).
+
+## Where the Browser Keeps the Credential
+
+| Storage | Security | Notes |
+|---------|----------|-------|
+| **httpOnly cookie** | Best | JavaScript can't read it, so XSS can't *steal* it. Automatically sent with requests, so it requires CSRF protection. |
+| **Memory (JS variable)** | Moderate | Not on disk and lost on refresh, which limits persistence — but any script running on the page (including injected XSS) can read the variable or hook `fetch` and use the token. Not safe from XSS. |
+| **sessionStorage** | Poor | Readable by any JavaScript on the page (XSS risk). Cleared when the tab closes. |
+| **localStorage** | Worst | Readable by any JavaScript on the page (XSS risk). Persists forever. Never store auth tokens here. |
+
+**The recommendation:** httpOnly, Secure, SameSite cookies, named with the `__Host-` prefix. They get the best security properties with the least effort.
+
+**What httpOnly does and doesn't do.** It prevents *theft* of the credential: an XSS payload can't read the cookie and send it to the attacker for use elsewhere. It does not prevent *use*: injected script can still call your API from the victim's page and the browser will attach the cookie. That's why CSP, output encoding, and step-up authentication for sensitive actions still matter even with perfect cookie flags.
+
+**A cookie catch:** anything stored in a cookie is sent automatically by the browser on every request — including requests triggered by other sites. That's exactly what CSRF (cross-site request forgery) abuses. If you use cookie-based sessions, you must add CSRF protection (a `SameSite` cookie setting plus anti-CSRF tokens). See `rules/security.md`.
+
 ## Client-Side Storage
 
 Your application may also need to store data on the user's device — preferences, cached data, offline state. The browser provides several options, each with different security implications.
@@ -72,7 +93,8 @@ Your application may also need to store data on the user's device — preference
 - `HttpOnly` — JavaScript can't read the cookie. Prevents XSS attacks from stealing session cookies. **Always set this for session cookies.**
 - `Secure` — Cookie is only sent over HTTPS. Prevents interception on insecure connections. **Always set this in production.**
 - `SameSite=Lax` or `SameSite=Strict` — Prevents the browser from sending the cookie with cross-site requests. Protects against CSRF attacks. **Always set this.**
-- Short `Max-Age` or `Expires` — Don't let session cookies live forever. A few hours to a few days is appropriate for most applications.
+- `Max-Age` or `Expires` matched to the session's absolute lifetime (24 hours by default) — don't let session cookies live forever.
+- `__Host-` prefix on the cookie name — the browser then enforces `Secure`, no `Domain`, and `Path=/`.
 
 ### localStorage
 
@@ -100,7 +122,17 @@ Your application may also need to store data on the user's device — preference
 
 ### The Rule
 
-**Sensitive data (tokens, personal info, financial data) goes in `HttpOnly` cookies — never in localStorage, sessionStorage, or IndexedDB.** Cookies with `HttpOnly` are the only client-side storage that JavaScript can't access, which makes them the only storage safe from XSS attacks.
+**Sensitive data (tokens, personal info, financial data) goes in `HttpOnly` cookies — never in localStorage, sessionStorage, IndexedDB, or a JavaScript variable.** `HttpOnly` cookies are the only client-side storage JavaScript can't read, so they're the only place a credential can't be *exfiltrated* by XSS. They don't make XSS harmless — script on the page can still send requests that carry the cookie — so XSS prevention (encoding, CSP) stays on the list.
+
+## CSRF: Why Cookie Auth Needs It and Token Auth Doesn't
+
+The browser attaches cookies to every request to your domain, no matter which page started the request. So a malicious page can submit a form to `https://yourapp.com/account/delete` and the user's session cookie rides along; your server sees an authenticated request and performs the action. That is cross-site request forgery, and it applies to httpOnly session cookies exactly as much as any other cookie (httpOnly stops JavaScript *reading* the cookie, not the browser *sending* it).
+
+Defenses stack: `SameSite=Lax` (or `Strict`) stops the browser sending the cookie on most cross-site requests; anti-CSRF tokens (a synchronizer token stored server-side, or a double-submit cookie the request must echo in a header or body) bind each state-changing request to a page you served. Nearly every web framework and auth library ships this; turn it on for POST/PUT/PATCH/DELETE.
+
+Tokens sent in an `Authorization` header are not vulnerable in the same way, because the browser never attaches that header on its own; the calling script has to, and a cross-site script can't read your token. That is the trade: header-borne tokens dodge CSRF but take on the storage risk described above (where does the script keep the token?). Pick one model and secure it fully rather than half of each.
+
+CORS does not prevent CSRF. CORS only decides whether the calling script may *read* the response; the browser still *sends* the cross-site request, cookies included, and the server-side action still happens.
 
 ## Stateless Application Design
 
@@ -134,9 +166,11 @@ If the answer is no, the AI should identify what state is stored locally and hel
 
 **Not setting `HttpOnly` on session cookies.** Without this flag, any JavaScript on your page can read the session cookie — including injected scripts from XSS attacks.
 
-**Using JWTs with long expiration times.** A JWT that's valid for 30 days means a stolen token is usable for 30 days. Use short expiration (15 minutes to 1 hour) with refresh tokens, or just use server-side sessions.
+**Using JWTs with long expiration times.** A JWT that's valid for 30 days means a stolen token is usable for 30 days. Use short expiration (15 minutes to 1 hour) with rotated refresh tokens, or just use server-side sessions.
 
-**Keeping sessions alive forever.** Sessions should expire — both when idle (no activity for 30 minutes) and absolutely (no session lives longer than 24 hours, regardless of activity). This limits the window of exposure if a session is stolen.
+**Keeping sessions alive forever.** Sessions should expire — both when idle (no activity for 30 minutes) and absolutely (no session lives longer than 24 hours, regardless of activity). This limits the window of exposure if a session is stolen. Low-risk consumer apps can choose longer windows, but document the choice.
+
+**Reusing the pre-login session ID.** If the anonymous session ID survives login, an attacker who set that ID in the victim's browser first (session fixation) is now logged in as them. Regenerate on login.
 
 **Storing application state in server memory.** Works perfectly on one server, breaks mysteriously when you add a second. The bug manifests as users randomly losing their session, seeing empty carts, or getting logged out — but only sometimes.
 

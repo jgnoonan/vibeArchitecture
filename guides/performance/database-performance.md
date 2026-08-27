@@ -35,17 +35,21 @@ Add an index when:
 - **On every column "just in case."** Each index consumes storage and slows down INSERT, UPDATE, and DELETE operations because the index must be updated too.
 - **On small tables.** A table with 100 rows doesn't need indexes — scanning 100 rows is nearly instant.
 - **On columns that are rarely queried.** An index no query uses is pure overhead.
-- **On columns with very few distinct values.** An index on a boolean column (true/false) or a status column with 3 possible values provides little benefit — the database still has to read a large percentage of the table.
+- **On columns with very few distinct values — as a full index.** An index on a boolean column (true/false) or a status column with 3 possible values provides little benefit — the database still has to read a large percentage of the table. The exception is a **partial index** over the small slice you actually query: `CREATE INDEX idx_orders_pending ON orders (created_at) WHERE status = 'pending'`. If 2% of orders are pending and every worker polls for them, this index is tiny, stays in memory, and turns the poll into an instant lookup. Same trick for `WHERE deleted_at IS NULL`, `WHERE processed = false`, and unique-email-among-live-rows constraints.
 
 ### Composite Indexes
 
-A composite index covers multiple columns. Column order matters.
+A composite index covers multiple columns. Column order matters — but not for the reason most people assume.
 
-For a query like `WHERE country = 'US' AND city = 'Denver'`:
-- Index on `(country, city)` — effective. The database finds US first (narrowing the search), then Denver within US.
-- Index on `(city, country)` — less effective. Finding Denver first narrows less (many countries have a Denver-equivalent).
+**The left-prefix rule.** An index on `(a, b, c)` can serve queries that filter on `a`, on `a AND b`, or on `a AND b AND c` — any *leading* subset. It cannot help a query that filters only on `b` or only on `c`. So order columns by which queries you need to cover, not by how "unique" each column is.
 
-**Rule of thumb:** Put the most selective column (the one with the most distinct values) first.
+**Equality before range.** The index is a sorted structure; the database walks it by matching each column in turn. Once it hits a column used with a range (`>`, `<`, `BETWEEN`, `LIKE 'abc%'`, or the `ORDER BY` column), it can't use any column after that one for narrowing. For `WHERE user_id = 42 AND created_at > '2026-01-01' ORDER BY created_at`:
+- Index on `(user_id, created_at)` — ideal. Jump to user 42, then read the date range in order. No sort step.
+- Index on `(created_at, user_id)` — poor. It scans every row after the date across all users, then filters by user.
+
+**Two equality predicates?** For `WHERE country = 'US' AND city = 'Denver'`, `(country, city)` and `(city, country)` perform the same for that query — both narrow to the same set of rows. Pick the order that also serves your *other* queries via the left-prefix rule (you probably filter by `country` alone more often than by `city` alone). Selectivity of the first column matters mostly when it's used alone.
+
+**Rule of thumb:** equality columns first (ordered by which prefixes you need), then the one range/sort column last, then any columns you only need for covering (`INCLUDE (...)` in Postgres).
 
 ### Covering Indexes
 
@@ -142,7 +146,9 @@ A connection pool maintains a set of pre-established connections. When your code
 ### Tools
 
 - **Built-in:** Most ORMs and database drivers have connection pooling built in. Configure it intentionally.
-- **External pooler:** PgBouncer (for PostgreSQL) sits between your app and database, managing connections efficiently. Useful when you have many app instances or serverless functions.
+- **External pooler:** PgBouncer (for PostgreSQL) sits between your app and database, managing connections efficiently. Useful when you have many app instances or serverless functions. Managed equivalents: Supabase's Supavisor, Neon's pooled endpoint, AWS RDS Proxy, Cloudflare Hyperdrive.
+
+This is the framework's canonical connection-pooling section; `guides/performance/scaling-strategies.md`, `guides/infrastructure/serverless-and-edge.md`, and the rules files link here.
 
 ## Common Query Anti-Patterns
 
@@ -155,14 +161,16 @@ Retrieves all columns when you might only need two or three. Wastes network band
 ### Functions in WHERE Clauses
 
 ```sql
-SELECT * FROM orders WHERE YEAR(created_at) = 2024
+-- MySQL: YEAR(created_at) = 2026
+-- Postgres: EXTRACT(YEAR FROM created_at) = 2026
+SELECT * FROM orders WHERE EXTRACT(YEAR FROM created_at) = 2026
 ```
 
-This applies the YEAR() function to every row before comparing, which prevents index usage.
+This applies the function to every row before comparing, which prevents index usage on `created_at`.
 
-**Fix:** Use a range condition:
+**Fix:** Use a range condition, which the index can walk directly (and which is correct for `timestamptz` in any zone):
 ```sql
-SELECT * FROM orders WHERE created_at >= '2024-01-01' AND created_at < '2025-01-01'
+SELECT * FROM orders WHERE created_at >= '2026-01-01' AND created_at < '2027-01-01'
 ```
 
 ### Missing LIMIT
@@ -181,7 +189,13 @@ If there are a million error logs, this returns all of them.
 SELECT * FROM products WHERE id IN (1, 2, 3, ..., 10000)
 ```
 
-Beyond a few hundred values, this becomes slow. Consider a temporary table or a JOIN instead.
+In Postgres, an `IN` list with thousands of values is fine for the planner (it hashes the list) — the real costs are the giant SQL text, one bind parameter per value (drivers cap these; Postgres allows 65,535), and plan-cache churn because every distinct list length is a different statement. Pass the list as **one array parameter** instead:
+
+```sql
+SELECT * FROM products WHERE id = ANY($1)   -- $1 is an int[] / uuid[]
+```
+
+One parameter, one cached plan, any list size. Beyond tens of thousands of values, or when you need to join extra columns per value, load them into a temporary table (or `unnest($1)` in a JOIN) instead. In MySQL, `IN` lists also scale reasonably, but a temp table is the equivalent escape hatch.
 
 ## Write Performance
 

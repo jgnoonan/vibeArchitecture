@@ -10,6 +10,13 @@ For the compact rules, see `rules/universal.md` (Dependencies section).
 
 Your app depends on hundreds of packages you didn't write. A compromised dependency, a typosquatted package name, or a leaked CI secret can compromise your app without touching your source code. AI-generated projects often pull in packages without vetting them.
 
+Recent examples, so this isn't abstract:
+
+- **xz-utils (March 2024).** A multi-year social-engineering campaign got a backdoor into a core Linux compression library, one step from every SSH server on the internet. Caught by luck, by a developer investigating a half-second login delay.
+- **polyfill.io (June 2024).** A CDN domain serving a script embedded on 100,000+ sites changed hands; the new owner served malware to visitors. Any script you load from someone else's domain is code you've delegated.
+- **tj-actions/changed-files (March 2025).** A popular GitHub Action was compromised and its version tags moved to a malicious commit, dumping CI secrets into build logs for every workflow that referenced it by tag.
+- **Shai-Hulud (September 2025).** A self-propagating npm worm: installing an infected package ran a postinstall script that stole npm and cloud tokens, then used the npm tokens to publish the worm into every package the victim maintained. It spread through hundreds of packages in days.
+
 ---
 
 ## Lock Files (Non-Negotiable)
@@ -68,9 +75,20 @@ AI assistants love adding dependencies. Push back when the cost outweighs the be
 
 ---
 
+## Install Hygiene: Cooldowns and No Scripts
+
+Most malicious package versions are caught and unpublished within a day or two. You avoid nearly all of them by simply not installing anything that new:
+
+- **Minimum release age.** pnpm's `minimumReleaseAge` setting (e.g. `10080` minutes = 7 days) refuses to resolve versions younger than the cutoff; Renovate and Dependabot have equivalent `minimumReleaseAge` / cooldown options for update PRs. Set one.
+- **`--ignore-scripts` by default.** Lifecycle scripts (`preinstall`, `postinstall`) run arbitrary code with your user's permissions on install — that's how Shai-Hulud harvested tokens. Set `ignore-scripts=true` in `.npmrc` (pnpm blocks them by default and lets you allowlist specific packages that genuinely need a build step). Run the few you need explicitly.
+- **Don't run installs with long-lived credentials in the environment.** A stolen token that's not there can't be stolen. Use short-lived, scoped tokens in CI and keep publishing tokens off developer laptops.
+
+---
+
 ## CI/CD Pipeline Hygiene
 
-- Pin action versions in GitHub Actions (`uses: actions/checkout@v4`, not `@main`)
+- Pin GitHub Actions to a full commit SHA with a version comment (`uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2`), not a tag. Tags are mutable — the tj-actions/changed-files compromise (March 2025) worked by moving existing version tags to a malicious commit. Dependabot and Renovate will keep SHA pins updated for you.
+- Set `permissions:` on every workflow to the minimum (`contents: read` by default) so a compromised step can't push code or read more secrets than it needs
 - Limit who can approve workflow runs on fork PRs (prevent secret exfiltration)
 - Store CI secrets in the platform's secret manager — never in workflow YAML
 - Use least-privilege tokens for deployment (scoped to one environment)
@@ -93,9 +111,9 @@ An **SBOM** (Software Bill of Materials) is a machine-readable inventory of ever
 
 Regulated environments often require an SBOM for audits, and EU regulation is extending the requirement to ordinary products — see the Cyber Resilience Act note in `rules/compliance.md`.
 
-**If you publish packages:** enable provenance so consumers can verify your artifact was built from your source by your CI — `npm publish --provenance` on GitHub Actions, or Sigstore signing for containers and binaries. This defends against the compromised-maintainer-laptop class of attack.
+**If you publish packages:** use **npm trusted publishing** — the registry accepts publishes only from your configured CI workflow, authenticated with a short-lived OIDC token, so there is no long-lived npm token to steal (this is the control that would have stopped Shai-Hulud from spreading). Trusted publishing generates provenance automatically; on other setups, `npm publish --provenance` on GitHub Actions or Sigstore signing for containers and binaries lets consumers verify the artifact was built from your source by your CI. PyPI, RubyGems, and crates.io offer the same OIDC-based trusted publishing.
 
-**SLSA** (Supply-chain Levels for Software Artifacts) is the maturity frame for all of this: level 1 is documented, scripted builds; higher levels add tamper-resistant, verifiable build pipelines. You don't need to chase levels — but when a customer security questionnaire asks about supply-chain maturity, SLSA is the vocabulary it will use.
+**SLSA v1.1** (Supply-chain Levels for Software Artifacts) is the maturity frame for all of this: Build L1 is documented, scripted builds with provenance; L2 adds a hosted build platform that signs the provenance; L3 adds a hardened, isolated builder. You don't need to chase levels — but when a customer security questionnaire asks about supply-chain maturity, SLSA is the vocabulary it will use. The companion US-government frame is **NIST SSDF v1.1 (SP 800-218)**, which federal procurement references, with **SP 800-218A** adding a profile for generative-AI and model development; an SSDF v1.2 draft was published in December 2025.
 
 ---
 
@@ -106,5 +124,5 @@ Regulated environments often require an SBOM for audits, and EU regulation is ex
 | Personal | Lock file committed, `.env` in `.gitignore` |
 | Shared | + `npm audit` / equivalent before deploy |
 | Public | + Dependabot or equivalent, secret scanning and SAST (CodeQL or Semgrep) in CI |
-| Business | + pinned CI actions, image scanning if containerized, SBOM generated at build |
+| Business | + SHA-pinned CI actions, minimum release age on installs, image scanning if containerized, SBOM generated at build, trusted publishing if you publish |
 | Regulated | + documented SBOM process, approved dependency allowlist |

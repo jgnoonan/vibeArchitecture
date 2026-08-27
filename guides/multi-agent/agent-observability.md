@@ -20,8 +20,9 @@ Agent observability means knowing three things at all times:
 For every call to an AI model, log:
 
 - **Timestamp** — when the call happened
-- **Model** — which model and version (e.g., `claude-sonnet-4-20250514`, not just "Sonnet")
-- **Prompt identifier** — a name or ID for the prompt template used (e.g., "classify-ticket-v3"), NOT the full prompt text (that's too large for high-volume logging)
+- **Model** — the exact dated or versioned model ID the provider returned, not the tier or alias ("the mid-tier one" is useless six months later)
+- **Prompt identifier and version** — a name or ID for the prompt template used (e.g., "classify-ticket-v3"), plus a hash of the fully rendered prompt so you can tell two calls apart without storing the text. NOT the full prompt (too large for high-volume logging, and it may contain personal data)
+- **On whose behalf** — the user or principal the agent was acting for (`agent X on behalf of user Y`)
 - **Input tokens** — how many tokens went in
 - **Output tokens** — how many tokens came out
 - **Latency** — how long the call took (from request sent to response received)
@@ -100,7 +101,8 @@ For small projects, this can be as simple as a spreadsheet updated from your log
 
 ### Setting Alerts
 
-- **Budget threshold alerts.** Alert at 50%, 80%, and 100% of your monthly budget. At 100%, you need to decide: increase the budget or reduce usage.
+- **Budget threshold alerts.** Alert at the thresholds set in `guides/multi-agent/llm-architecture.md` (Setting Budgets). Alerts are not caps — the hard spend cap that actually stops calls lives in `rules/multi-agent.md` (Cost Controls).
+- **Loop-cap and kill-switch events.** Every time an iteration cap fires or the kill switch is flipped is an incident-grade signal; alert on it.
 - **Per-pipeline cost spike.** If a single pipeline run costs 10x the average, alert immediately. This likely indicates an infinite loop or runaway agent.
 - **Sudden usage increase.** If daily call volume doubles without a corresponding increase in users, investigate. A bug might be causing duplicate calls.
 
@@ -123,11 +125,7 @@ Use a second AI model to evaluate the first model's output. "On a scale of 1–5
 
 This works surprisingly well for relative comparisons (is output A better than output B?) but less well for absolute quality assessment. It's also not free — the judge model consumes tokens too.
 
-Practical tips for LLM-as-Judge:
-- Use a more capable model as the judge than the model being judged
-- Provide a clear rubric (not "is this good?" but "does it include all three key points, avoid fabrication, and stay under 200 words?")
-- Run the same evaluation multiple times and average scores to reduce randomness
-- Validate the judge occasionally with human evaluation — make sure the judge and humans agree
+Practical tips for building a judge (rubrics, judge model choice, averaging, validating against humans) are in `guides/multi-agent/testing-ai-systems.md` (LLM-as-Judge).
 
 **Task-specific metrics (when available):**
 - Classification: accuracy, precision, recall against labeled test data

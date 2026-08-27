@@ -24,6 +24,12 @@ An adversary who records your encrypted traffic today can decrypt it in the futu
 - Application-layer E2EE needs it explicitly: PQXDH is the published pattern for adding ML-KEM to an X3DH-style handshake.
 - **Signatures can wait; confidentiality can't.** A quantum-forged signature matters only once quantum computers exist; recorded ciphertext is vulnerable retroactively. Prioritize hybrid *key agreement* now, plan signature migration (ML-DSA) later.
 
+**The standards and the clock:**
+
+- **FIPS 203 (ML-KEM, formerly Kyber)** is the key-encapsulation standard; **FIPS 204 (ML-DSA, formerly Dilithium)** and **FIPS 205 (SLH-DSA, formerly SPHINCS+)** are the signature standards. All three were finalized in August 2024. NIST selected **HQC** in March 2025 as a backup KEM built on different mathematics (code-based rather than lattice-based); its draft standard is expected in 2026.
+- **NIST IR 8547** sets the migration timeline: quantum-vulnerable algorithms (RSA, ECDSA, ECDH, EdDSA at 112-bit security) are **deprecated after 2030 and disallowed after 2035**. Plan library and protocol upgrades against those dates, and inventory where you use classical public-key crypto now — you can't migrate what you haven't found.
+- In TLS the hybrid group is `X25519MLKEM768`; for application protocols, PQXDH (Signal) and HPKE with a hybrid KEM are the reference patterns. "Hybrid" means the derived key depends on both the classical and the PQ shared secret, so an attacker must break both.
+
 ## Engineering Rules That Prevent Real Findings
 
 Lessons from adversarial reviews of production encrypted systems — each of these was a real defect class:

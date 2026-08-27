@@ -40,19 +40,44 @@ If you're storing passwords yourself (even with a library helping), these rules 
 
 ### Hashing
 
-- **Use bcrypt, argon2, or scrypt.** These are purposefully slow algorithms. "Slow" is a feature — it means an attacker who steals your password database can only test a few thousand guesses per second instead of billions.
+- **Use argon2id first; scrypt or bcrypt are acceptable.** These are purposefully slow, memory-hard (argon2id, scrypt) algorithms. "Slow" is a feature — it means an attacker who steals your password database can only test a few thousand guesses per second instead of billions. If you use bcrypt, know that it silently truncates passwords at 72 bytes — a 100-character passphrase is checked as its first 72 bytes. Don't "fix" this by pre-hashing with SHA-256 unless your library documents that pattern safely; prefer argon2id.
 - **Never use MD5, SHA-1, or SHA-256 for passwords.** These are fast hash algorithms designed for data integrity, not passwords. An attacker with a stolen SHA-256 password database can test billions of guesses per second on consumer hardware.
 - **Never store passwords in plain text.** This should be obvious, but it still happens. If your database is breached and passwords are in plain text, every user's password is instantly compromised — and since people reuse passwords, their accounts on other sites are too.
 
 ### Password Policies
 
-- **Minimum length over complexity.** "Correct-Horse-Battery-Staple" is more secure and more memorable than "P@$$w0rd!". Require a minimum of 8 characters (12+ is better); don't force special characters.
-- **Check against known breached passwords.** Libraries like `haveibeenpwned` let you check if a password appeared in a data breach. Reject common and known-compromised passwords.
-- **Never limit maximum password length** to anything less than 128 characters. Users who use password managers generate long random passwords. Let them.
+These follow NIST SP 800-63B-4 (final, July 2025), which is what auditors and modern auth libraries now expect:
+
+- **Minimum 8 characters (SHALL), 15 or more recommended (SHOULD).** Length is what makes a password hard to guess; "Correct-Horse-Battery-Staple" beats "P@$$w0rd!".
+- **Allow at least 64 characters.** Password managers generate long random strings. Let them. (Watch the 72-byte bcrypt limit above.)
+- **No composition rules.** Don't require uppercase, digits, or symbols. They push users toward predictable substitutions and don't measurably improve strength.
+- **No periodic rotation.** Force a change only when you have evidence of compromise. Scheduled expiry produces `Summer2026!` → `Autumn2026!`.
+- **Screen against breached passwords.** Check new passwords with the Pwned Passwords k-anonymity API (you send the first five characters of the SHA-1 hash, get back matching suffixes, and compare locally — the password never leaves your server) and reject any that appear. Also block your own product name and obvious context words.
+- **Show a strength meter, allow paste, and offer a "show password" toggle.** These are usability rules that produce stronger passwords than any composition rule.
+
+### Login Throttling Without Locking Users Out
+
+Brute-force defense is a rate-limiting problem, not a lockout problem. A hard rule like "lock after five failures" means an attacker who knows a victim's email can lock them out at will — a denial of service you built yourself.
+
+- **Throttle per IP and per account independently.** Per-IP catches spraying across many accounts; per-account catches targeted guessing through many IPs.
+- **Use progressive delay.** After a few failures, add a growing delay (1s, 2s, 4s…) or require a CAPTCHA with an accessible alternative. This makes guessing impractical while a legitimate user who mistyped twice barely notices.
+- **Lock as a last resort, and notify.** If you do lock after sustained abuse, make it temporary (minutes, growing), email the owner with a "this wasn't me" link, and never reveal in the login response that the account exists or is locked in a way that differs from a wrong password.
+- **Counters live in shared state.** In-memory counters reset on every serverless cold start and are not shared across instances. Use Redis or your platform's limiter (see `rules/api.md`).
+
+### Password Reset
+
+- Reset tokens are single-use, high-entropy (32+ random bytes), stored **hashed** (a database leak must not hand out live reset links), and expire quickly — 15 minutes is plenty.
+- The "forgot password" endpoint returns the same response, in the same time, whether or not the email exists: "If that address is registered, we've sent a link." Anything else is an account-enumeration oracle.
+- Signup must not enumerate either. "That email is already registered" tells an attacker who your users are; instead, send an email to the address ("you already have an account — here's how to log in") and show the same "check your email" screen both ways. Watch timing too — hashing a password only on the "new user" path is a measurable difference.
+- Completing a reset invalidates every other outstanding reset token and all existing sessions for the account.
+
+### Email Change
+
+Changing the address that controls account recovery is the most sensitive settings change you have. Verify **both** addresses: send a confirmation link to the new address and switch only when it's clicked; send a notice with a revert link to the old address; and require step-up authentication (password or MFA) before starting. Until the new address is confirmed, keep sending security notices to the old one.
 
 ## Passkeys and WebAuthn — The Direction of Travel
 
-Passkeys are the modern replacement for passwords, and in 2026 they've gone mainstream — Apple, Google, and Microsoft all support them across their platforms. For a new app, a passkey is increasingly the best sign-in option you can offer, and it belongs right alongside passwords as a first-class choice.
+Passkeys are the modern replacement for passwords. Apple, Google, and Microsoft all support them across their platforms, and every major auth provider offers them. For a new app, a passkey is the best sign-in option you can offer, and it belongs alongside passwords as a first-class choice. NIST SP 800-63B-4 recognizes syncable passkeys as meeting AAL2.
 
 **How they work, in plain language:** Instead of a shared secret you both know (a password), the user's device holds a private key and your server holds the matching public key. When someone logs in, their device proves it holds the private key — usually unlocked with a fingerprint, face scan, or device PIN. The private key never leaves the device and is never sent to your server.
 
@@ -63,6 +88,14 @@ Passkeys are the modern replacement for passwords, and in 2026 they've gone main
 - **They sync.** Modern passkeys back up and sync across a user's devices through their platform (iCloud Keychain, Google Password Manager) or a password manager, so losing one phone doesn't lock them out.
 
 **The easy path:** Don't implement WebAuthn (the underlying standard) by hand. The providers this guide already recommends — Clerk, Auth0, Supabase Auth, and others — support passkeys with a configuration toggle. Turn it on and let them handle the cryptography and the account-recovery edge cases.
+
+**If you configure WebAuthn yourself (or review what the AI generated), these settings matter:**
+- **RP ID** is your registrable domain (`example.com`), which lets the passkey work on every subdomain. It can never change without invalidating every credential, so choose it once.
+- **`userVerification: "required"`** for passwordless sign-in — the device must check biometrics or PIN, not just presence. `"preferred"` is fine when the passkey is a second factor.
+- **`attestation: "none"`** unless you have a compliance reason to know the authenticator model. Requesting attestation adds privacy prompts and complexity for no benefit to a typical app.
+- **Allow multiple credentials per account** (phone, laptop, security key) and show them in settings with names and last-used dates, so losing one device isn't a lockout.
+- **Conditional UI** (`mediation: "conditional"`, `autocomplete="username webauthn"`) surfaces passkeys in the browser's autofill on the username field — it's the difference between "what's a passkey?" and one-tap sign-in.
+- Store the credential's sign counter and reject a decreasing value (cloned authenticator), and keep a non-passkey recovery path that's as strong as the passkey (not an SMS code).
 
 ## Email Magic Links and One-Time Codes
 
@@ -76,73 +109,36 @@ A "magic link" logs a user in by emailing them a link they click; a one-time cod
 - **Single-use.** A link or code must stop working the moment it's used once. Otherwise a forwarded or logged link is a permanent key to the account.
 - **Short-lived.** Expire links and codes quickly (5–15 minutes). A link that works for days is a link that leaks.
 - **Rate-limited.** Limit how often codes can be requested and how many wrong guesses are allowed, or an attacker can brute-force a short numeric code.
+- **Stored hashed, compared in constant time.** Same rules as password-reset tokens.
 
-## Social Login and OAuth (Sign in with Google, etc.)
+## Social Login, OAuth, and OIDC (Sign in with Google, etc.)
 
-"Sign in with Google/Apple/GitHub" is genuinely a good option — you offload passwords and account security to a provider that does it well. As with everything else here, **use a provider (Auth0, Clerk, Supabase, Cognito) to wire it up** rather than hand-rolling the OAuth dance. But even through a provider, there are pitfalls a vibe coder hits, and getting them wrong creates real account-takeover holes:
+"Sign in with Google/Apple/GitHub" is genuinely a good option — you offload passwords and account security to a provider that does it well. OAuth 2.0 is the authorization framework; OpenID Connect (OIDC) is the identity layer on top that gives you a signed ID token saying who the user is. As with everything else here, **use a provider (Auth0, Clerk, Supabase, Cognito) to wire it up** rather than hand-rolling the dance. But even through a provider, there are pitfalls a vibe coder hits, and getting them wrong creates real account-takeover holes:
 
-- **Allowlist your redirect URIs exactly.** After login, the provider sends the user back to a URL you specify. Register only the exact URLs you control and nothing else — no wildcards, no "close enough." A loose redirect URI lets an attacker redirect the login (and its token) to a site they control.
-- **Always use the `state` parameter.** `state` is a random value your app sends into the login flow and checks when the user comes back. It ties the response to the request that started it. Without it, an attacker can trick a victim into completing a login the attacker began — logging the victim into the attacker's account (login CSRF), or the reverse. Providers handle this for you; don't disable it.
+- **Follow RFC 9700 (OAuth 2.0 Security Best Current Practice, January 2025) and OAuth 2.1.** In practice that means: authorization-code flow with PKCE for *every* client (web, SPA, mobile, CLI), no implicit flow, no resource-owner password grant, exact redirect URI matching, and sender-constrained or rotated refresh tokens.
+- **Allowlist your redirect URIs exactly.** After login, the provider sends the user back to a URL you specify. Register only the exact URLs you control and nothing else — no wildcards, no "close enough." A loose redirect URI lets an attacker redirect the login (and its code) to a site they control.
+- **Always use the `state` parameter.** `state` is a random value your app sends into the login flow and checks when the user comes back. It ties the response to the request that started it. Without it, an attacker can trick a victim into completing a login the attacker began — logging the victim into the attacker's account (login CSRF), or the reverse. Providers handle this for you; don't disable it. With OIDC, also send and verify `nonce`.
 - **Use the authorization-code flow with PKCE, not the implicit flow.** The implicit flow hands the token straight to the browser and is deprecated. Authorization-code-with-PKCE is the current standard and what every reputable provider defaults to — keep that default. AI tools routinely generate the deprecated pattern from older training data, so check what yours produced.
 - **Never put tokens in URLs or query strings.** URLs get logged everywhere — server logs, proxies, browser history, analytics tools. (This is the core reason the implicit flow is dead.)
-- **Validate every token you accept:** issuer (`iss` — did it come from the provider you expect?), audience (`aud` — was it issued for YOUR app?), expiry (`exp`), and signature. Skipping audience validation means a token issued for someone else's app can be replayed against yours.
-- **Handle account linking and duplicate emails carefully.** The same person may sign in with Google today and email/password tomorrow. If both carry the same email, don't silently create two separate accounts, and don't let a new sign-in method attach to an existing account without proof. Before linking a new provider to an existing account, verify the person actually controls that email (or requires them to log in with the existing method first). Getting this wrong lets one login method hijack an account created with another.
+- **Validate every token you accept** (RFC 8725, JWT Best Current Practices): issuer (`iss` — did it come from the provider you expect?), audience (`aud` — was it issued for YOUR app?), expiry (`exp`), and signature. **Pin the algorithm you accept** in your verifier — reject `alg: none`, and never let the token choose between HMAC and RSA/ECDSA (a token that says `HS256` verified against your RSA *public* key as the HMAC secret is a classic bypass). Resolve `kid` only against the issuer's published JWKS, cache it, and check `typ` so an ID token can't be replayed as an access token. Skipping audience validation means a token issued for someone else's app can be replayed against yours.
+- **Rotate refresh tokens for public clients.** Browsers and mobile apps can't keep a client secret, so each refresh must issue a new refresh token and invalidate the old one; if an old one is ever presented again, revoke the whole family — someone stole it.
+- **Sender-constrain tokens when a stolen bearer token is your main worry.** DPoP (RFC 9449) binds a token to a key the client proves it holds on every request, so a copied token is useless elsewhere. Mutual TLS is the server-to-server equivalent.
+- **CLIs, TVs, and agent tools use the Device Authorization flow (RFC 8628):** the tool shows a short code and URL, the user approves in a real browser, and the tool polls for the token. Don't ask users to paste passwords into a terminal.
+- **Services acting on behalf of a user use token exchange (RFC 8693):** exchange the user's token for a narrower, audience-specific token for the downstream service instead of forwarding the original everywhere.
+- **Handle account linking and duplicate emails carefully.** The same person may sign in with Google today and email/password tomorrow. If both carry the same email, don't silently create two separate accounts, and don't let a new sign-in method attach to an existing account without proof. Before linking a new provider to an existing account, verify the person actually controls that email (or require them to log in with the existing method first). Getting this wrong lets one login method hijack an account created with another.
 - **Never trust `email_verified: false`.** Providers tell you whether they've confirmed the user owns the email. If that flag is false (or missing), treat the email as unverified — never use it to match or link to an existing account, or an attacker can register an unverified address to steal someone else's account.
 
-## Sessions vs. Tokens (JWTs)
+## Sessions vs. Tokens — The Short Version
 
-Two main approaches to "remembering" that a user is logged in:
+There are two ways to remember that a user is logged in: a **server-side session** (a random ID in a cookie, the real state on your server) or a **JWT** (a signed, self-contained token the client presents). For most web apps, **server-side sessions are the better default** — they're simpler and instantly revocable. Use JWTs when you have a concrete reason (API consumed by mobile or third parties, several backend services), keep access tokens to **15 minutes to 1 hour**, and pair them with rotated refresh tokens.
 
-### Server-Side Sessions
+Session hygiene that applies either way:
 
-**How it works:** When a user logs in, the server creates a session record (stored in a database or cache), generates a random session ID, and sends it to the browser as a cookie. On each request, the browser sends the cookie, and the server looks up the session.
+- **Regenerate the session ID on login and on any privilege change** (session fixation). If the ID from the anonymous visit survives login, an attacker who planted that ID — via a link or a subdomain cookie — now owns the authenticated session.
+- **Expire sessions.** Defaults: 30 minutes idle, 24 hours absolute. Low-risk consumer apps may extend these, but write the decision down.
+- **"Log out everywhere."** Users and support must be able to revoke every session and refresh token for an account in one action, and it should happen automatically on password change and MFA reset. With JWTs this needs a server-side revocation list or a per-user token version claim checked on each request.
 
-**Advantages:**
-- Easy to invalidate — delete the session record, and the user is logged out immediately
-- Session data stays on the server — the client only has a meaningless ID
-- Well-understood, battle-tested pattern
-
-**Disadvantages:**
-- Requires server-side storage (database or Redis)
-- Adds a database lookup on every request
-- Harder to scale across multiple servers without shared session storage
-
-**Best for:** Traditional web applications, applications where immediate session invalidation matters.
-
-### Token-Based (JWT)
-
-**How it works:** When a user logs in, the server creates a JSON Web Token containing user information (claims), signs it with a secret key, and sends it to the client. On each request, the client sends the token, and the server verifies the signature without needing to look anything up.
-
-**Advantages:**
-- No server-side session storage needed
-- Works naturally across multiple servers
-- Can carry useful information (user ID, roles) without a database lookup
-
-**Disadvantages:**
-- **Cannot be easily revoked.** Once issued, a JWT is valid until it expires. If a user logs out or is compromised, you can't invalidate the token without additional infrastructure (a token blacklist, which partially negates the stateless advantage).
-- Tokens can be large (they carry data), adding to every request
-- If the signing secret is compromised, every token is compromised
-
-**Best for:** APIs consumed by mobile apps or SPAs, microservices architectures, situations where statelessness is a priority.
-
-### The Honest Recommendation
-
-For most web applications, **server-side sessions are simpler and more secure.** The ability to instantly revoke sessions is valuable, and the "scaling" disadvantage rarely matters until you're running many servers. Use JWT when you have a specific reason (API-only backend, microservices, mobile clients), and keep token expiration short (15 minutes to a few hours).
-
-## Token Storage
-
-Where the browser stores the authentication credential matters:
-
-| Storage | Security | Notes |
-|---------|----------|-------|
-| **httpOnly cookie** | Best | JavaScript can't access it. Automatically sent with requests. Requires CSRF protection. |
-| **Memory (JS variable)** | Good | Lost on page refresh. No persistence. Safe from XSS but inconvenient. |
-| **sessionStorage** | Moderate | Accessible to JavaScript (XSS risk). Cleared when tab closes. |
-| **localStorage** | Worst | Accessible to JavaScript (XSS risk). Persists forever. Never store auth tokens here. |
-
-**The recommendation:** httpOnly, Secure, SameSite cookies. They get the best security properties with the least effort.
-
-**A cookie catch:** anything stored in a cookie is sent automatically by the browser on every request — including requests triggered by other sites. That's exactly what CSRF (cross-site request forgery) abuses. If you use cookie-based sessions, you must add CSRF protection (a `SameSite` cookie setting plus anti-CSRF tokens). See `rules/security.md`.
+The full comparison, cookie flags, and where tokens should (and shouldn't) live in the browser are in `guides/security/state-management.md` — read that before choosing.
 
 ## Common Authentication Mistakes
 
@@ -152,9 +148,11 @@ Where the browser stores the authentication credential matters:
 
 **Not invalidating sessions on security events:** When a user changes their password, all existing sessions should be invalidated. Otherwise, an attacker who stole a session continues to have access even after the password change.
 
-**Leaking information in auth responses:** "Invalid password" tells an attacker the username exists. Use generic messages: "Invalid email or password" for both cases.
+**Leaking information in auth responses:** "Invalid password" tells an attacker the username exists. Use generic messages: "Invalid email or password" for both cases — and make both paths take the same time.
 
-**No rate limiting on login:** Without rate limiting, an attacker can try millions of password combinations. Implement lockout after 5–10 failed attempts, or add progressive delays.
+**No throttling on login:** Without it, an attacker can try millions of password combinations. Throttle per IP and per account with progressive delays; lock out only as a last resort and notify the owner (see "Login Throttling Without Locking Users Out" above).
+
+**Comparing secrets with `==`:** String equality returns as soon as the first byte differs, so an attacker can learn a token or HMAC byte by byte from response timing. Use `crypto.timingSafeEqual`, `hmac.compare_digest`, or your library's constant-time compare for API keys, signatures, reset tokens, and OTPs.
 
 ## Multi-Factor Authentication (MFA)
 
@@ -173,7 +171,7 @@ MFA requires two or more forms of identification:
 From strongest to last resort:
 
 - **Passkeys / WebAuthn security keys** — phishing-resistant: the credential is bound to your domain, so a fake login page can't capture it. Passkeys work as a second factor or can replace passwords entirely. Prefer these when your auth provider supports them (most do now).
-- **Authenticator apps (TOTP)** — the six-digit codes from apps like Google Authenticator or 1Password. Widely supported, works offline, no phone number needed. A solid default.
+- **Authenticator apps (TOTP)** — the six-digit codes from apps like Google Authenticator or 1Password. Widely supported, works offline, no phone number needed. A solid default. Two details libraries get wrong: **a code is single-use** — store the last accepted time-step per user and refuse it again, or a phished code can be replayed within its 30-second window — and accept **at most one step of clock skew** each way, not a wide window.
 - **SMS codes** — last resort only. Attackers take over phone numbers through SIM-swapping (convincing the carrier to transfer the number to their SIM), and then receive the victim's codes. Better than nothing, but don't offer it as the primary option if you can avoid it.
 
 ### Recovery and Lockout

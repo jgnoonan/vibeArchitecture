@@ -90,20 +90,19 @@ If No and tier is Personal or Shared: simplifies security guidance significantly
 - Health or medical information
 - Government-issued IDs (SSN, driver's license, passport numbers)
 - Location tracking or movement data
-- None of the above — just non-personal stuff (todos, game scores, preferences)
-
 - Biometric data (face scans, fingerprints, voiceprints)
 - Data about children under 13 (or under 16 in the EU)
+- None of the above — just non-personal stuff (todos, game scores, preferences)
 
 **Tier upgrades based on answers:**
 - Health/medical data → upgrade to **Regulated**
 - Biometric data → upgrade to **Regulated** (special-category data under GDPR)
-- Data about children → upgrade to at least **Business**, and flag COPPA/age-verification obligations
+- Data about children → upgrade to **Regulated**, and flag COPPA / GDPR-K age-verification and parental-consent obligations
 - Payment/financial data → upgrade to at least **Business**
 - Government IDs → upgrade to at least **Business**
 - Names/emails/phone/location about **other people** → apply the **Privacy overlay** (load `rules/privacy.md`): the app owes users data-subject rights (access, deletion, consent). This is separate from tier and applies from Shared upward.
 
-**Also ask where the users are** (one line): *"Will any of your users be in the EU, UK, or California?"* If yes, note in the profile that GDPR / UK GDPR / CCPA obligations apply — this makes the Privacy overlay mandatory, not optional, even for a Public-tier app.
+**Also ask where the users are** (one line): *"Will any of your users be in the EU, UK, or California?"* If yes, note in the profile that GDPR / UK GDPR / CCPA obligations apply — this makes the Privacy overlay mandatory, not optional, even for a Public-tier app. It does **not** raise the tier: ordinary personal data about EU/UK/California users is the overlay's job, not Regulated's.
 
 ---
 
@@ -117,7 +116,9 @@ If No and tier is Personal or Shared: simplifies security guidance significantly
 - **Command-line tool** — run from a terminal
 - **More than one of these**
 
-Skip if Q2 was "Just me" and the project is clearly a local script or tool.
+Record as **Platform** in the profile: web browser → `web`; mobile app (iOS, Android, React Native, Flutter) → `mobile-native`; web and mobile → `both`; desktop, API, or command-line → `other`. `mobile-native` or `both` loads `rules/mobile.md`.
+
+Skip if Q2 was "Just me" and the project is clearly a local script or tool (record Platform as `other`).
 
 ---
 
@@ -159,7 +160,7 @@ If "No idea": that's fine. Design for hundreds initially, make it possible to sc
 
 **Skip if Q2 was "Just me."**
 
-If "Critical": upgrade to at least **Business**. If combined with sensitive data from Q4, likely **Regulated**.
+Record the answer as **Downtime impact** in the profile. If "Critical": upgrade to at least **Business**. If "Critical" is combined with sensitive data from Q4 (health, payment, biometric, government ID, children's data): **Regulated**.
 
 ---
 
@@ -266,7 +267,7 @@ Scan the project and look for the following. Summarize findings for the user in 
 - Types of tests present (unit, integration, e2e)
 
 **AI and agent usage (signals for multi-agent rules):**
-- AI/LLM SDK packages in dependencies (`openai`, `anthropic`, `@anthropic-ai/sdk`, `langchain`, `langgraph`, `crewai`, `autogen`, `llamaindex`, `ai` (Vercel AI SDK), `google-generativeai`, `cohere`, `replicate`)
+- AI/LLM SDK packages in dependencies (`openai`, `openai-agents`, `anthropic`, `@anthropic-ai/sdk`, `@anthropic-ai/claude-agent-sdk`, `langchain`, `langgraph`, `crewai`, `autogen`, `llamaindex`, `ai` and `@ai-sdk/*` (Vercel AI SDK), `mastra`, `@google/genai` (and the deprecated `google-generativeai`), `cohere`, `replicate`)
 - Multiple LLM client instantiations or multiple agent class definitions
 - Tool/function definitions for LLM function calling
 - Prompt files or prompt template directories
@@ -306,7 +307,7 @@ After analysis, present a summary to the user:
 Use the analysis to pre-fill answers to the questionnaire:
 - **Q3 (accounts/login):** Detected from auth configuration
 - **Q4 (data stored):** Inferred from database schema and models
-- **Q5 (access method):** Detected from project type (web app, API, CLI, etc.)
+- **Q5 (access method → Platform):** Detected from project type — a browser front end → `web`; iOS/Android/React Native/Flutter project → `mobile-native`; both → `both`; API-only, desktop, or CLI → `other`
 - **Q6 (hosting):** Detected from deployment configuration
 - **Q10:** Already answered — existing code
 
@@ -348,9 +349,12 @@ Then check for upgrades (tier can only go UP):
   Q4 has biometric data                 → Regulated
   Q4 has payment/financial data          → at least Business
   Q4 has government IDs                  → at least Business
-  Q4 has children's data                 → at least Business (flag COPPA)
+  Q4 has children's data                 → Regulated (flag COPPA / GDPR-K)
   Q8 is "Critical"                       → at least Business
   Q8 is "Critical" + sensitive data (Q4) → Regulated
+
+Ordinary personal data (names, emails) and EU/UK/California users do NOT
+raise the tier — they turn on the Privacy overlay below.
 
 Then apply the Privacy overlay (independent of tier — it is an ADD-ON, not an upgrade):
   App stores personal data about OTHER people
@@ -444,7 +448,7 @@ Even when the determination suggests services, the AI should emphasize the Stran
 
 ## After Determining the Tier
 
-1. **Add `vibeArchitecture/` to the project's `.gitignore`.** The framework is a development tool — it should not be committed to the project's repository. Add a `vibeArchitecture/` line to the project's root `.gitignore` file. Create the file if it doesn't exist.
+1. **Add `vibeArchitecture/` to the project's `.gitignore` — unless it is a git submodule.** The framework is a development tool — a copied-in folder should not be committed to the project's repository. Add a `vibeArchitecture/` line to the project's root `.gitignore` file (create the file if it doesn't exist). If `.gitmodules` lists it as a submodule, leave it tracked.
 
 2. **Tell the user their tier and what it means.** Read from `tier-definitions.md`. Be encouraging, not intimidating. Example: *"Based on your answers, this is a Public-tier project. That means we'll apply security and data protection rules appropriate for an app that strangers on the internet will use. Nothing scary — just smart defaults."*
 
@@ -459,6 +463,6 @@ Even when the determination suggests services, the AI should emphasize the Stran
 
 6. **Load the rules** from `rules/_index.md` for the determined tier.
 
-7. **Confirm what's active before writing code.** State it back in two or three lines: the tier and why, whether the privacy overlay is on, and the exact rule files loaded. Example: *"Active guardrails: Public tier + privacy overlay. Loaded rules: universal, security, data, testing, api, accessibility, privacy. I'll follow these as I build — tell me if the tier looks off."* This lets the user catch a wrong tier before it shapes the code. If you can't name the loaded rules, you haven't loaded them. Then begin building.
+7. **Confirm what's active before writing code** — tier and why, privacy overlay on/off, exact rule files loaded — in two or three lines, as described in `ARCHITECT.md` ("Confirm what's active before writing code"). Then begin building.
 
-7. **For Business and Regulated tiers:** Mention the production readiness checklist. *"When you're getting ready to launch, we'll go through a production readiness checklist together. It covers security, reliability, monitoring, and everything you need for a solid launch. We don't need it now — just know it's there for when you're ready."*
+8. **For Business and Regulated tiers:** Mention the production readiness checklist. *"When you're getting ready to launch, we'll go through a production readiness checklist together. It covers security, reliability, monitoring, and everything you need for a solid launch. We don't need it now — just know it's there for when you're ready."*

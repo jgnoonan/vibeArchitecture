@@ -58,9 +58,22 @@ The standard approach that works for projects of any size:
    - Ruby: `dotenv`
    - Most frameworks have this built in
 
+## Client-Exposed Variables Are Not Secret
+
+Frontend frameworks ship any variable with a special prefix straight into the browser bundle or app binary: `NEXT_PUBLIC_` (Next.js), `VITE_` (Vite), `EXPO_PUBLIC_` (Expo), `REACT_APP_` (Create React App), `PUBLIC_` (SvelteKit/Astro). That is the prefix's *purpose* — it marks values that are safe to publish, like a public analytics ID. A variable named `NEXT_PUBLIC_STRIPE_SECRET_KEY` is a secret printed on a billboard. Anything a server must keep private stays unprefixed and is only read in server code (API routes, server components, edge functions).
+
+## AI Coding Tools Are a Leak Surface
+
+Every AI assistant you use keeps a record of what it saw. Chat transcripts persist on the provider's side and in local history; MCP server configs (`.mcp.json`, `claude_desktop_config.json`, `.cursor/mcp.json`) commonly hold API keys as plain strings; `.claude/`, `.cursor/`, `.aider*`, and agent run logs capture file contents and command output — including the `.env` an agent just `cat`-ed to "check the config."
+
+- Reference secrets by environment variable name in MCP configs (`"env": {"API_KEY": "${API_KEY}"}`) rather than pasting the value.
+- Add tool directories and logs to `.gitignore` and to your secret scanner's paths, and don't commit MCP config that contains literal keys.
+- Never paste a live key into a prompt. If one slips, treat it as leaked and rotate it — the transcript outlives the conversation.
+- Give agents scoped, revocable credentials (a test-mode key, a token limited to one repo) rather than your personal master keys.
+
 ## Leveling Up: Secrets Managers
 
-For production applications (Business tier and above), `.env` files have limitations:
+A secrets manager is preferred at Shared tier and required at Business tier and above. `.env` files have limitations:
 - They sit on disk in plain text
 - There's no access logging
 - Rotation requires manual file editing and redeployment
@@ -111,3 +124,5 @@ For how JWT signing keys and session secrets are used in the first place, see `g
 | Secrets in log output | Logs are often widely accessible | Redact secrets before logging |
 | Secrets in error messages | Error pages can be seen by users | Never include secrets in user-visible output |
 | Sharing secrets via chat/email | Creates a permanent record in an insecure channel | Use a secrets manager or encrypted sharing tool |
+| Pasting a key into an AI chat or MCP config | Transcripts and config files persist and get committed | Reference by env var name; rotate anything pasted |
+| Secret behind `NEXT_PUBLIC_` / `VITE_` / `EXPO_PUBLIC_` | The prefix ships the value to every client | Only public values get the prefix; secrets stay server-side |

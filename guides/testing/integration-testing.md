@@ -20,7 +20,7 @@ Most frameworks handle this automatically. Ask your AI: *"Is my test suite confi
 
 ### Test Containers
 
-For more robust testing, "test containers" spin up a real database in a temporary Docker container just for your tests. When the tests finish, the container is destroyed. This gives you a completely fresh, isolated database every time.
+For more robust testing, [Testcontainers](https://testcontainers.com/) (available for Node, Python, Java, Go, .NET, and more) spins up a real database in a temporary Docker container just for your tests. When the tests finish, the container is destroyed. This gives you a completely fresh, isolated database every time.
 
 This is the gold standard for integration testing, but it requires Docker to be installed. If you're not using Docker yet, a dedicated test database is perfectly fine.
 

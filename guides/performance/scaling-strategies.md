@@ -34,9 +34,9 @@ Instead of one big server, run multiple copies of your application behind a load
 If your application stores anything in memory between requests (user sessions, uploaded files in a temp directory, cached data in a variable), that data exists on only one server. The next request might go to a different server that doesn't have it.
 
 To scale horizontally, all shared state must live outside the application:
-- Sessions → stored in a database or Redis
-- Uploaded files → stored in cloud storage (S3, etc.)
-- Cached data → stored in Redis or Memcached
+- Sessions → stored in a database or Redis/Valkey
+- Uploaded files → stored in object storage (S3, R2, etc. — see `guides/infrastructure/cloud-fundamentals.md` for the presigned-URL pattern)
+- Cached data → stored in Redis/Valkey or Memcached
 - Background jobs → managed by a job queue
 
 Ask your AI: *"Is my application stateless? Can it run multiple instances behind a load balancer?"*
@@ -59,15 +59,18 @@ If your application reads much more than it writes (which most do), you can crea
 
 **How it works:** The primary database replicates every change to one or more replicas. Your application sends read queries (SELECT) to replicas and write queries (INSERT, UPDATE, DELETE) to the primary.
 
-**The tradeoff:** Replicas may be slightly behind the primary (usually milliseconds). If a user writes data and immediately reads it back, they might not see their change if the read goes to a replica that hasn't caught up yet. For most applications, this brief delay is acceptable.
+**The tradeoff:** Replicas may be slightly behind the primary (usually milliseconds, occasionally seconds under load). If a user writes data and immediately reads it back, they might not see their change if the read goes to a replica that hasn't caught up yet. The user saves a profile edit, the page reloads from a replica, and their change is "gone" — the classic replica bug report.
+
+**Read-your-own-writes — the fix:** guarantee that a session sees its own writes, without forcing every read to the primary.
+- **Pin after write.** After any write, route that user's reads to the primary for a short window (a few seconds — longer than typical lag). Implement it as a `wrote_at` timestamp in the session or a short-lived cookie; the router checks it. Rails' automatic connection switching and most multi-DB ORM plugins do exactly this.
+- **Wait for the replica to catch up.** Record the primary's write position (Postgres `pg_current_wal_lsn()`) after the write; a subsequent read on a replica first checks `pg_last_wal_replay_lsn() >= that position` and falls back to the primary if not. Precise, more work.
+- **Route by query type by default.** Anything the user just changed, anything transactional, and anything in the same request as a write goes to the primary; browse/list/search traffic goes to replicas.
+
+For most applications the first option is enough; the point is to *decide* rather than let the ORM's default routing surprise you.
 
 ### Connection Pooling
 
-Each database connection uses memory. If you have 10 application servers each opening 20 connections, that's 200 connections to your database — which may only support 100–200 by default.
-
-A connection pooler (like PgBouncer for PostgreSQL) sits between your application and the database. It maintains a smaller number of actual database connections and multiplexes your application's requests through them.
-
-This is often the first database scaling step you need, and it's simple to set up.
+Each database connection uses memory. If you have 10 application servers each opening 20 connections, that's 200 connections to your database — which may only support 100–200 by default. A connection pooler (PgBouncer, Supavisor, RDS Proxy) between your application and the database multiplexes many app connections through a few real ones. This is often the first database scaling step you need, and it's simple to set up. Sizing, tools, and the serverless variant are in the connection-pooling section of `guides/performance/database-performance.md` (the canonical treatment).
 
 ### Database Sharding — Last Resort
 

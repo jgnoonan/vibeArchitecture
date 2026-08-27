@@ -13,7 +13,7 @@ A container is a lightweight, portable package that includes your application an
 ### The "Works on My Machine" Problem
 
 Without containers:
-- Your laptop runs Node 20, the server runs Node 18 — different behavior
+- Your laptop runs Node 24, the server runs Node 22 — different behavior
 - You have a library installed locally that the server doesn't have — crash
 - Your OS uses different file paths — bugs that only appear in production
 
@@ -42,17 +42,17 @@ Docker is the most common container tool. The key concepts:
 A text file that describes how to build your container image. It's a recipe:
 
 ```dockerfile
-FROM node:20-slim
+FROM node:24-slim
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 COPY . .
 EXPOSE 3000
 USER node
 CMD ["node", "server.js"]
 ```
 
-This says: start with a Node.js 20 base image, copy the dependency files, install dependencies, copy the application code, expose port 3000, run as a non-root user, and start the server.
+This says: start with a Node.js 24 base image, copy the dependency files, install dependencies, copy the application code, expose port 3000, run as a non-root user, and start the server.
 
 ### Image
 
@@ -76,25 +76,42 @@ Each container should run one application. Don't put your web server, database, 
 Building your application needs tools (compilers, build tools, dev dependencies) that running it doesn't. Multi-stage builds use one stage to build and a smaller stage to run:
 
 ```dockerfile
-# Build stage — has all build tools
-FROM node:20 AS build
+# Build stage — has all build tools and devDependencies
+FROM node:24 AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-# Production stage — minimal, just runtime
-FROM node:20-slim
+# Production stage — minimal, runtime deps only
+FROM node:24-slim
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
 EXPOSE 3000
 USER node
 CMD ["node", "dist/server.js"]
 ```
 
-The final image only contains the build output and production dependencies. It's smaller (faster to deploy, less attack surface) and doesn't include source code or build tools.
+The final image only contains the build output and production dependencies. It's smaller (faster to deploy, less attack surface) and doesn't include source code, build tools, or devDependencies.
+
+**The common mistake:** copying `node_modules` from the build stage into the final stage. The build stage ran a full `npm ci`, so that folder contains TypeScript, test runners, linters — everything in `devDependencies`. Either reinstall with `npm ci --omit=dev` in the final stage (as above) or run `npm prune --omit=dev` at the end of the build stage before copying. (`--only=production` is the deprecated spelling of `--omit=dev`.)
+
+### Build Secrets Never Go in ARG or ENV
+
+A private registry token or an API key passed as `ARG NPM_TOKEN` or `ENV` is baked into an image layer forever — anyone who can pull the image can read it with `docker history` or by inspecting the layer. Use BuildKit's secret mount instead, which exposes the secret only during that one `RUN` step and leaves nothing in the image:
+
+```dockerfile
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
+```
+
+```bash
+docker build --secret id=npmrc,src=$HOME/.npmrc .
+```
+
+Same rule for `COPY .env .` — keep it in `.dockerignore` (below) and inject runtime config as environment variables when the container starts.
 
 ### Don't Run as Root
 
@@ -114,7 +131,7 @@ USER app
 
 **Bad:** `FROM node:latest` — this changes without warning. Your build might work today and break tomorrow because `latest` now points to a new major version.
 
-**Good:** `FROM node:20.11-slim` — this is predictable and reproducible.
+**Good:** `FROM node:24.11-slim` — this is predictable and reproducible. (Pinning to the image digest, `node:24.11-slim@sha256:...`, is stricter still: tags can be re-pushed, digests can't.)
 
 Update pinned versions deliberately and test after updating.
 
@@ -158,7 +175,7 @@ services:
     depends_on:
       - db
   db:
-    image: postgres:16
+    image: postgres:18
     environment:
       - POSTGRES_PASSWORD=pass
       - POSTGRES_DB=myapp

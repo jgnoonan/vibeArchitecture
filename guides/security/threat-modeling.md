@@ -95,14 +95,15 @@ For each threat you've identified, choose one of four responses:
 
 ## Defense in Depth
 
-Don't rely on a single defense. Layer your protections so that if one fails, another catches the attack:
+Don't rely on a single defense. Layer your protections so that if one fails, another catches the attack. These are the same seven layers `guides/security/security-architecture.md` walks through in detail — same numbering, so the two guides can be read together:
 
-- **Layer 1: Input validation** — Reject obviously bad data at the API boundary
-- **Layer 2: Authentication** — Verify the user is who they claim to be
-- **Layer 3: Authorization** — Verify the user is allowed to do what they're requesting
-- **Layer 4: Data protection** — Encrypt sensitive data, use parameterized queries
-- **Layer 5: Monitoring** — Detect unusual patterns that suggest an attack in progress
-- **Layer 6: Backups** — If all else fails, recover from a known good state
+- **Layer 1: Network boundary** — HTTPS, HSTS, firewalls, rate limiting, DDoS protection
+- **Layer 2: Application boundary** — Security headers, CORS, request size limits
+- **Layer 3: Authentication** — Verify the user is who they claim to be
+- **Layer 4: Authorization** — Verify the user is allowed to do what they're requesting
+- **Layer 5: Input validation and data protection** — Reject bad data at the boundary, parameterized queries, encrypt sensitive data
+- **Layer 6: Monitoring and detection** — Detect unusual patterns that suggest an attack in progress
+- **Layer 7: Backups and recovery** — If all else fails, recover from a known good state
 
 Think of it like a castle: moat, walls, locked doors, guards, a safe for the valuables. An attacker has to get past all of them.
 

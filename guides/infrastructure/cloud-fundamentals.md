@@ -46,7 +46,7 @@ The cloud provider handles updates, backups, scaling, and maintenance. You use i
 
 Examples:
 - **Managed database** (AWS RDS, Google Cloud SQL, Azure Database): You get a database. They handle backups, updates, failover, and scaling.
-- **Managed cache** (AWS ElastiCache, Google Memorystore): You get Redis. They keep it running.
+- **Managed cache** (AWS ElastiCache, Google Memorystore): You get Redis or Valkey (both are now Valkey-first, the open-source fork). They keep it running.
 - **Managed hosting** (Railway, Fly.io, Render, Vercel, Heroku): You push code. They handle everything.
 
 **Pros:** Less work, fewer things to go wrong, security patches applied automatically, built-in backups and monitoring.
@@ -83,13 +83,15 @@ Cloud billing surprises are one of the most common pain points. Things that cost
 
 2. **Start small, scale up.** Begin with the smallest instance size that works. You can always upgrade. Starting big "just in case" wastes money.
 
-3. **Use free tiers wisely.** AWS, GCP, and Azure all have free tiers that cover small projects. Platforms like Railway, Fly.io, and Render have free or very cheap starter plans.
+3. **Use free tiers wisely — and check current terms.** They change often. AWS moved new accounts to a credit-based model in July 2025 (up to $200 of credits over 6 months, then pay-as-you-go); GCP and Azure offer starter credits plus small always-free allowances. Railway has no free tier (a one-time trial credit, then a paid plan); Render has a free tier for small services; Fly.io is pay-as-you-go. Verify before you plan around "free."
 
-4. **Turn off what you're not using.** Development databases, staging environments, test servers. If nobody's using it right now, shut it down.
+4. **Set a hard spend cap where the platform offers one.** Alerts tell you about a runaway bill; caps stop it. AWS Budgets can run *actions* (stop instances, deny IAM permissions) when a threshold trips; Vercel has account spend limits that pause deployments; Cloudflare Workers lets you cap daily requests. For LLM API spend — the fastest-growing surprise bill — see the Cost Controls section of `rules/multi-agent.md`.
 
-5. **Watch data transfer costs.** If your application serves large files (images, videos), use a CDN (Content Delivery Network) which caches content at edge locations worldwide. CDN egress is much cheaper than cloud egress.
+5. **Turn off what you're not using.** Development databases, staging environments, test servers. If nobody's using it right now, shut it down.
 
-6. **Review your bill monthly.** Look at what's actually costing money. Often one or two things dominate, and you can optimize those specifically.
+6. **Watch data transfer costs.** If your application serves large files (images, videos), use a CDN (Content Delivery Network) which caches content at edge locations worldwide. CDN egress is much cheaper than cloud egress. For file storage, prefer egress-free object storage (Cloudflare R2, Bunny Storage, Backblaze B2 via the Bandwidth Alliance) over S3 when users download what you store — S3 egress is often the biggest line on a media-heavy bill.
+
+7. **Review your bill monthly.** Look at what's actually costing money. Often one or two things dominate, and you can optimize those specifically.
 
 Ask your AI: *"Review my cloud setup and identify anything that's costing money unnecessarily."*
 
@@ -99,13 +101,25 @@ Ask your AI: *"Review my cloud setup and identify anything that's costing money 
 
 Start here. These platforms handle nearly everything and let you focus on your code:
 
-- **Railway** — Simple, generous free tier, supports many languages
+- **Railway** — Simple, usage-based pricing (trial credit, no free tier), supports many languages
 - **Render** — Good all-around platform, free tier for small projects
 - **Fly.io** — Great for global distribution, Docker-based
 - **Vercel** — Excellent for Next.js and frontend applications
 - **Heroku** — The original PaaS, simple but more expensive
 
 These are not "lesser" platforms. Many successful businesses run entirely on PaaS providers.
+
+## Object Storage and File Uploads
+
+User files (avatars, documents, exports) belong in object storage (S3, R2, GCS, Azure Blob, Supabase Storage), not on your server's disk — disks vanish on redeploy and don't scale across instances. The pattern that keeps it cheap and safe:
+
+1. **The bucket is private.** No public listing, no world-readable objects. Public assets (marketing images) live in a separate, deliberately public bucket or behind the CDN.
+2. **Uploads go direct-to-bucket.** Your API authorizes the user, then returns a short-lived presigned URL (or presigned POST) that permits exactly one upload: a fixed object key you chose, an allowed content type, a maximum size, and an expiry of a few minutes. The browser uploads straight to the bucket. Your app server never buffers the bytes — no memory spikes, no request timeouts on a 2 GB video.
+3. **Downloads use presigned GETs** (minutes to an hour), generated only after an authorization check. Never hand out a permanent link to a private object.
+4. **Verify after upload.** The client can lie about what it uploaded. Confirm the object exists, check its size and magic bytes, re-encode images, and only then record it as "ready" in your database. Set a lifecycle rule to delete orphaned objects that never got confirmed.
+5. **Set CORS on the bucket** for the origins allowed to upload, and a lifecycle policy that moves old objects to cheaper tiers.
+
+The security side (magic-byte validation, separate file origin, `Content-Disposition: attachment`) is in `rules/security.md` and `guides/security/`. Egress cost is covered above — for download-heavy apps, an egress-free bucket (R2, Bunny) plus a CDN is the default choice.
 
 ### For Growth: The Big Three
 
@@ -139,8 +153,8 @@ This is called "Infrastructure as Code" (IaC), and it matters because:
 - **It's reviewable.** Before making infrastructure changes, you can review the configuration changes — just like reviewing code.
 
 Popular IaC tools:
-- **Terraform** — Cloud-agnostic, the most widely used
+- **Terraform or OpenTofu** — Cloud-agnostic, the most widely used. OpenTofu is the open-source fork, drop-in compatible; pick either.
 - **Pulumi** — Like Terraform but you write actual code (Python, TypeScript, etc.) instead of a special configuration language
 - **AWS CDK / CloudFormation** — AWS-specific
 
-**When to adopt IaC:** Not on day one. Start by using your cloud provider's console or a PaaS. When your infrastructure grows beyond "one database and one application server," IaC starts saving you time and preventing mistakes. Ask your AI: *"Help me convert my current cloud setup to Terraform."*
+**When to adopt IaC:** From day one — but "IaC" scales with your tier, which is how this reconciles with `rules/infrastructure.md`. On a PaaS, your `fly.toml`, `render.yaml`, `railway.json`, or `vercel.json` committed to the repo *is* your infrastructure as code; that's enough. The moment you're composing raw cloud primitives yourself (a VPC, an RDS instance, a bucket policy, IAM roles), stop clicking in the console and write Terraform/OpenTofu or Pulumi — that's where drift and un-reproducible environments start. Ask your AI: *"Help me convert my current cloud setup to Terraform."*

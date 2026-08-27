@@ -95,7 +95,51 @@ http://169.254.169.254/latest/meta-data/iam/security-credentials/
 
 On many cloud platforms, that address returns the server's own cloud credentials. The attacker now has your cloud keys without ever touching your code.
 
-**The fix:** Validate URLs before fetching: `https` only, allowlist destination hosts where possible, resolve the hostname and reject private/reserved IP ranges, and re-check after every redirect. Also beware DNS rebinding: a hostname can resolve to a safe public IP during your validation check and to an internal IP moments later when the fetch happens — resolve once and connect to the IP address you validated. This matters doubly for LLM apps, which fetch user-supplied URLs constantly (RAG ingestion, link previews, webhook callbacks). See `rules/security.md` (Server-Side Requests).
+**The fix:** Validate URLs before fetching: `https` by default (plain `http` only for explicit link-preview features), allowlist destination hosts where possible, resolve the hostname and reject private/reserved IP ranges in both IPv4 and IPv6 (including IPv4-mapped forms like `::ffff:169.254.169.254`), and re-check after every redirect. The ranges to reject: IPv4 127.0.0.0/8 (loopback), 0.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (private), 100.64.0.0/10 (carrier-grade NAT, used inside many clouds), 169.254.0.0/16 (link-local, home of the metadata service); IPv6 `::1`, `fc00::/7` (unique local), `fe80::/10` (link-local). Block the metadata endpoints by name as well as address (`169.254.169.254`, `metadata.google.internal`) because they hand out the server's own cloud credentials. Reject every scheme except `https` (and `http` only for public-by-design previews): `file://` reads local files, `gopher://` and `ftp://` let an attacker speak arbitrary protocols to internal services. Also beware DNS rebinding: a hostname can resolve to a safe public IP during your validation check and to an internal IP moments later when the fetch happens — resolve once and connect to the IP address you validated. On AWS, enforce IMDSv2 with a hop limit of 1 so even a successful SSRF can't reach the metadata service. Put a timeout and a response size limit on every fetch so one URL can't hang the server or fill the disk, and where the platform allows, run URL-fetching features with egress-restricted networking so a validation bypass has nowhere to go. This matters doubly for LLM apps, which fetch user-supplied URLs constantly (RAG ingestion, link previews, webhook callbacks). See `rules/security.md` (Server-Side Requests).
+
+### Open Redirect
+
+**What it is:** A `?next=` or `?returnTo=` parameter that sends the user to any URL after login. The link *starts* on your real domain, so it passes every "is this link legitimate?" check a user makes — then lands on the attacker's page, which may harvest credentials or, in OAuth flows, receive the authorization code.
+
+**The fix:** Accept only relative paths (`/dashboard`) or hosts from an allowlist, and normalize before checking — `//evil.com`, `/\evil.com`, and `https:evil.com` all parse as absolute URLs in some browsers.
+
+### Prototype Pollution (JavaScript)
+
+**What it is:** Deep-merging or recursively assigning untrusted JSON into an object lets a payload like `{"__proto__": {"isAdmin": true}}` set a property on `Object.prototype` — and now *every* object in the process has `isAdmin`. Authorization checks that read `user.isAdmin` start passing.
+
+**The fix:** Reject `__proto__`, `constructor`, and `prototype` keys at the boundary, use `Object.create(null)` or `Map` for user-keyed data, validate with a schema that forbids unknown keys, and keep merge utilities (lodash and friends) current.
+
+### Regular Expression Denial of Service (ReDoS)
+
+**What it is:** A regex with nested or overlapping quantifiers — `(a+)+$`, `(\w+\s?)*$`, most hand-written "email validators" — takes exponential time on a crafted input. One request pins a CPU core; a handful pin the server.
+
+**The fix:** Bound input length before matching, avoid nested quantifiers, and use a linear-time engine (RE2, Rust `regex`, Go's `regexp`) for anything applied to untrusted input. Lint for it — `eslint-plugin-regexp` and similar tools flag the dangerous shapes.
+
+### XXE and Unsafe Deserialization
+
+**What it is:** XML parsers resolve external entities by default in many libraries, so a document containing `<!ENTITY x SYSTEM "file:///etc/passwd">` reads server files or makes SSRF requests. Native serialization formats — Java serialization, Python `pickle`, PHP `unserialize`, Ruby `Marshal`, YAML `load` — can instantiate arbitrary classes on the way in, which is remote code execution.
+
+**The fix:** Disable DTDs and external entities in every XML parser (`XMLConstants.FEATURE_SECURE_PROCESSING`, `defusedxml`, `libxml_disable_entity_loader`). Never deserialize untrusted input with a native format; use JSON plus a schema, and `yaml.safe_load`, never `yaml.load`.
+
+### HTTP Request Smuggling
+
+**What it is:** When a proxy, load balancer, or CDN and your application server disagree about where one HTTP request ends and the next begins (usually via conflicting `Content-Length` and `Transfer-Encoding` headers), an attacker can prepend part of their request to the *next* user's request — hijacking it, poisoning caches, or bypassing front-end auth.
+
+**The fix:** Use HTTP/2 end-to-end where you can, configure the front end to reject ambiguous requests (both headers present, malformed chunk sizes), keep every hop patched, and don't mix server vendors between edge and origin without testing the boundary.
+
+### Web Cache Poisoning and Cache Deception
+
+**What it is:** *Poisoning* — an attacker gets a CDN to store a response built from a header or parameter the cache key ignores (an unkeyed `X-Forwarded-Host`, say), so every later visitor receives the attacker's version. *Deception* — an attacker tricks a victim into visiting `/account/settings/x.css`; the app returns the victim's personal settings page, the CDN sees `.css` and caches it, and the attacker fetches it.
+
+**The fix:** Send `Cache-Control: private, no-store` on every authenticated or personalized response, `Vary` on every header that affects the output, don't let the CDN cache by extension alone, and never build responses from headers you don't key on. If a response depends on who is asking, it must not be in a shared cache.
+
+### Mass Assignment and Self-Attested Data
+
+**Mass assignment.** Binding a request body straight onto a model (`User.update(req.body)`, `Model.create(**params)`) lets the client set every column the model has, including the ones the form never showed: `role`, `is_admin`, `balance`, `verified`, `owner_id`. The fix is an explicit allowlist of the fields each endpoint may set, and a rule that server-controlled fields are assigned only in server code, never copied from input. Frameworks that offer "strong parameters" or schema-based DTOs exist for this reason; use them on every write endpoint.
+
+**Self-attested data.** A record that says who it belongs to, a message that carries the key that signs it, a client that reports its own role: none of these are authenticated, because the attacker controls the record. Verifying a signature against a key that arrived alongside the signed payload proves only that someone signed something with some key. Trust anchors (which keys are valid, which identity owns which resource) must come from a separate channel established earlier: a key pinned at pairing time, a directory looked up by identity, a session the server issued. This is the same mistake as IDOR (`guides/security/security-architecture.md`, Layer 4) one level down.
+
+**Validate before the dangerous sink.** Length fields, filenames, counts, and dimensions supplied by a peer must be bounds-checked before any resource is committed to them: before the allocation, before the decompressor runs, before the media decoder opens the file, before the path is joined. A check that happens after the allocation is a crash at best and a memory-corruption primitive at worst.
 
 ## Validation Strategy
 
@@ -123,13 +167,17 @@ Always validate on the server. Client-side validation is optional and complement
 
 ## File Upload Validation
 
-File uploads deserve special attention because they introduce unique risks:
+File uploads deserve special attention because they introduce unique risks. The compact rules are in `rules/security.md` (File Uploads); this is why they exist.
 
-- **Don't trust the file extension.** A file named `photo.jpg` might actually be a PHP script or an executable. Validate the file's actual content type by reading the first few bytes (called "magic bytes" or "file signatures").
-- **Don't trust the MIME type sent by the browser.** It's trivially spoofed.
-- **Set size limits.** Without them, an attacker can upload a 10GB file and fill your storage.
-- **Store uploads outside your web directory.** Serve them through your application so you control access. If uploads are directly accessible by URL, an attacker might upload and execute a script.
-- **Generate new filenames.** Don't use the original filename — it could contain path traversal characters or overwrite important files.
+**The file isn't what it says it is.** The extension and the browser-supplied MIME type are both chosen by the uploader, so `photo.jpg` can be a PHP script, an HTML page, or an SVG with JavaScript inside. Reading the first bytes (magic bytes) tells you the real container type — but even a genuine image can be a *polyglot*, a file that is simultaneously a valid JPEG and valid HTML. Re-encoding images through an image library (decode, then write a fresh JPEG/PNG/WebP) discards everything that isn't pixels, which also strips EXIF metadata — including the GPS coordinates that many phones embed.
+
+**Where you serve it matters as much as what it is.** An SVG or HTML file served inline from your main origin runs scripts with your users' cookies: that's stored XSS. Serve user files from a separate origin (`files.example.com` or a bucket's own domain), with `Content-Disposition: attachment` so the browser downloads rather than renders, and `X-Content-Type-Options: nosniff` so it doesn't guess. Never put uploads under the web root — a directly reachable `uploads/shell.php` is the classic path to code execution.
+
+**The modern storage pattern is a private bucket, not your disk.** Store objects in S3/GCS/R2 with public access blocked, and hand out short-lived presigned URLs for download — or let the browser upload straight to the bucket with a presigned POST so multi-megabyte files never transit your app server. Your code's job becomes *authorizing* each URL it signs (does this user own this object?), which is a much smaller surface than streaming bytes.
+
+**Archives and size limits.** A 1 MB zip can expand to 100 GB (a decompression bomb), and an archive entry named `../../etc/cron.d/x` extracts outside the target directory (zip-slip). Cap both the compressed and decompressed size, validate every entry path after normalization, and extract into a fresh directory.
+
+**Names and malware.** Generate a random filename for storage (keep the original in metadata if you need to show it), so the path can never contain traversal sequences or overwrite another file. If files are shared with other users, scan them with an antivirus engine before they become downloadable.
 
 ## The Belt-and-Suspenders Approach
 

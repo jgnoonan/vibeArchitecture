@@ -83,6 +83,31 @@ When multiple servers or services can process the same request, concurrency gets
 
 This is critical for payment processing — if a network timeout makes you unsure whether a charge went through, you can safely retry with the same idempotency key. The payment provider will recognize it and return the original result instead of charging again.
 
+#### Implementing Idempotency Keys (canonical section)
+
+This is the one place the framework spells out the storage mechanics; `rules/reliability.md`, `guides/system-design/async-patterns.md`, `guides/infrastructure/serverless-and-edge.md`, and `rules/api.md` link here.
+
+- **Scope the key to the caller.** Store `UNIQUE (idempotency_key, principal_id)` — the principal being the authenticated user, API key, or tenant. Without the principal, one client can replay (or collide with) another's key.
+- **Store the response, not just "seen."** Save the status code and body you returned. A retry must get the *same* answer — the created order's ID, the same 201 — not a 409 that makes the client think it failed.
+- **Record the in-progress state first.** Insert the key with `status = 'in_progress'` *before* doing the work (in the same transaction as the work when it's all in one database). A concurrent duplicate then hits the unique constraint and should wait or return 409 "already processing" rather than starting a second charge. On completion, update to `completed` with the stored response; on failure, delete the row or mark it `failed` so a genuine retry can proceed.
+- **Compare the request fingerprint.** Store a hash of the request body with the key. Same key with a different body is a client bug — return 422 rather than silently returning the old response.
+- **Expire them.** Keys live 24 hours to a few days (Stripe uses 24 hours). A `created_at` column plus a nightly cleanup job (or a TTL in Redis/Valkey if you store them there) keeps the table small.
+
+```sql
+CREATE TABLE idempotency_keys (
+  key            TEXT NOT NULL,
+  principal_id   UUID NOT NULL,
+  request_hash   TEXT NOT NULL,
+  status         TEXT NOT NULL CHECK (status IN ('in_progress','completed','failed')),
+  response_code  INT,
+  response_body  JSONB,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (key, principal_id)
+);
+```
+
+For queue consumers the same shape applies with the message ID as the key and the worker as the principal.
+
 **Eventual consistency:** Accept that in distributed systems, not everything will be perfectly synchronized at every instant. After an update, it may take a moment for all servers to see the new data. Design your user experience around this — "your changes may take a few seconds to appear" is fine for most applications.
 
 ## The Rust Perspective
@@ -119,6 +144,17 @@ The Rust compiler will refuse to compile code that has potential data races. If 
 **Not making retried operations idempotent.** If a network timeout leaves you unsure whether an operation completed, and you retry, you might execute it twice. Charging a customer twice, sending a notification twice, creating a duplicate record. Use idempotency keys or check-before-write patterns to prevent this.
 
 **Using global variables as shared state.** Global or module-level variables are shared across all threads and requests. A web framework handling concurrent requests will have multiple threads reading and writing global state simultaneously. Use thread-local storage, request-scoped state, or proper synchronization.
+
+## Lock Ordering Across Subsystems
+
+The deadlock in the Common Mistakes list above usually doesn't appear inside one module, where the two locks are visible on the same screen. It appears when two subsystems each own a lock and call into each other: a storage layer with its own mutex calls a crypto-state manager that has its own, while another code path enters the crypto manager first and then needs storage. A cache lock and a session lock, a connection-pool lock and a metrics lock, follow the same shape. Each side is correct in isolation, every unit test passes, and the process freezes only under production timing when the two paths overlap.
+
+Two rules keep it out:
+
+- **Define a single acquisition order** for any pair of lock domains that can meet (storage before crypto, cache before session), write it down next to the lock definitions, and never nest in the other direction.
+- **Better, don't nest at all.** Gather what you need under the first lock, release it, then take the second. Holding a lock while calling into another subsystem is the same mistake as holding a lock across an external call: you no longer know what the code under you will wait for.
+
+The same reasoning is why the rules say to do the external call first, then lock, write, and unlock. A lock held across a 10-second API call blocks everything else that needs that resource for 10 seconds, and if the API itself needs that resource (a callback, a webhook, a metrics flush), it blocks forever.
 
 ## When to Worry About This
 

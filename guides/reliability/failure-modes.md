@@ -16,7 +16,7 @@ The question is never "will something fail?" It's "when it fails, will the syste
 
 The problem goes away on its own. A network blip, a momentary overload, a brief DNS hiccup. If you retry in a few seconds, it works.
 
-**How to handle:** Retry with exponential backoff. Wait 1 second, then 2, then 4. Most transient failures resolve within seconds.
+**How to handle:** Retry with exponential backoff and jitter. Most transient failures resolve within seconds. Which status codes to retry, how many times, and how to space them is spelled out once in `guides/reliability/resilience-patterns.md`.
 
 **The danger:** Retrying too aggressively makes things worse. If a service is overloaded and 100 clients all retry immediately, the overload gets worse, not better. This is why backoff and jitter matter.
 
@@ -53,7 +53,7 @@ Understanding how cascading failures happen helps you prevent them:
 
 **Prevention:**
 - **Timeouts** on every call to Service B. If it doesn't respond in 2 seconds, give up.
-- **Circuit breaker** on the connection to Service B. After 5 timeouts, stop trying for 30 seconds.
+- **Circuit breaker** on the connection to Service B. Thresholds and cooldowns are in the circuit-breaker section of `guides/reliability/resilience-patterns.md`.
 - **Separate connection pools** for calls to Service B vs. other operations. Even if B's pool is exhausted, other operations continue.
 - **Fallback** when Service B is unavailable. Serve cached data, a default response, or degrade gracefully.
 
@@ -72,6 +72,10 @@ Classify every external dependency:
 - Image processing service (show unprocessed images, process later)
 
 **The rule:** Hard dependencies get the strongest protection (retries, circuit breakers, health monitoring, alerts). Soft dependencies should fail silently with graceful fallbacks — the user should barely notice.
+
+## Practice Failing: Chaos Experiments and Game Days
+
+Everything above describes how you *hope* the system behaves. The only way to know is to break it on purpose, in a controlled way, while people are watching. At Business tier, run a **game day** every quarter or two: pick one failure (the cache goes away, the payment API returns 503 for ten minutes, the primary database fails over, a region's DNS answers wrong), announce it, inject it in staging — or in production with a kill switch ready, once staging has passed — and watch whether the timeouts, breakers, fallbacks, and alerts you designed actually fire. Write down what surprised you; those are your next runbooks and fixes. You don't need a chaos platform for this — `docker stop`, a firewall rule, or a feature flag that makes a client return errors is enough. Automated fault injection (Gremlin, AWS Fault Injection Service, Litmus) is for when game days have become routine and you want them continuous.
 
 ## The Real-World Impact
 

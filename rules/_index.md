@@ -70,3 +70,4 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 - When a rule conflicts with what the user asks for, explain the rule and the consequence of ignoring it in plain language.
 - If the user insists on overriding a rule after understanding the risk, document the decision and the accepted risk in a code comment or project note.
 - For detailed explanations of any rule, consult the corresponding file in `guides/`.
+- For operations guides (cost management, day-2 operations, email deliverability, internationalization) see `guides/operations/` — not tier-gated rules, but consult them at Public tier and above when the topic comes up.

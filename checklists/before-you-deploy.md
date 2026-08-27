@@ -12,9 +12,12 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] Is your app served over HTTPS? (Most hosting platforms handle this automatically. Confirm it's on.)
 - [ ] If users log in: are passwords hashed (not stored in plain text)?
 - [ ] If users log in: does logging out actually end the session?
+- [ ] If users log in: is there a limit on failed login attempts? (Someone guessing passwords should get slowed down or locked out.)
+- [ ] Do forms and buttons that change data reject requests forged from other websites? (Ask your AI: "Is CSRF protection enabled for every state-changing route?")
+- [ ] If a permission check or rate limiter fails for a technical reason, does the app deny the request instead of letting it through? (Ask your AI: "Do our guards fail closed?")
 - [ ] Have you tested what happens when someone enters garbage into your forms? (Random characters, extremely long strings, script tags, blank required fields.)
 - [ ] Have you run a static analysis scan on your code? (Enable CodeQL if you're on GitHub, or run Semgrep. Fix the high-severity findings before deploying.)
-- [ ] If you define infrastructure in code (Terraform, CloudFormation, etc.): have you scanned it (Checkov, tfsec, or Trivy) and fixed high-severity findings? (Misconfigured infrastructure is how databases and storage buckets end up public.)
+- [ ] If you define infrastructure in code (Terraform, CloudFormation, etc.): have you scanned it (Checkov or Trivy) and fixed high-severity findings? (Misconfigured infrastructure is how databases and storage buckets end up public.)
 
 ## Data
 
@@ -22,6 +25,8 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] If your database were deleted right now, would you lose everything? If yes, fix that before deploying.
 - [ ] Have you tested with more data than "just a couple of test records"? Some problems only show up with real-world amounts of data.
 - [ ] Are database migrations up to date and committed to your repository?
+- [ ] Can you run the migrations twice without breaking anything? (Try it on a copy. A deploy that dies halfway through a migration will re-run it.)
+- [ ] Have you decided how much downtime and how much lost data you could live with? (Even a rough "an hour and a day's data" tells you how often to back up.)
 
 ## Error Handling
 
@@ -35,11 +40,14 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] Is your production environment set up separately from your development environment? (Different database, different secrets, etc.)
 - [ ] Are your environment variables configured in your hosting platform? (They won't read your local `.env` file.)
 - [ ] Have you set your app to "production" mode? (Many frameworks have a development mode that shows debug info — you don't want that public.)
+- [ ] If you deploy with GitHub Actions: are the actions pinned to full commit SHAs, and does the workflow log in to your cloud with OIDC instead of a long-lived access key stored as a secret?
+- [ ] When tests run before deploy, can you see how many were skipped? (A test suite that silently skips its database tests looks like it passed.)
 - [ ] Have you removed or disabled any test/debug features? (Debug panels, test accounts, development-only API endpoints.)
 
 ## Access and Accounts
 
 - [ ] If your app has admin features: is the admin area properly protected? (Not just a hidden URL — actually requiring authentication.)
+- [ ] Do admin accounts use multi-factor authentication? (An authenticator app or passkey. Admin passwords get phished; a second factor stops most of it.)
 - [ ] Have you changed any default passwords? (Database admin, hosting dashboard, CMS admin, etc.)
 - [ ] If you created a test account with a simple password during development, delete it or change the password.
 
@@ -68,6 +76,8 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] If you collect personal data: do you have a privacy policy? (Even a basic one.)
 - [ ] If required: do you have terms of service?
 - [ ] If you use cookies beyond essential ones: are you providing a cookie notice where required?
+- [ ] If your app has AI features: do users know when they're talking to an AI or reading AI-generated content?
+- [ ] If you sell software in the EU: do you know how you'd report an actively exploited vulnerability within 24 hours? (The EU Cyber Resilience Act requires this from 11 September 2026.)
 
 ## The Final Test
 

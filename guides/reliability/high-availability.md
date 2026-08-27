@@ -54,6 +54,23 @@ These three terms come up constantly in reliability discussions:
 
 For most early-stage applications, you don't need a formal SLA. But having an internal SLO helps you make engineering decisions: "Is this improvement worth the effort to get from 99.5% to 99.9%?"
 
+### Error Budgets: The SLO Turned Into a Number You Can Spend
+
+An SLO of 99.9% over 30 days means 0.1% of requests — about 43 minutes of full outage, or a much longer stretch of partial failure — are *allowed* to fail. That allowance is your **error budget**. It changes how decisions get made:
+
+- **Budget mostly unspent?** Ship the risky migration, run the game day, deploy on Friday. Reliability is fine; spend some of it on velocity.
+- **Budget nearly gone?** Freeze feature deploys, fix the flaky dependency, add the missing timeout. The budget is the objective signal that reliability work comes first this week — no arguing about it.
+
+**Alert on burn rate, not raw thresholds.** Burn rate is how fast you're consuming the budget relative to the pace that would use exactly all of it by the end of the window (1× = on track). The standard multi-window pairs:
+
+| Burn rate | Window | Budget consumed | Response |
+|-----------|--------|-----------------|----------|
+| 14.4× | 1 hour (confirm on 5 min) | 2% of a 30-day budget in an hour | Page |
+| 6× | 6 hours (confirm on 30 min) | 5% in six hours | Page |
+| 1× | 3 days (confirm on 6 hours) | 10% in three days | Ticket |
+
+This catches both a sudden outage (fast burn) and a slow bleed like a 0.5% error rate nobody would page on (slow burn), while a five-minute blip that spends almost nothing stays quiet. The alerting mechanics live in `guides/observability/monitoring.md`.
+
 ## How to Build for High Availability
 
 ### Eliminate Single Points of Failure
@@ -97,7 +114,7 @@ Two numbers drive your availability design:
 
 **RTO (Recovery Time Objective):** How quickly do you need to be back up after a failure? If your RTO is 5 minutes, you need automated failover. If your RTO is 4 hours, manual recovery might be fine.
 
-**RPO (Recovery Point Objective):** How much data can you afford to lose? If your RPO is zero, you need real-time replication. If your RPO is 1 hour, hourly backups are sufficient.
+**RPO (Recovery Point Objective):** How much data can you afford to lose? If your RPO is zero, you need synchronous replication. If your RPO is 1 hour, hourly backups are sufficient. If your RPO is *minutes*, daily or hourly snapshots can't get you there — **point-in-time recovery (PITR)** is what does: the database's write-ahead log is shipped continuously, so you can restore to any second, and your exposure shrinks to the log-shipping interval (typically well under five minutes on managed Postgres/MySQL).
 
 | Scenario | Typical RTO | Typical RPO |
 |----------|-------------|-------------|
@@ -121,6 +138,6 @@ For many applications, the practical sweet spot is:
 - Two application servers across two availability zones
 - Managed database with automatic failover
 - Automated health checks and recovery
-- Daily backups with point-in-time recovery
+- Daily snapshots plus point-in-time recovery (the snapshot is the base; PITR is what makes a minutes-level RPO real)
 
 This gets you to roughly 99.9% availability without excessive cost or complexity.

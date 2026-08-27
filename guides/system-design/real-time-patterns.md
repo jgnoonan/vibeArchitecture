@@ -90,7 +90,7 @@ Server: Here's another one. (pushes data)
 **Disadvantages:**
 - One-way only — server pushes to client, client can't send through the same connection (use regular HTTP requests for client-to-server)
 - Limited to text data (not binary)
-- Browser limit of ~6 connections per domain (fine for most apps, but a constraint if you need many SSE streams)
+- Under HTTP/1.1, browsers cap connections at ~6 per host, and each SSE stream holds one open — so a few tabs can exhaust it. Over HTTP/2 (which every CDN and modern host serves), streams are multiplexed on one connection and the limit is effectively gone (default ~100 concurrent streams). Make sure your SSE endpoint is actually served over HTTP/2 end-to-end; a proxy that downgrades to HTTP/1.1 brings the limit back.
 - Some hosting platforms don't support long-lived HTTP connections
 
 **Use when:** You need server-to-client push (notifications, live feeds, dashboards) but the client doesn't need to send frequent messages back. SSE is the sweet spot between polling and WebSockets — much simpler than WebSockets, much more efficient than polling.
@@ -152,11 +152,11 @@ With regular HTTP, a load balancer can send any request to any server. With WebS
 **For small scale (single server):** No problem. All connections are on one server.
 
 **For moderate scale (a few servers):**
-- **Redis Pub/Sub.** When Server A needs to send a message to a user connected to Server B, it publishes to a Redis channel. All servers subscribe to the channel and deliver messages to their connected users. This is the most common approach and works well up to tens of thousands of concurrent connections.
+- **Redis/Valkey Pub/Sub.** When Server A needs to send a message to a user connected to Server B, it publishes to a Redis channel. All servers subscribe to the channel and deliver messages to their connected users. This is the most common approach and works well up to tens of thousands of concurrent connections.
 
 **For large scale (many servers, many connections):**
 - **Dedicated real-time services.** Use a managed service like Pusher, Ably, or Supabase Realtime. They handle the connection management, scaling, and message routing. You publish events to their API; they deliver to connected clients.
-- **Socket.IO with Redis adapter.** If using Node.js, Socket.IO with its Redis adapter handles multi-server WebSocket scaling out of the box.
+- **Socket.IO with Redis adapter.** If using Node.js, Socket.IO with its Redis/Valkey adapter handles multi-server WebSocket scaling out of the box.
 
 **Practical advice:** Unless you're building a product where real-time is the core feature (a chat platform, a collaborative tool), use a managed service. The operational complexity of scaling WebSocket infrastructure is significant, and managed services handle it for a few dollars a month.
 
@@ -164,13 +164,18 @@ With regular HTTP, a load balancer can send any request to any server. With WebS
 
 WebSocket and SSE connections need authentication too. The approaches differ from regular HTTP:
 
-**For SSE:** The initial HTTP request can carry cookies, so session-based auth works normally.
+**For SSE:** It's a plain HTTP request, so cookies and session auth work normally.
 
-**For WebSockets:**
-- Pass an authentication token as a query parameter during the handshake: `ws://server/socket?token=xyz`. The server validates the token before accepting the connection.
-- Or authenticate over the WebSocket after connection: the first message from the client contains the auth token.
-- Don't rely on cookies for WebSocket auth — browser support varies.
-- **Validate on connection and periodically.** A token that was valid when the connection opened might be revoked later. For long-lived connections, re-validate periodically.
+**For WebSockets:** The handshake is also a plain HTTP request, so **cookies are sent on it** — session-cookie auth works. The catch is that browsers don't apply same-origin policy or CORS to WebSocket handshakes: any site the user visits can open `wss://yourapp.com/socket` and the browser will attach your cookies. That's **cross-site WebSocket hijacking**, and the defense is on the server:
+- **Validate the `Origin` header on every handshake** against an allowlist of your own origins, and reject anything else. Frameworks often leave this open by default ("allow all origins"); close it.
+- Cookies marked `SameSite=Lax` or `Strict` also block the cross-site case in modern browsers — use them, but don't rely on them alone.
+
+If you'd rather not use cookies (native clients, a separate API domain):
+- **Authenticate with the first message** after the connection opens: the client sends the token, the server validates it before processing anything else, and closes the socket if nothing valid arrives within a few seconds.
+- **Or use a short-lived ticket**: the client calls an authenticated HTTP endpoint that returns a single-use ticket valid for ~30 seconds, then opens the socket with it.
+- **Avoid `?token=xyz` in the URL.** Browsers can't set custom headers on the WebSocket handshake, which is why people reach for the query string — but the URL lands in server access logs, proxy logs, CDN logs, and browser history. If you must, make it a short-lived single-use ticket, never a long-lived session token or API key.
+- **Validate on connection and periodically.** A token that was valid when the connection opened might be revoked later. For long-lived connections, re-validate periodically (or close and let the client reconnect with a fresh credential).
+- Rate-limit handshakes per IP/user; an unauthenticated open socket costs you memory.
 
 ## Error Handling and Reconnection
 
