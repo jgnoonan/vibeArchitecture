@@ -1,6 +1,6 @@
 # Your First Successful Use (5 Minutes)
 
-This walkthrough shows exactly what happens when vibeArchitecture is working. We'll use **Option B** (paste one prompt) — no install required. The same flow applies to Cursor, Claude Code, or the Cursor/Claude Skills once enabled. Not sure which option fits you? The "Which option?" table at the top of the README's Get Started section is the quick answer.
+This walkthrough shows exactly what happens when vibeArchitecture is working. We'll use **Option C** (paste one prompt) — no install required. The same flow applies to Cursor, Claude Code, or the Cursor/Claude Skills once enabled. Not sure which option fits you? The "Which option?" table at the top of the README's Get Started section is the quick answer.
 
 ---
 
@@ -18,7 +18,7 @@ In your AI tool, paste:
 
 > Read https://raw.githubusercontent.com/jgnoonan/vibeArchitecture/main/BOOTSTRAP.md and follow its instructions before we start building. Ask me the intake questions first.
 
-Or, if you already copied the framework into your project (Option C):
+Or, if you already copied the framework into your project (Option D):
 
 > Read vibeArchitecture/ARCHITECT.md and let's get started on a new project.
 
@@ -80,7 +80,7 @@ Close the chat. Open a new one tomorrow. Say:
 
 A working setup finds your existing `PROJECT_PROFILE.md`, reads **Shared tier**, and **skips re-intake** — it loads the same rules and keeps going.
 
-**Caveat for the Claude.ai Skill path:** a Claude.ai chat doesn't see files from a previous chat. If you're using the Skill in the browser rather than Claude Code, keep `PROJECT_PROFILE.md` in a Claude Project (as project knowledge) or in your repo and attach it when you start the new chat — otherwise Claude will run intake again. In Claude Code, Cursor, and Option C setups, the file lives in your project folder and persists on its own.
+**Caveat for the Claude.ai Skill path:** a Claude.ai chat doesn't see files from a previous chat. If you're using the Skill in the browser rather than Claude Code, keep `PROJECT_PROFILE.md` in a Claude Project (as project knowledge) or in your repo and attach it when you start the new chat — otherwise Claude will run intake again. In Claude Code, Cursor, and Option D setups, the file lives in your project folder and persists on its own.
 
 ---
 
@@ -93,7 +93,7 @@ You know vibeArchitecture is working when:
 - [ ] The AI refuses or fixes unsafe patterns (hardcoded secrets, plain-text passwords, SQL string concatenation)
 - [ ] A new chat session picks up the profile without re-asking everything
 
-If intake never runs, your integration isn't wired up — re-check README Option C or enable the Skill (named `vibe-architecture`) in Cursor/Claude settings.
+If intake never runs, your integration isn't wired up — re-check README Option D or enable the Skill (named `vibe-architecture`) in Cursor/Claude settings.
 
 ---
 

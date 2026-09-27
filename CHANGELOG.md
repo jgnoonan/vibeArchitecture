@@ -6,7 +6,7 @@ All notable changes to vibeArchitecture are documented here. The framework uses 
 
 ### Removed
 
-- The Vibe Code Guardian ChatGPT GPT and its configuration (`CodeGuardian/`): the GPT no longer exists. ChatGPT users paste the one-line prompt (README Option B), which reads `BOOTSTRAP.md` directly. README options relabelled: Claude Skill is now Option A, Cursor Skill Option A+. `scripts/sync.sh` no longer checks the GPT instruction length, and the release procedure drops the GPT update step.
+- The Vibe Code Guardian ChatGPT GPT and its configuration (`CodeGuardian/`): the GPT no longer exists. ChatGPT users paste the one-line prompt (README Option C), which reads `BOOTSTRAP.md` directly. README options relabelled A to D in reading order: Claude Skill (A), Cursor Skill (B), paste one prompt (C), full setup (D). `scripts/sync.sh` no longer checks the GPT instruction length, and the release procedure drops the GPT update step.
 
 ## [1.6.0] - 2026-09-27
 
