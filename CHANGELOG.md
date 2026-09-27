@@ -2,6 +2,12 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
+## [Unreleased]
+
+### Removed
+
+- The Vibe Code Guardian ChatGPT GPT and its configuration (`CodeGuardian/`): the GPT no longer exists. ChatGPT users paste the one-line prompt (README Option B), which reads `BOOTSTRAP.md` directly. README options relabelled: Claude Skill is now Option A, Cursor Skill Option A+. `scripts/sync.sh` no longer checks the GPT instruction length, and the release procedure drops the GPT update step.
+
 ## [1.6.0] - 2026-09-27
 
 Enforcement release: the rules gain automated checks that verify committed code, in the places a CI practitioner expects (git hooks, CI, a required status check), using standard scanners. Replaces the unimplemented "progressive guards" proposal.

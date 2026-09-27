@@ -14,19 +14,14 @@ vibeArchitecture fixes this. It's a set of instructions your AI reads before wri
 
 | If you... | Use |
 |---|---|
-| Just want a ChatGPT conversation | **Option A** — Vibe Code Guardian GPT |
-| Use Claude.ai or Claude Code daily | **Option A+** — Claude Skill |
-| Use Cursor daily | **Option A++** — Cursor Skill (plus Option C for the full framework) |
-| Want zero install, try it once | **Option B** — paste one prompt |
+| Use Claude.ai or Claude Code daily | **Option A**: Claude Skill |
+| Use Cursor daily | **Option A+**: Cursor Skill (plus Option C for the full framework) |
+| Use ChatGPT, or want zero install to try it once | **Option B**: paste one prompt |
 | Want checklists, guides, and full intake in your repo | **Option C** — copy the framework folder + an integration file |
 
 Throughout this README, **project root** means the top-level folder of your app — the one that holds your `package.json`, `pyproject.toml`, `.git/`, or equivalent. The `vibeArchitecture/` folder, `PROJECT_PROFILE.md`, and integration files all go there.
 
-### Option A: Use the ChatGPT GPT (zero setup)
-
-Open **[Vibe Code Guardian](https://chatgpt.com/g/g-69cd25c7200c8191938a6de92ddc56fb-vibe-code-guardian)** and describe what you want to build. It asks a few questions, then writes code with security and reliability guardrails automatically. Nothing to install, nothing to configure.
-
-### Option A+: Install as a Claude Skill (Claude.ai or Claude Code)
+### Option A: Install as a Claude Skill (Claude.ai or Claude Code)
 
 If you use Claude.ai (Pro, Max, Team, or Enterprise) or Claude Code, you can install vibeArchitecture as a Skill that activates automatically whenever you start building a project.
 
@@ -58,7 +53,7 @@ Once installed, Claude will automatically run the intake questionnaire and apply
 
 </details>
 
-### Option A++: Install as a Cursor Skill (for Cursor users)
+### Option A+: Install as a Cursor Skill (for Cursor users)
 
 If you use Cursor, install vibeArchitecture as an Agent Skill so it activates when you build software — even without copying integration files into every project. (Cursor also reads a project-root `AGENTS.md` natively, so Option C works without any Cursor-specific file.)
 
@@ -75,7 +70,7 @@ For the full framework with guides and checklists, also add the `vibeArchitectur
 
 ### Option B: Paste one prompt (any AI tool)
 
-Copy this into Claude, Cursor, Copilot, Codex, or any other AI coding tool:
+Copy this into ChatGPT, Claude, Cursor, Copilot, Codex, or any other AI tool:
 
 > **Read https://raw.githubusercontent.com/jgnoonan/vibeArchitecture/main/BOOTSTRAP.md and follow its instructions before we start building. Ask me the intake questions first.**
 
@@ -160,9 +155,8 @@ vibeArchitecture is versioned — see [CHANGELOG.md](CHANGELOG.md) for what's ne
 
 | How you use it | How to update |
 |---|---|
-| **ChatGPT GPT (Option A)** | Nothing to do — the GPT is updated centrally. |
-| **Claude Skill (Option A+)** | Installed skills are snapshots — they don't update themselves. Download `vibe-architecture.zip` from the [latest Release](https://github.com/jgnoonan/vibeArchitecture/releases/latest) (or re-zip `ClaudeSkill/vibe-architecture/` yourself) and upload it in **Settings > Capabilities**, replacing the old skill. For Claude Code, replace the folder under `.claude/skills/` or `~/.claude/skills/`. |
-| **Cursor Skill (Option A++)** | Replace the folder at `~/.cursor/skills/vibe-architecture/` (or `.cursor/skills/vibe-architecture/`) with the latest from this repo. |
+| **Claude Skill (Option A)** | Installed skills are snapshots — they don't update themselves. Download `vibe-architecture.zip` from the [latest Release](https://github.com/jgnoonan/vibeArchitecture/releases/latest) (or re-zip `ClaudeSkill/vibe-architecture/` yourself) and upload it in **Settings > Capabilities**, replacing the old skill. For Claude Code, replace the folder under `.claude/skills/` or `~/.claude/skills/`. |
+| **Cursor Skill (Option A+)** | Replace the folder at `~/.cursor/skills/vibe-architecture/` (or `.cursor/skills/vibe-architecture/`) with the latest from this repo. |
 | **Paste one prompt (Option B)** | Nothing to do — the prompt reads `BOOTSTRAP.md` live from GitHub, so every new session gets the latest version. |
 | **Full setup, git submodule (Option C)** | Run `git submodule update --remote vibeArchitecture`, then commit the updated submodule pointer. |
 | **Full setup, copied folder (Option C)** | Download the ZIP again and replace your project's `vibeArchitecture/` folder. Your `PROJECT_PROFILE.md` lives in your project root, not inside the framework folder, so it's untouched. |
@@ -302,7 +296,6 @@ vibeArchitecture/
 ├── examples/                     # Walkthrough, sample profile, before/after
 ├── ClaudeSkill/vibe-architecture/  # Installable Claude Skill (Claude.ai + Claude Code)
 ├── CursorSkill/vibe-architecture/  # Installable Cursor Agent Skill (generated from ClaudeSkill)
-├── CodeGuardian/                 # Config for the Vibe Code Guardian ChatGPT GPT
 ├── scripts/sync.sh               # Keeps skill packages + integration files in sync
 ├── scripts/test-semgrep-rules.py # Proves every Semgrep rule fires and stays quiet on its fixtures
 ├── scripts/verify-matrix.py      # Keeps rules/verification.toml in step with rules/*.md

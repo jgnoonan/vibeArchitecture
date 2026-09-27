@@ -19,4 +19,4 @@ Your suggested correction, with a source if it's a factual/legal/standards claim
 The `Framework version:` line at the top of `ARCHITECT.md` (or `BOOTSTRAP.md` / `SKILL.md`).
 
 **How are you using vibeArchitecture?**
-GPT / Claude Skill / Cursor Skill / bootstrap prompt / full folder with `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, other.
+Claude Skill / Cursor Skill / bootstrap prompt (ChatGPT or another tool) / full folder with `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, other.
