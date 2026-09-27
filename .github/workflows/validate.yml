@@ -117,7 +117,12 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: Secret scan (full history)
-        run: gitleaks git --redact --no-banner
+        run: |
+          rc=0
+          gitleaks git --redact --no-banner --report-format json --report-path "$RUNNER_TEMP/gitleaks.json" || rc=$?
+          # Surface each finding as an annotation on the PR (file, line, rule, commit).
+          python3 -c 'import json,sys; [print("::error file=%s,line=%s::gitleaks %s in commit %s (fingerprint %s)" % (f["File"], f["StartLine"], f["RuleID"], f["Commit"][:10], f["Fingerprint"])) for f in json.load(open(sys.argv[1]))]' "$RUNNER_TEMP/gitleaks.json" || true
+          exit "$rc"
       - name: Workflow lint
         run: actionlint
       - name: Workflow security
