@@ -2,7 +2,7 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
-## [1.6.0] - Unreleased
+## [1.6.0] - 2026-09-27
 
 Enforcement release: the rules gain automated checks that verify committed code, in the places a CI practitioner expects (git hooks, CI, a required status check), using standard scanners. Replaces the unimplemented "progressive guards" proposal.
 
