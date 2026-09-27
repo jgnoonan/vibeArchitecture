@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# vibeArchitecture: checks on what is being pushed. Installed by `.va/check install-hooks`.
+# git passes "<local ref> <local sha> <remote ref> <remote sha>" lines on stdin.
+# The remote sha (what the remote already has) is the base; for a new branch the
+# check command falls back to the merge-base with the default branch.
+zero=0000000000000000000000000000000000000000
+base=""
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue          # deleting a remote branch
+  if [ "$remote_sha" != "$zero" ] && git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  fi
+done
+if [ -n "$base" ]; then export VA_BASE="$base"; fi
+exec "$(git rev-parse --show-toplevel)/.va/check" push

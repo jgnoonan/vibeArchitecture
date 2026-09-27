@@ -73,7 +73,8 @@ Logs are your best friend when things break. Find them:
 
 - [ ] **Confirm the fix is working.** Don't just deploy and walk away. Verify the problem is actually resolved.
 - [ ] **Write down what happened.** Even a few sentences: what broke, why, and what you did to fix it. You'll thank yourself when a similar problem happens later.
-- [ ] **Think about prevention.** Could monitoring have caught this sooner? Could a test have prevented it? Could the app have handled the failure more gracefully? You don't have to act on these immediately, but keep them in mind.
+- [ ] **Think about prevention.** Could monitoring have caught this sooner? Could the app have handled the failure more gracefully? You don't have to act on these immediately, but keep them in mind.
+- [ ] **Add the check that would have caught it.** Ask your AI to write a test (or scan) that fails on the broken version and passes on the fix, and to prove it can fail. Add it to your checks so the same bug can't come back quietly. If it's a pattern any project could hit, suggest it to vibeArchitecture as a new rule.
 
 ## Common Problems and Quick Fixes
 

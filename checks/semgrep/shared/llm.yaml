@@ -11,7 +11,7 @@ rules:
       sized to the expected output. [VA MAI-017, rules/multi-agent.md
       "LLM Call Hygiene"]
     metadata:
-      va_rules: [MAI-017, MAI-031]
+      va_rules: [MAI-017]
       confidence: HIGH
     pattern-either:
       - patterns:
@@ -38,7 +38,7 @@ rules:
       max_completion_tokens / max_output_tokens sized to the expected output.
       [VA MAI-017, rules/multi-agent.md "LLM Call Hygiene"]
     metadata:
-      va_rules: [MAI-017, MAI-031]
+      va_rules: [MAI-017]
       confidence: HIGH
     pattern-either:
       - patterns:

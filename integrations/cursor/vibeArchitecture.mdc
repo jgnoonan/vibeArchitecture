@@ -33,4 +33,6 @@ This project uses **vibeArchitecture** for architectural guidance.
    - `vibeArchitecture/checklists/production-readiness.md` for Business or Regulated tier projects approaching launch
    - `vibeArchitecture/checklists/something-broke.md` when the user reports a bug, error, outage, or something not working
 
+7. **Run the checks.** Once the profile exists, make sure `.va/check` is installed (`vibeArchitecture/checks/install.sh`, with the user's agreement). A task is done when `.va/check push` exits 0. Fix what fails; never use `--no-verify`, skip variables, skipped tests, or config edits to get to green.
+
 <!-- Add project-specific instructions below this line -->

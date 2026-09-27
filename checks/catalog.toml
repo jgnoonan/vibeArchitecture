@@ -1,0 +1,340 @@
+# Check catalog: every check id that rules/verification.toml may reference.
+#
+# kind      tool | test | runtime | review
+# layers    where it runs: pre-commit, pre-push, ci, release, post-deploy, scheduled
+# tier      lowest tier at which the check is expected (lower tiers may still run it)
+# when      when it applies ("always", or the signal that switches it on)
+# provided  how vibeArchitecture helps:
+#             step      a step in the `.va/check` script ships ready to run
+#             config    `.va/check` runs it once you set a command in .va/config.sh
+#             template  a template or example ships under checks/
+#             project   the project writes it; checks/README.md explains what "done" means
+# blocking  whether a failure fails the layer it runs in
+#
+# Tool versions are pinned in checks/templates/mise.toml.
+
+[gate]
+title = "The check command itself"
+kind = "tool"
+layers = ["pre-commit", "pre-push", "ci"]
+tier = "personal"
+when = "always"
+provided = "step"
+blocking = true
+description = """One entry point (`.va/check fast|push|full|release`) used by git hooks, CI and \
+the agent. Runs every step bare (exit codes are never piped), fails on a missing tool, \
+applies baselines, and logs each run to .va/logs/."""
+
+[secrets]
+title = "Secret scan (gitleaks)"
+kind = "tool"
+layers = ["pre-commit", "pre-push", "ci"]
+tier = "personal"
+when = "always"
+provided = "step"
+blocking = true
+description = "Staged changes at pre-commit, the pushed commit range at pre-push, full history in CI."
+
+[env-files]
+title = "No .env files tracked"
+kind = "tool"
+layers = ["pre-commit", "ci"]
+tier = "personal"
+when = "always"
+provided = "step"
+blocking = true
+description = """Fails if any .env / .env.* file (except .env.example, .env.sample, .env.template) \
+or AI-tool secret file (.mcp.json, .claude/settings.local.json, .cursor/mcp.json, \
+claude_desktop_config.json) is tracked by git."""
+
+[deps]
+title = "Dependency audit (osv-scanner) and lockfile presence"
+kind = "tool"
+layers = ["pre-push", "ci", "scheduled"]
+tier = "personal"
+when = "a package manifest exists"
+provided = "step"
+blocking = true
+description = """osv-scanner over every lockfile; exceptions live in osv-scanner.toml with a \
+reason and ignoreUntil date. Also fails when a manifest has no lockfile. Runs at pre-push \
+only when a manifest or lockfile changed; CI always runs it, and a weekly schedule catches \
+newly published advisories."""
+
+[va-rules]
+title = "vibeArchitecture Semgrep rules"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "personal"
+when = "always"
+provided = "step"
+blocking = true
+description = """The rules in checks/semgrep/ for the project's tier, vendored into .va/semgrep/. \
+ERROR findings block, WARNING findings are reported. Pre-push reports only findings \
+introduced since the base commit; CI scans everything and filters the adoption baseline \
+(.va/baselines/semgrep.json)."""
+
+[sast]
+title = "General SAST (CodeQL or Semgrep registry rules)"
+kind = "tool"
+layers = ["ci"]
+tier = "public"
+when = "always"
+provided = "template"
+blocking = true
+description = """Broader language rules than VA's own. On GitHub, turn on CodeQL default setup \
+(Settings > Code security; free for public repos) and require its check. Elsewhere, add Semgrep \
+registry rulesets to SEMGREP_EXTRA_CONFIG in .va/config.sh."""
+
+[lint]
+title = "Linter and formatter, warnings as errors"
+kind = "tool"
+layers = ["pre-commit", "pre-push", "ci"]
+tier = "personal"
+when = "always"
+provided = "config"
+blocking = true
+description = "FORMAT_CHECK_CMD at pre-commit, LINT_CMD at pre-push and CI (ESLint/Prettier, ruff, clippy + rustfmt, flutter analyze, golangci-lint)."
+
+[lint-a11y]
+title = "Accessibility lint"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "public"
+when = "user-facing UI"
+provided = "config"
+blocking = true
+description = "eslint-plugin-jsx-a11y / vuejs-accessibility / angular-eslint template a11y rules, enabled inside LINT_CMD."
+
+[workflows]
+title = "CI workflow hygiene (actionlint + zizmor)"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "personal"
+when = ".github/workflows exists"
+provided = "step"
+blocking = true
+description = "actionlint for correctness; zizmor for SHA pinning, least-privilege permissions, credential persistence, injection."
+
+[iac]
+title = "Infrastructure-as-code scan (Trivy config)"
+kind = "tool"
+layers = ["ci"]
+tier = "business"
+when = "Terraform/OpenTofu, CloudFormation, Kubernetes, Helm or Dockerfiles present"
+provided = "config"
+blocking = true
+description = "trivy config --exit-code 1 --severity HIGH,CRITICAL . (or Checkov). Add to EXTRA_FULL_CMD."
+
+[image-scan]
+title = "Container image scan (Trivy image)"
+kind = "tool"
+layers = ["release", "ci"]
+tier = "business"
+when = "a container image is built"
+provided = "config"
+blocking = true
+description = "trivy image --exit-code 1 --severity HIGH,CRITICAL <image> in RELEASE_CMD."
+
+[migration-lint]
+title = "Migration lint (squawk for Postgres)"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "shared"
+when = "SQL migrations present"
+provided = "step"
+blocking = true
+description = "Runs squawk on changed (pre-push) or all (CI) .sql migrations when MIGRATION_LINT=squawk."
+
+[migrations-immutable]
+title = "Applied migrations are never edited"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "shared"
+when = "a migrations directory exists"
+provided = "step"
+blocking = true
+description = "Fails when a migration file that exists on the base branch is modified, renamed or deleted."
+
+[codegen-drift]
+title = "Generated code matches its source"
+kind = "tool"
+layers = ["pre-push", "ci"]
+tier = "personal"
+when = "code generation is used"
+provided = "config"
+blocking = true
+description = "Runs CODEGEN_CMD, then fails if it changed or created any file (regenerate-and-diff)."
+
+[tests]
+title = "Unit and behavioural tests"
+kind = "test"
+layers = ["pre-push", "ci"]
+tier = "shared"
+when = "always"
+provided = "config"
+blocking = true
+description = "TEST_CMD. The behavioural tests VA rules call for (authorization, isolation, validation, fail-closed guards) live here."
+
+[tests-db]
+title = "Database-backed tests that fail instead of skipping"
+kind = "test"
+layers = ["ci"]
+tier = "shared"
+when = "a database is used"
+provided = "config"
+blocking = true
+description = """TEST_DB_CMD, run with VA_REQUIRE_DB=1 exported. Suites must fail, not skip, when \
+VA_REQUIRE_DB=1 and the database is unreachable; see checks/invariant-tests/."""
+
+[migrate-twice]
+title = "Migrations apply twice cleanly"
+kind = "test"
+layers = ["ci"]
+tier = "shared"
+when = "migrations exist"
+provided = "config"
+blocking = true
+description = "Runs MIGRATE_CMD twice against the test database; both must exit 0."
+
+[a11y-e2e]
+title = "Automated accessibility checks on rendered pages"
+kind = "test"
+layers = ["ci"]
+tier = "business"
+when = "user-facing web UI"
+provided = "project"
+blocking = true
+description = "@axe-core/playwright on key pages (both colour schemes), or jest-axe/vitest-axe for components, inside TEST_CMD or EXTRA_FULL_CMD."
+
+[contract]
+title = "API contract tests against the OpenAPI document"
+kind = "test"
+layers = ["ci"]
+tier = "public"
+when = "an OpenAPI document exists"
+provided = "project"
+blocking = true
+description = "Schemathesis or a generated-client test run against the implementation; lint the spec with Spectral."
+
+[invariant-import-boundary]
+title = "Sensitive modules imported from one place only"
+kind = "test"
+layers = ["pre-push", "ci"]
+tier = "public"
+when = "crypto, raw SQL, or cross-domain imports need a boundary"
+provided = "template"
+blocking = true
+description = "Source-scanning test with a negative control; see checks/invariant-tests/."
+
+[invariant-release-artifact]
+title = "Release artifact contains no debug features"
+kind = "test"
+layers = ["release"]
+tier = "public"
+when = "a release build exists"
+provided = "template"
+blocking = true
+description = "Asserts on the built artifact or manifest: no localhost/dev endpoints, debug flags, test accounts or source maps with secrets."
+
+[invariant-log-helpers]
+title = "Log helpers cannot take personal data"
+kind = "test"
+layers = ["pre-push", "ci"]
+tier = "shared"
+when = "server-side logging of user activity"
+provided = "template"
+blocking = true
+description = "Source-scanning test over log helper signatures/call sites with a negative control."
+
+[invariant-third-party-payload]
+title = "Third-party payloads use an allowlist of keys"
+kind = "test"
+layers = ["pre-push", "ci"]
+tier = "public"
+when = "push notifications, email, SMS, analytics or webhooks to third parties"
+provided = "template"
+blocking = true
+description = "Test that builds each outbound payload and asserts its keys against an allowlist."
+
+[sbom]
+title = "SBOM per release"
+kind = "tool"
+layers = ["release"]
+tier = "business"
+when = "software is released or shipped"
+provided = "config"
+blocking = true
+description = "syft or trivy sbom in RELEASE_CMD; attach to the release."
+
+[repo-settings]
+title = "Branch protection and required checks"
+kind = "tool"
+layers = ["ci", "scheduled"]
+tier = "public"
+when = "hosted on GitHub or GitLab"
+provided = "template"
+blocking = false
+description = """Ruleset template (checks/templates/github/ruleset.json) that requires the check job \
+and pull requests on the default branch. `.va/check doctor` reports whether it is in place."""
+
+[agent-hooks]
+title = "AI agent hooks that block check bypasses"
+kind = "tool"
+layers = ["pre-commit"]
+tier = "personal"
+when = "an AI coding agent works in the repo"
+provided = "template"
+blocking = true
+description = """Claude Code PreToolUse and Cursor beforeShellExecution hooks: deny --no-verify, \
+hook-path changes and skip variables; ask before edits to check configuration."""
+
+[ai-review]
+title = "AI review of each pull request against the tier's rules"
+kind = "review"
+layers = ["ci"]
+tier = "business"
+when = "pull requests"
+provided = "template"
+blocking = false
+description = """Advisory: a read-only review pass per failure class (guides/testing/adversarial-review.md). \
+Every finding is fixed or closed in writing; it never replaces a required deterministic check."""
+
+[headers]
+title = "Security headers and transport on the deployed site"
+kind = "runtime"
+layers = ["post-deploy", "scheduled"]
+tier = "public"
+when = "a deployed web app or API"
+provided = "template"
+blocking = true
+description = "checks/templates/smoke-headers.sh against the deployed URL: HTTPS redirect, HSTS, CSP, nosniff, frame-ancestors, cookie flags, Cache-Control on authenticated routes."
+
+[deploy-health]
+title = "Post-deploy health check"
+kind = "runtime"
+layers = ["post-deploy"]
+tier = "business"
+when = "deployed services"
+provided = "project"
+blocking = true
+description = "The deploy fails if the health endpoint does not report healthy within a timeout."
+
+[restore-drill]
+title = "Backup restore drill"
+kind = "runtime"
+layers = ["scheduled"]
+tier = "business"
+when = "a production database"
+provided = "project"
+blocking = false
+description = "Scheduled restore into a scratch database with a logged PASS/FAIL and duration against RTO/RPO."
+
+[load-test]
+title = "Load test before launch"
+kind = "runtime"
+layers = ["scheduled"]
+tier = "business"
+when = "before launch and after major changes"
+provided = "project"
+blocking = false
+description = "k6 or Locust against staging at expected peak; rate limits behave under load."

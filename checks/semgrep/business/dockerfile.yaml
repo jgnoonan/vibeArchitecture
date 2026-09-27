@@ -38,9 +38,9 @@ rules:
     message: >-
       A secret-looking value is passed as a build ARG/ENV, which is stored in
       the image history. Use BuildKit secret mounts
-      (RUN --mount=type=secret,id=...). [VA INFRA containers, SEC-075]
+      (RUN --mount=type=secret,id=...). [VA UNI-002]
     metadata:
-      va_rules: [INFRA-029, UNI-002]
+      va_rules: [UNI-002]
       cwe: "CWE-538: Insertion of Sensitive Information into Externally-Accessible File"
       confidence: MEDIUM
     patterns:

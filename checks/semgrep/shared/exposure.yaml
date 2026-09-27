@@ -34,7 +34,7 @@ rules:
       log. Logs are copied, retained and shared widely. Log an identifier or a
       redacted form instead. [VA DATA-031/OBS-006]
     metadata:
-      va_rules: [DATA-031, OBS-006, SEC-080]
+      va_rules: [DATA-031, OBS-006]
       cwe: "CWE-532: Insertion of Sensitive Information into Log File"
       confidence: MEDIUM
     patterns:
@@ -61,7 +61,7 @@ rules:
       log. Logs are copied, retained and shared widely. Log an identifier or a
       redacted form instead. [VA DATA-031/OBS-006]
     metadata:
-      va_rules: [DATA-031, OBS-006, SEC-080]
+      va_rules: [DATA-031, OBS-006]
       cwe: "CWE-532: Insertion of Sensitive Information into Log File"
       confidence: MEDIUM
     patterns:

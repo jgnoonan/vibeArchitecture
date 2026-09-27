@@ -1,0 +1,20 @@
+# Paths the vibeArchitecture Semgrep rules skip. Project-owned.
+# Tests are skipped by default because they deliberately contain bad inputs; remove
+# those lines if you want test code held to the same rules.
+:include .gitignore
+node_modules/
+vendor/
+dist/
+build/
+out/
+.next/
+coverage/
+*.min.js
+vibeArchitecture/
+.va/
+test/
+tests/
+__tests__/
+spec/
+*.test.*
+*.spec.*

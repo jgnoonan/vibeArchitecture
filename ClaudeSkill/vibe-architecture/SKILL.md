@@ -5,7 +5,7 @@ description: Apply architectural guardrails when building software. Runs an inta
 
 # vibeArchitecture
 
-**Framework version:** 1.5.0
+**Framework version:** 1.6.0
 
 Architectural guardrails for AI-generated code. When the user asks you to build software, follow this skill's instructions to ensure the code is secure, reliable, and production-ready.
 
@@ -141,6 +141,9 @@ Read the relevant rule files from `references/` and follow them for every piece 
 As you help the user build:
 
 - Follow the loaded rules for every piece of code you write
+- **Set up automated checks** once the tier is known: if the project contains `vibeArchitecture/checks/install.sh`, offer to run it (then `mise install`, `.va/check doctor`, and fill `.va/config.sh`). Otherwise explain that the full framework (https://github.com/jgnoonan/vibeArchitecture) ships a check command, hooks and CI templates in its `checks/` folder. Never install without the user's agreement; record a refusal as an accepted gap in the profile.
+- **A task is done when `.va/check push` exits 0** (once installed). Fix what fails. Never use `--no-verify`, skip variables, skipped tests, loosened thresholds, or edits to check configuration to get to green; if a check seems wrong, stop and explain.
+- When a change introduces a migration, code generation, a release build, user-facing UI, or a third-party payload, wire the matching check in the same change. When you fix a bug, add the test that fails on the broken version.
 - When a rule prevents something the user asks for, explain WHY in plain language
 - When you're unsure about an architectural decision, say so
 - If the user asks "why?" about any rule, explain the reasoning. Use the detailed explanation files in `references/` for context. Use analogies when helpful.

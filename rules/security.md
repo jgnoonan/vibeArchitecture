@@ -129,14 +129,14 @@ See `guides/security/secrets-management.md`.
 - Prefer a secrets manager (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, HashiCorp Vault, or platform encrypted secrets) over `.env` files at Shared tier; required at Business tier and above.
 - Log access to secrets where possible.
 - Only client-exposed prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`) may hold public values; never put a secret behind one.
-- AI coding tools are a secret-leak surface (chat transcripts, `.mcp.json`, `claude_desktop_config.json`, `.claude/`, `.cursor/`, agent logs): reference secrets by env var name, add these paths to `.gitignore` and secret scanning, never paste a live key into a prompt.
+- AI coding tools are a secret-leak surface (chat transcripts, `.mcp.json`, `claude_desktop_config.json`, `.claude/settings.local.json`, `.cursor/mcp.json`, agent logs): reference secrets by env var name, gitignore those files, keep them in secret scanning, and never paste a live key into a prompt. Shared agent config such as `.claude/settings.json` and `.cursor/hooks.json` is committed and must stay secret-free.
 - API keys you issue: recognizable prefix and checksum (`sk_live_` style), shown once at creation, stored only as a hash, last-used time recorded, per-key scopes.
 
 ## Dependency Security
 
 See `guides/security/supply-chain.md`.
 
-- Run automated dependency vulnerability scanning (`npm audit`, `pip-audit`, Dependabot, Snyk), in CI if you have a pipeline.
+- Run automated dependency vulnerability scanning in the `check` command (osv-scanner covers every lockfile; `npm audit`/`pip-audit` also work), plus Dependabot or Renovate for update PRs.
 - Update promptly when a vulnerability is reported in a dependency you use.
 - Audit new dependencies before adding: active maintenance, known vulnerabilities, download count, license compatibility.
 - Pin CI actions to a full commit SHA, install with a minimum release age, and disable install scripts by default.

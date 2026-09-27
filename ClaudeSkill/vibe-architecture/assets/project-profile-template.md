@@ -70,6 +70,15 @@ Based on the tier, these rule files are enforced:
 - [ ] `rules/mobile.md` *(when Platform is `mobile-native` or `both`)*
 - [ ] `rules/compliance.md` *(Regulated tier in full; Public tier and above when EU users interact with an AI feature — EU AI Act section only)*
 
+## Checks
+
+Automated checks installed with `vibeArchitecture/checks/install.sh` (see `.va/README.md`).
+
+- **Installed:** [yes / no / declined]
+- **Gate:** [pre-push hook only / CI on pull requests / CI + required status check on the default branch]
+- **Baseline:** [none / recorded YYYY-MM-DD, N findings, expires YYYY-MM-DD]
+- **Accepted gaps:** [checks the tier expects that are deliberately not in place, and why; e.g. "no required status check: private repo on a free plan"]
+
 ## Detected Tech Stack (Existing Projects Only)
 
 If this project was analyzed from an existing codebase, the detected stack is listed here:
