@@ -14,7 +14,7 @@ Do not open a public issue for security problems. Include what's affected (file 
 
 - Rules or guides that recommend an insecure practice, or omit a mitigation in a way that would lead an AI coding tool to generate vulnerable code
 - Problems in `scripts/sync.sh` or `.github/workflows/*` (unsafe shell handling, excessive permissions, unpinned or compromised actions)
-- Prompt-injection or instruction-smuggling risks in the integration files, skills, or GPT configuration
+- Prompt-injection or instruction-smuggling risks in the integration files or skills
 
 Ordinary factual corrections, outdated advice, and broken links are welcome as regular issues or pull requests — see `CONTRIBUTING.md`.
 

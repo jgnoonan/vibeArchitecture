@@ -176,21 +176,6 @@ else
   fi
 fi
 
-# --- 5. GPT instruction length ---
-# The custom GPT's instruction field is capped at 8000 characters. Fail before
-# someone pastes a truncated version into the GPT builder.
-GPT_INSTRUCTIONS="$ROOT/CodeGuardian/gpt-instructions.md"
-GPT_LIMIT=8000
-if [[ -f "$GPT_INSTRUCTIONS" ]]; then
-  GPT_CHARS=$(wc -m < "$GPT_INSTRUCTIONS" | tr -d ' ')
-  if [[ "$GPT_CHARS" -gt "$GPT_LIMIT" ]]; then
-    echo "CodeGuardian/gpt-instructions.md is $GPT_CHARS characters; the GPT builder limit is $GPT_LIMIT." >&2
-    FAILED=true
-  fi
-else
-  echo "Missing: $GPT_INSTRUCTIONS (skipping length check)" >&2
-fi
-
 if $CHECK; then
   if $FAILED; then
     echo "Derived files are out of sync. Run ./scripts/sync.sh to fix." >&2

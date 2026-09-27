@@ -9,7 +9,7 @@
 - [ ] New or changed rule bullets are classified in `rules/verification.toml` (`python3 scripts/verify-matrix.py` passes)
 - [ ] New or changed Semgrep rules cite `metadata.va_rules` and have firing and quiet fixtures (`python3 scripts/test-semgrep-rules.py` passes)
 - [ ] `npx markdownlint-cli2 "**/*.md" "#node_modules"` passes locally (see "Local Checks" in CONTRIBUTING.md)
-- [ ] If tier-determination logic changed: `intake/questionnaire.md`, `intake/tier-definitions.md`, `BOOTSTRAP.md`, `SKILL.md`, and `CodeGuardian/gpt-instructions.md` all agree
+- [ ] If tier-determination logic changed: `intake/questionnaire.md`, `intake/tier-definitions.md`, `BOOTSTRAP.md`, and `SKILL.md` all agree
 - [ ] New or changed internal paths exist (`ls` them)
 - [ ] Factual, legal, or standards claims cite a source in the PR description
 - [ ] Plain-language content stays jargon-free; rules files stay compact (see CONTRIBUTING.md)

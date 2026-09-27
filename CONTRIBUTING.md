@@ -34,7 +34,7 @@ Thank you for your interest in improving vibeArchitecture. This framework exists
 
 `integrations/cursorrules` is intentionally **not** generated — the legacy (deprecated) `.cursorrules` format can't use the `@./…` import, so it's a small standalone file maintained by hand. Note that `@./…` imports are a Claude Code / Gemini CLI feature, not a universal one; that's why `integrations/AGENTS.md` opens with a plain-text "read `vibeArchitecture/ARCHITECT.md`" line that every tool understands.
 
-The intake logic exists in five places — the full `intake/questionnaire.md`, `intake/tier-definitions.md`, the condensed `BOOTSTRAP.md`, the `SKILL.md` package (Cursor copy is generated), and `CodeGuardian/gpt-instructions.md`. These are not auto-synced; if you change tier-determination logic, update all of them together. `scripts/sync.sh --check` also verifies that the version stamps in `ARCHITECT.md`, `BOOTSTRAP.md`, and `SKILL.md` agree and that the GPT instructions stay under the 8,000-character limit.
+The intake logic exists in four places: the full `intake/questionnaire.md`, `intake/tier-definitions.md`, the condensed `BOOTSTRAP.md`, and the `SKILL.md` package (Cursor copy is generated). These are not auto-synced; if you change tier-determination logic, update all of them together. `scripts/sync.sh --check` also verifies that the version stamps in `ARCHITECT.md`, `BOOTSTRAP.md`, and `SKILL.md` agree.
 
 ### What Makes a Good Pull Request
 
@@ -56,7 +56,7 @@ CI runs six jobs on every push and pull request (`.github/workflows/validate.yml
 
 | Check | Command | Notes |
 |-------|---------|-------|
-| Sync + version stamps + GPT length | `./scripts/sync.sh --check` | Bash 3.2 compatible; no dependencies |
+| Sync + version stamps | `./scripts/sync.sh --check` | Bash 3.2 compatible; no dependencies |
 | Verification matrix | `python3 scripts/verify-matrix.py` | Python 3.11+, stdlib only. Every rule bullet must be classified; `--summary` prints coverage per tier |
 | Semgrep rules | `python3 scripts/test-semgrep-rules.py` | Needs `semgrep` (`mise install`). Every rule must fire on a `ruleid:` fixture and stay quiet on an `ok:` fixture |
 | Secrets, workflows | `gitleaks git --redact`, `actionlint`, `zizmor --offline .github/workflows` | Installed by `mise install` (versions in `mise.toml`) |
@@ -82,7 +82,7 @@ The bar for a new Semgrep rule: generic (not tied to one project), low false-pos
 Releases are tagged `vX.Y.Z` and follow [Semantic Versioning](https://semver.org/): patch for corrections, minor for new rules/guides or changed tier logic, major only if the file layout or integration contract changes in a way that breaks existing installs.
 
 1. **Bump the three version stamps** — the `**Framework version:**` line in `ARCHITECT.md`, `BOOTSTRAP.md`, and `ClaudeSkill/vibe-architecture/SKILL.md` (the Cursor `SKILL.md` is regenerated). `./scripts/sync.sh --check` fails if any of them disagree.
-2. **Update the condensations** — `BOOTSTRAP.md` and `CodeGuardian/gpt-instructions.md` are hand-maintained summaries of the rules. Fold in every rule change that matters at intake or in the first session, then confirm `gpt-instructions.md` is still under 8,000 characters (`wc -m CodeGuardian/gpt-instructions.md`; `sync.sh --check` enforces the limit).
+2. **Update the condensation.** `BOOTSTRAP.md` is a hand-maintained summary of the rules. Fold in every rule change that matters at intake or in the first session.
 3. **Re-measure the README token table** ("Token Usage" under *For developers*). Tokens are estimated as file bytes ÷ 4, summed over the rule files each tier loads (`rules/_index.md` lists them):
    ```bash
    for f in rules/*.md; do printf "%-28s %6d\n" "$f" $(( $(wc -c < "$f") / 4 )); done
@@ -105,8 +105,7 @@ Releases are tagged `vX.Y.Z` and follow [Semantic Versioning](https://semver.org
    ```bash
    gh release create vX.Y.Z vibe-architecture.zip --title "vX.Y.Z" --notes-file <(sed -n '/^## \[X.Y.Z\]/,/^## \[/p' CHANGELOG.md | sed '$d')
    ```
-9. **Update the GPT** — follow the update procedure in `CodeGuardian/README.md` (diff the two tags to see which knowledge files changed, re-upload those, paste the refreshed instructions, test one intake conversation).
-10. **Announce** — the README "Updating From a Previous Version" table should already describe any manual migration steps; if not, add them now and push a follow-up commit.
+9. **Announce** — the README "Updating From a Previous Version" table should already describe any manual migration steps; if not, add them now and push a follow-up commit.
 
 ## Writing Standards
 
