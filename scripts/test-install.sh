@@ -46,6 +46,15 @@ git add -A && git commit -qm search >/dev/null 2>&1
 expect fail "push with SQL built from request input"  git push -q
 git reset -q --hard origin/main
 
+# Pushing a branch that isn't checked out is refused (the checks scan the checkout).
+git checkout -q -b bad
+printf 'exports.r = (cp, req) => cp.exec("ls " + req.query.dir);\n' > src/run.js
+git add -A && git commit -qm bad >/dev/null 2>&1
+git checkout -q main
+expect fail "push a different branch than the checkout" git push -q origin bad
+expect pass "push that only deletes a remote branch"    sh -c 'git push -q origin main:refs/heads/tmp --no-verify && git push -q origin :refs/heads/tmp'
+git branch -q -D bad
+
 # A realistic-looking secret must be rejected at pre-commit (gitleaks, staged).
 printf 'const key = "%s";\n' "ghp_$(printf 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8')" > src/config.js
 git add -A

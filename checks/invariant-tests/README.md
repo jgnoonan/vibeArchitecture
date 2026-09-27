@@ -13,6 +13,7 @@ Every invariant test has four parts:
 |---|---|---|
 | `js/import-boundary.test.mjs`, `python/test_import_boundary.py` | SYS-005 (module boundaries), SEC-069 (one crypto module) | `invariant-import-boundary` |
 | `js/release-artifact.test.mjs` | UNI-039 (release builds have no debug features) | `invariant-release-artifact` |
+| `js/log-helpers.test.mjs` | PRIV-023, DATA-031 (no personal data in server logs) | `invariant-log-helpers` |
 | `python/test_payload_allowlist.py` | MOB-018, PRIV-023 (third-party payloads carry no content or identity) | `invariant-third-party-payload` |
 | `js/require-db.mjs`, `python/conftest_require_db.py` | TEST-021, TEST-022 (skipped tests must not read as green) | `tests-db` |
 

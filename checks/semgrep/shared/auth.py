@@ -96,3 +96,12 @@ def cors_setup(app):
 @require_POST
 def update_email(request):
     pass
+
+
+def enum_compare(tok, TokenType, token_count):
+    # ok: va-timing-unsafe-compare-py
+    if tok.type == TokenType.STRING:
+        pass
+    # ok: va-timing-unsafe-compare-py
+    if token_count == 3:
+        pass

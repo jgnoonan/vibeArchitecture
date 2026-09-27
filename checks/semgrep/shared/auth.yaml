@@ -111,7 +111,7 @@ rules:
           regex: ^(window\.)?(localStorage|sessionStorage|AsyncStorage)$
       - metavariable-regex:
           metavariable: $KEY
-          regex: (?i).*(token|jwt|session|bearer|auth|refresh|credential).*
+          regex: '(?i)^[`"'']?[\w.:-]*?(token|jwt|bearer|session|session_?id|sessionid|auth|credentials?)[`"'']?$'
 
   # ---------------------------------------------------------------------------
   # SEC-040 constant-time comparison of secrets
@@ -138,7 +138,10 @@ rules:
                   - pattern: $A != $B
               - metavariable-regex:
                   metavariable: $A
-                  regex: (?i)^[\w$.\[\]"']*(signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["'\]]?$
+                  regex: '^[a-z_$][\w$]*(?:\??\.[\w$]+|\[["''][\w-]+["'']\])*$'
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: '^.*(?:^|[.\["''_-])(?:[a-z][A-Za-z0-9]*(?:Signature|Hmac|HMAC|Digest|Token|ApiKey|APIKey|Secret|Otp|OTP|Mac|MAC)|signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["''\]]*$'
           - patterns:
               - pattern-either:
                   - pattern: $A === $B
@@ -147,24 +150,23 @@ rules:
                   - pattern: $A != $B
               - metavariable-regex:
                   metavariable: $B
-                  regex: (?i)^[\w$.\[\]"']*(signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["'\]]?$
-      - pattern-not: $A === undefined
-      - pattern-not: $A === null
-      - pattern-not: $A == null
-      - pattern-not: $A !== undefined
-      - pattern-not: $A !== null
-      - pattern-not: $A != null
-      - pattern-not: $A === "..."
-      - pattern-not: $A !== "..."
-      - pattern-not: $A === true
-      - pattern-not: $A === false
-      - pattern-not: undefined === $B
-      - pattern-not: null === $B
+                  regex: '^[a-z_$][\w$]*(?:\??\.[\w$]+|\[["''][\w-]+["'']\])*$'
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: '^.*(?:^|[.\["''_-])(?:[a-z][A-Za-z0-9]*(?:Signature|Hmac|HMAC|Digest|Token|ApiKey|APIKey|Secret|Otp|OTP|Mac|MAC)|signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["''\]]*$'
+      - pattern-not: '$A === undefined'
+      - pattern-not: '$A === null'
+      - pattern-not: '$A == null'
+      - pattern-not: '$A !== undefined'
+      - pattern-not: '$A !== null'
+      - pattern-not: '$A != null'
+      - pattern-not: '$A === "..."'
+      - pattern-not: '$A !== "..."'
+      - pattern-not: '$A === true'
+      - pattern-not: '$A === false'
+      - pattern-not: 'undefined === $B'
+      - pattern-not: 'null === $B'
       - pattern-not: '"..." === $B'
-      - pattern-not: typeof $X === $B
-      - pattern-not: $A === typeof $X
-      - pattern-not: $A.length === $B
-      - pattern-not: $A === $B.length
 
   - id: va-timing-unsafe-compare-py
     languages: [python]
@@ -185,23 +187,27 @@ rules:
                   - pattern: $A != $B
               - metavariable-regex:
                   metavariable: $A
-                  regex: (?i)^[\w.\[\]"']*(signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["'\]]?$
+                  regex: '^[a-z_]\w*(?:\.\w+|\[["''][\w-]+["'']\]|\(\))*$'
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: '^.*(?:^|[.\["''_-])(?:signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["''\]]*$'
           - patterns:
               - pattern-either:
                   - pattern: $A == $B
                   - pattern: $A != $B
               - metavariable-regex:
                   metavariable: $B
-                  regex: (?i)^[\w.\[\]"']*(signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["'\]]?$
-      - pattern-not: $A == None
-      - pattern-not: $A != None
-      - pattern-not: $A == "..."
-      - pattern-not: $A != "..."
+                  regex: '^[a-z_]\w*(?:\.\w+|\[["''][\w-]+["'']\]|\(\))*$'
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: '^.*(?:^|[.\["''_-])(?:signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["''\]]*$'
+      - pattern-not: '$A == None'
+      - pattern-not: '$A != None'
+      - pattern-not: '$A == "..."'
+      - pattern-not: '$A != "..."'
       - pattern-not: '"..." == $B'
-      - pattern-not: $A == True
-      - pattern-not: $A == False
-      - pattern-not: len($A) == $B
-      - pattern-not: $A == len($B)
+      - pattern-not: '$A == True'
+      - pattern-not: '$A == False'
 
   # ---------------------------------------------------------------------------
   # SEC-026 password hashing

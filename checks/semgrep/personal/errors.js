@@ -25,3 +25,8 @@ app.use((err, req, res, next) => {
   // ruleid: va-error-details-in-response-js
   res.status(500).send(err);
 });
+
+function logOnly(err) {
+  // ok: va-error-details-in-response-js
+  console.error(err.stack);
+}

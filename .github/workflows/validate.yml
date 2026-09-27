@@ -85,6 +85,16 @@ jobs:
           checks/templates/.githooks/pre-commit checks/templates/.githooks/pre-push
           checks/templates/smoke-headers.sh
 
+  # The agent guard runs under macOS's BSD sed and /bin/sh too.
+  guard-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Agent guard (BSD userland)
+        run: bash scripts/test-guard.sh
+
   # The check templates work end to end with the real pinned tools: clean pushes
   # pass and each planted violation is rejected by the hooks.
   checks-e2e:

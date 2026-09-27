@@ -220,13 +220,17 @@ s_va_rules() {
   mkdir -p "$VA_DIR/logs"
   args=(--config "$VA_DIR/semgrep")
   for c in $SEMGREP_EXTRA_CONFIG; do args+=(--config "$c"); done
+  local diff=()
+  rm -f "$out.diff-scan"
   if [ "$PROFILE" != full ] && [ "$PROFILE" != release ] && [ -n "$BASE" ] && [ "$SCOPE" != all ]; then
     args+=(--baseline-commit "$BASE")
+    diff=(--diff-scan)
+    : > "$out.diff-scan"   # marks the results as new-code-only, so `prune` refuses them
   fi
   semgrep scan --metrics=off --disable-version-check --quiet --json-output="$out" "${args[@]}" . >/dev/null
   local rc=$?
   if [ $rc -ne 0 ] && [ $rc -ne 1 ]; then say "${C_RED}semgrep failed (exit $rc).${C_0} Run it by hand to see why."; return 1; fi
-  python3 "$VA_DIR/baseline.py" check "$out" --baseline "$VA_DIR/baselines/semgrep.json"
+  python3 "$VA_DIR/baseline.py" check "$out" --baseline "$VA_DIR/baselines/semgrep.json" ${diff[@]+"${diff[@]}"}
 }
 
 s_lint() {

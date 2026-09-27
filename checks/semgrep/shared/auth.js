@@ -103,3 +103,21 @@ function controls(token, key, jwtLib) {
   // ok: va-csrf-disabled-js
   const o2 = { csrf: true };
 }
+
+function enumCompare(node, SyntaxKind, req) {
+  // ok: va-timing-unsafe-compare-js
+  if (node.getKind() === SyntaxKind.CommaToken) {}
+  // ok: va-timing-unsafe-compare-js
+  if (req.body.tokenCount === 3) {}
+  // ruleid: va-timing-unsafe-compare-js
+  if (req.headers["x-hub-signature"] === computedSignature) {}
+}
+
+function prefs(filter, count) {
+  // ok: va-token-in-web-storage
+  localStorage.setItem("authorFilter", filter);
+  // ok: va-token-in-web-storage
+  localStorage.setItem("sessionCount", count);
+  // ruleid: va-token-in-web-storage
+  localStorage.setItem("supabase.auth.token", count);
+}

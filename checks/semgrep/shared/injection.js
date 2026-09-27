@@ -123,3 +123,8 @@ function timerControls(handler) {
   // ok: va-dynamic-code-execution-string
   setTimeout(() => handler("x" + 1), 100);
 }
+
+app.get("/users/:id/go", (req, res) => {
+  // ok: va-open-redirect-js
+  res.redirect("/user/" + req.params.id);
+});

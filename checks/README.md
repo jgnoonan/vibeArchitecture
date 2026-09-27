@@ -37,9 +37,11 @@ rules/*.md ──── rules/verification.toml ──── checks/catalog.toml
 | release | as needed | `full` + `RELEASE_CMD` (SBOM, image scan, release-artifact invariants) |
 | post-deploy / scheduled | n/a | `templates/smoke-headers.sh`, health checks, restore drills, a weekly CI run for new advisories |
 
+**The pre-push hook checks what you're pushing.** It refuses to push a branch other than the one checked out, since the checks scan the checked-out files.
+
 **Only the server enforces.** Hooks give fast feedback, and anyone (or any agent) can skip them. The required `check` status on the default branch is the control that can't be skipped. Business and Regulated tiers must have it; `.va/check doctor` reports whether it's in place.
 
-**The agent can't turn the checks off.** `templates/.va/hooks/guard.sh` is wired into Claude Code (PreToolUse) and Cursor (beforeShellExecution). It denies `--no-verify`, `git commit -n`, changes to `core.hooksPath`, and skip variables. It asks the user before the agent edits check configuration or adds a `nosemgrep`, a `.skip`, or a similar suppression. Cursor's hooks can't intercept file edits, only shell commands, so for Cursor the server-side check is the backstop.
+**The agent can't turn the checks off.** `templates/.va/hooks/guard.sh` is wired into Claude Code (PreToolUse) and Cursor (beforeShellExecution). It denies `--no-verify`, `git commit -n`, changes to `core.hooksPath`, and skip variables. It asks the user before the agent edits check or linter configuration (including `.gitignore`, which the Semgrep scan honours) or writes a `nosemgrep`, `eslint-disable`, `.skip`, or similar suppression. Cursor's hooks can't intercept file edits, only shell commands, so for Cursor the server-side check is the backstop.
 
 **Adopting on an existing codebase.** `.va/check baseline` records today's Semgrep findings, each with an expiry. After that only new findings block, and the baseline only shrinks. osv-scanner exceptions carry a `reason` and `ignoreUntil` in `osv-scanner.toml`; gitleaks uses `.gitleaksignore` for leaks that have been rotated.
 

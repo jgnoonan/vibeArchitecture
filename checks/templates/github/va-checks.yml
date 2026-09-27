@@ -41,6 +41,10 @@ jobs:
       # tests can run, or pin the runtime in mise.toml.
       - name: Run checks
         run: .va/check full
+        env:
+          # On pushes to the default branch, diff against the previous tip so edits to
+          # applied migrations are caught there too (pull requests use the PR base).
+          VA_BASE: ${{ github.event_name == 'push' && github.event.before || '' }}
       - name: Keep the check logs as evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -22,6 +22,12 @@ rules:
           - pattern-not: '$R.status($C).send(...)'
           - pattern-not: 'Response.json($B, $INIT)'
           - pattern-not: 'NextResponse.json($B, $INIT)'
+          - pattern-not-inside: |
+              $R.status($C);
+              ...
+          - pattern-not-inside: |
+              $R.statusCode = $C;
+              ...
 
   - id: va-error-with-200-status-py
     languages: [python]

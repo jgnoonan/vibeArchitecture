@@ -423,6 +423,13 @@ rules:
           - pattern: $REQ.headers
     pattern-sanitizers:
       - patterns:
+          - pattern-either:
+              - pattern: '"$PREFIX" + $X'
+              - pattern: '`$PREFIX${$X}...`'
+          - metavariable-regex:
+              metavariable: $PREFIX
+              regex: ^/[^/\\]
+      - patterns:
           - pattern: $F(...)
           - metavariable-regex:
               metavariable: $F
@@ -456,6 +463,13 @@ rules:
           - pattern: request.POST
           - pattern: request.query_params
     pattern-sanitizers:
+      - patterns:
+          - pattern-either:
+              - pattern: '"$PREFIX" + $X'
+          - metavariable-regex:
+              metavariable: $PREFIX
+              regex: ^/[^/\\]
+      - pattern: 'f"/{$X}..."'
       - patterns:
           - pattern: $F(...)
           - metavariable-regex:

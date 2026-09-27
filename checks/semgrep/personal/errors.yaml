@@ -35,7 +35,16 @@ rules:
       cwe: "CWE-209: Information Exposure Through an Error Message"
       confidence: MEDIUM
     pattern-either:
-      - pattern: $RES.$SEND(<... $E.stack ...>)
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.$SEND(<... $E.stack ...>)
+              - pattern: $RES.status($C).$SEND(<... $E.stack ...>)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|resp|response|reply|ctx\.response|c)$
+          - metavariable-regex:
+              metavariable: $SEND
+              regex: ^(send|json|end|write|render|jsonp|type)$
       - patterns:
           - pattern-inside: |
               try { ... } catch ($E) { ... }

@@ -29,3 +29,9 @@ export async function GET() {
   // ok: va-error-with-200-status-js
   return Response.json({ error: "not found" }, { status: 404 });
 }
+
+app.use((req, res) => {
+  res.status(404);
+  // ok: va-error-with-200-status-js
+  return res.json({ error: "Not found" });
+});

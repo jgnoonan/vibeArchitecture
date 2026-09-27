@@ -130,9 +130,9 @@ def cmd_check(args):
         print(f"{describe(r)}")
     baselined = len([r for r in results if r["extra"].get("severity") == "ERROR"]) - len(new_errors) - len(expired)
     print(f"\nva-rules: {len(new_errors) + len(expired)} blocking, {len(warnings)} warning(s), {baselined} baselined")
-    if stale:
+    if stale and not args.diff_scan:
         print(f"  {stale} baseline entr{'y is' if stale == 1 else 'ies are'} fixed; shrink the baseline: "
-              f"python3 .va/baseline.py prune <results> --baseline {args.baseline}")
+              f"python3 .va/baseline.py prune {args.results} --baseline {args.baseline}")
     if new_errors or expired:
         print("  Fix the finding. If it is a true false positive, add `nosemgrep: <rule-id>` on that line with a reason.")
         return 1
@@ -168,6 +168,10 @@ def cmd_accept(args):
 
 
 def cmd_prune(args):
+    if pathlib.Path(str(args.results) + ".diff-scan").exists():
+        print(f"{args.results} only covers new code (pre-push); pruning from it would empty the baseline. "
+              "Run `.va/check full` and prune from .va/logs/semgrep-full.json.", file=sys.stderr)
+        return 2
     baseline = load_baseline(args.baseline)
     present = {}
     for r in load_results(args.results):
@@ -192,6 +196,8 @@ def main():
     ap.add_argument("--baseline", required=True)
     ap.add_argument("--reason")
     ap.add_argument("--expires")
+    ap.add_argument("--diff-scan", action="store_true",
+                    help="results cover new code only (semgrep --baseline-commit): don't report fixed entries")
     args = ap.parse_args()
     return {"check": cmd_check, "record": cmd_record, "accept": cmd_accept, "prune": cmd_prune}[args.command](args)
 

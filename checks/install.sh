@@ -181,7 +181,11 @@ case ",$AGENTS," in *,claude,*) merge_json "$TPL/claude/settings.json" .claude/s
 case ",$AGENTS," in *,cursor,*) merge_json "$TPL/cursor/hooks.json" .cursor/hooks.json ;; esac
 
 # -------------------------------------------------------------- gitignore ---
-add_ignore() { grep -qxF "$1" .gitignore 2>/dev/null || { act "ignore $1"; [ -z "$DRY" ] && printf '%s\n' "$1" >> .gitignore; }; }
+add_ignore() {
+  if grep -qxF "$1" .gitignore 2>/dev/null; then return 0; fi
+  act "ignore $1"
+  if [ -z "$DRY" ]; then printf '%s\n' "$1" >> .gitignore; fi
+}
 say "gitignore:"
 add_ignore ".env"
 add_ignore ".env.*"
