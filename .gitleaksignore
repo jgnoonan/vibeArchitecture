@@ -1,0 +1,6 @@
+# gitleaks exceptions for this repository. Each entry is one finding, pinned by fingerprint.
+# Only for values that are not secrets. A real leaked key is rotated, never ignored.
+#
+# Documentation examples of what NOT to do (fake keys, present since the initial commit):
+e548309ddee13e8ae53d1903c49b1b9bd7eb140d:guides/security/secrets-management.md:generic-api-key:42
+e548309ddee13e8ae53d1903c49b1b9bd7eb140d:appendices/anti-patterns.md:stripe-access-token:13
