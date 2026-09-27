@@ -1,0 +1,55 @@
+# vibeArchitecture checks: the same `.va/check` the git hooks run, on every PR.
+# Make the `check` job a required status check on __BRANCH__ (see .va/README.md).
+name: va-checks
+
+on:
+  pull_request:
+  push:
+    branches: [__BRANCH__]
+  schedule:
+    - cron: "17 6 * * 1" # weekly, so newly published advisories fail the build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: va-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Database-backed tests (TEST_DB_CMD / MIGRATE_CMD) need a real database:
+    # services:
+    #   postgres:
+    #     image: postgres:18
+    #     env:
+    #       POSTGRES_PASSWORD: postgres
+    #     ports: ["5432:5432"]
+    #     options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    # env:
+    #   DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history for the secret scan and the diff base
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      # Install your project's dependencies here (npm ci, uv sync, ...) so lint and
+      # tests can run, or pin the runtime in mise.toml.
+      - name: Run checks
+        run: .va/check full
+        env:
+          # On pushes to the default branch, diff against the previous tip so edits to
+          # applied migrations are caught there too (pull requests use the PR base).
+          VA_BASE: ${{ github.event_name == 'push' && github.event.before || '' }}
+      - name: Keep the check logs as evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: va-check-logs
+          path: .va/logs/
+          retention-days: 90
+          if-no-files-found: ignore

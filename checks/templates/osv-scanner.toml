@@ -1,0 +1,7 @@
+# Known-vulnerability exceptions for osv-scanner. Project-owned.
+# Every exception needs a reason and an expiry; when it expires, the check fails again.
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2026-12-31
+# reason = "Only reachable through the XML import, which is disabled in production; upgrade tracked in #123"

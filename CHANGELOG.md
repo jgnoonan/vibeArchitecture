@@ -2,6 +2,39 @@
 
 All notable changes to vibeArchitecture are documented here. The framework uses [Semantic Versioning](https://semver.org/) for its documentation releases.
 
+## [1.6.0] - Unreleased
+
+Enforcement release: the rules gain automated checks that verify committed code, in the places a CI practitioner expects (git hooks, CI, a required status check), using standard scanners. Replaces the unimplemented "progressive guards" proposal.
+
+### Added
+
+- **Verification matrix** (`rules/verification.toml`): every one of the 647 rule bullets is classified by how it is verified: tool, pattern, test, runtime, review, attest, or guidance, with stable ids (`SEC-004`, `DATA-012`, ...). `scripts/verify-matrix.py` fails CI when a rule is unclassified, a match goes stale, or a "pattern" rule has no Semgrep rule behind it; `--summary` prints automation coverage per tier (roughly 36 to 55% of in-scope rules are decided by a tool, pattern, test or runtime check)
+- **vibeArchitecture Semgrep ruleset** (`checks/semgrep/`): 83 rules in tier directories covering injection (SQL, XSS, shell, eval, path traversal, SSRF, open redirect), mass assignment, JWT validation, token storage, timing-unsafe comparison, password hashing, weak randomness, cookie flags, CSRF, CORS, weak crypto, disabled TLS verification, unsafe deserialization, XXE, archive extraction, secrets behind public env prefixes, sensitive values in logs, LLM calls (token caps, system-prompt interpolation, model output into eval/SQL), money as float, timestamps without time zone, blocking and destructive migrations, Android/iOS transport and storage settings, error leakage, 200-with-error responses, in-memory rate limiting, accessibility (missing alt, click handlers on divs, zoom disabled), HTTP timeouts, and Dockerfile hygiene. Every rule cites the VA rule it enforces and ships fixtures proving it fires and stays quiet; `scripts/test-semgrep-rules.py` enforces that (plain `semgrep --test` reports success on config errors and untested rules)
+- **The check command** (`checks/templates/.va/check`): one entry point with `fast` (pre-commit), `push` (pre-push), `full` (CI) and `release` profiles; runs gitleaks, osv-scanner (plus lockfile presence per ecosystem), the VA Semgrep rules (diff-aware at pre-push), lint, tests, database tests that fail instead of skipping (`VA_REQUIRE_DB=1`), migrate-twice, migration immutability, actionlint + zizmor, and codegen drift. Every tool runs bare (no pipes); a missing tool fails the step; `doctor`, `list`, and a logged, CI-refused `VA_SKIP`
+- **Baselines** (`.va/baseline.py`): adopt checks on an existing codebase: record today's findings once, each with an expiry; only new findings block, the file only shrinks, additions need a reason and expiry, expired entries block again
+- **Agent guard** (`.va/hooks/guard.sh`) for Claude Code (PreToolUse) and Cursor (beforeShellExecution): denies `--no-verify` (and the abbreviations git accepts), `git commit -n`, `core.hooksPath` changes in any case, and skip variables; asks the user before check, linter or `.gitignore` configuration is edited or new text adds a suppression or a skipped/focused test. POSIX sh with no GNU extensions, no jq/python; tested on Linux and macOS in CI
+- **Installer and audit**: `checks/install.sh` (tier from `PROJECT_PROFILE.md`, stack detection for lint/test/format commands, framework-owned vs project-owned files, merges agent hook config, `--update`, `--dry-run`); `checks/audit.py` reports which checks the tier expects are wired, unconfigured or missing and lists the review/attest rules for the assurance register
+- **CI templates**: GitHub Actions workflow (SHA-pinned, least privilege, `persist-credentials: false`, logs kept as evidence, weekly run for new advisories), a ruleset requiring the `check` job, an optional AI review workflow for Business tier and above, a GitLab CI job, a post-deploy security-header smoke test, and `mise.toml` pinning every scanner
+- **Invariant-test templates** (`checks/invariant-tests/`): import boundaries, release artifact free of debug features, third-party payload allowlists, and loud database-test skips, each with a negative control
+- **New rules** (`rules/universal.md`): release builds have no debug features (UNI-039); a new "Automated Checks" section (UNI-040..044): one check command, layered gates with the server as the enforcement point, done means `check push` passes and checks are never bypassed or weakened, baselines only shrink, every fixed bug gets a check, removing CI is a migration
+- **Guide** `guides/testing/automated-checks.md`: why rules need checks, the layers and their time budgets, per-tier requirements, the author-is-the-enforcer problem, baselines, checks that can't fail, incidents to checks, evidence
+- This repository now runs its own checks: `scripts/check.sh` + `.githooks/pre-push`, and CI jobs for the matrix, rule tests, agent-guard tests, shellcheck, an end-to-end test that installs the checks into a scratch project and plants violations (`scripts/test-install.sh`), and gitleaks/actionlint/zizmor on the repo
+
+### Changed
+
+- `ARCHITECT.md` Step 3 sets up checks after intake (with the user's agreement); Step 4 adds the definition of done (`.va/check push` passes, never bypassed), wiring the matching check when a change introduces migrations, codegen, release builds, UI or third-party payloads, and a check for every fixed bug. Mirrored in `BOOTSTRAP.md`, the Claude/Cursor skill, `integrations/AGENTS.md` (and generated files), `.cursorrules`, and the GPT instructions
+- Rule wording is host-neutral where it said "in CI": tests at Public tier run in CI or a blocking pre-push check; SAST and dependency scanning run in the `check` command; Business tier requires CI as a required check (`rules/testing.md`, `rules/universal.md`, `rules/security.md`)
+- `rules/security.md` (SEC-080): project-scoped agent config (`.claude/settings.json`, `.cursor/hooks.json`) is committed and must stay secret-free; local files (`.claude/settings.local.json`, `claude_desktop_config.json`) are gitignored. The previous wording told projects to gitignore all of `.claude/`
+- Checklists: before-you-build (install checks), before-you-deploy (new Automated Checks section), production-readiness (required status check, coverage audit), something-broke (write the check that would have caught it)
+- `PROJECT_PROFILE.template.md` gains a **Checks** section; the assurance register gains a **Checks** table; intake's Existing Project Analysis inspects hooks and CI and offers the checks
+- `CONTRIBUTING.md`: how to add or change a rule (classify it, and write the Semgrep rule with fixtures when a pattern can catch it); local checks table; PR template checkboxes
+- `.github/workflows/validate.yml`: `persist-credentials: false` on every checkout (zizmor artipacked finding)
+- README: Option C step 4, "Coming from 1.5.0", checks in "What It Actually Does", "How It Works", "What's Covered" and the file structure; token table re-measured at 1.6.0
+
+### Removed
+
+- `docs/proposal-progressive-guards.md`: superseded by this release's design
+
 ## [1.5.0] - 2026-08-27
 
 Standards-refresh and agentic-security release: an end-to-end review of the framework against mid-2026 standards, correction of every verified defect, one new domain (agentic AI security), and tooling that catches drift automatically.

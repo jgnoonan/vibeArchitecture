@@ -1,0 +1,439 @@
+#!/usr/bin/env bash
+# vibeArchitecture check command. Framework-owned: `checks/install.sh --update` replaces it.
+# Project settings live in .va/config.sh.
+#
+#   .va/check fast       pre-commit: secrets in staged changes, tracked .env files, format
+#   .va/check push       pre-push (default): + lint, VA rules and deps on what changed, tests
+#   .va/check full       CI / before merge: everything, on all files, with baselines
+#   .va/check release    full + RELEASE_CMD (SBOM, artifact checks, image scan)
+#   .va/check doctor     tools, versions, hooks, agent hooks, branch protection
+#   .va/check baseline   record the adoption baseline (see .va/README.md)
+#   .va/check list       show which steps each profile runs
+#
+# Options: --all (push: scan everything, not just changes)  --base <ref>
+# Env:     VA_BASE=<ref>   VA_SKIP=step1,step2 with VA_SKIP_REASON="why"  (logged)
+#
+# Exit status: 0 when every step that applies passed; 1 otherwise; 2 for usage errors.
+# Every step runs bare (no pipes), so a step's exit code is the tool's exit code.
+
+set -u
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "va: not inside a git repository" >&2; exit 2; }
+cd "$ROOT" || exit 2
+VA_DIR="$ROOT/.va"
+# Clear git's hook environment so tools behave the same from hooks, worktrees and shells.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX 2>/dev/null || true
+
+# ---------------------------------------------------------------- config ---
+VA_TIER="shared"
+MAIN_BRANCH=""
+FORMAT_CHECK_CMD=""
+LINT_CMD=""
+TEST_CMD=""
+TEST_DB_CMD=""
+MIGRATE_CMD=""
+MIGRATIONS_DIR=""
+MIGRATION_LINT=""
+CODEGEN_CMD=""
+CODEGEN_ON_PUSH=""
+SEMGREP_EXTRA_CONFIG=""
+EXTRA_PUSH_CMD=""
+EXTRA_FULL_CMD=""
+RELEASE_CMD=""
+LOCKFILE_EXEMPT=""
+# shellcheck source=/dev/null
+[ -f "$VA_DIR/config.sh" ] && . "$VA_DIR/config.sh"
+
+# ----------------------------------------------------------------- output ---
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_RED=$'\033[31m'; C_GRN=$'\033[32m'; C_YLW=$'\033[33m'; C_DIM=$'\033[2m'; C_B=$'\033[1m'; C_0=$'\033[0m'
+else
+  C_RED=""; C_GRN=""; C_YLW=""; C_DIM=""; C_B=""; C_0=""
+fi
+say()  { printf '%s\n' "$*"; }
+head_() { printf '\n%s== %s%s\n' "$C_B" "$*" "$C_0"; }
+warn() { printf '%sva: %s%s\n' "$C_YLW" "$*" "$C_0" >&2; }
+die()  { printf '%sva: %s%s\n' "$C_RED" "$*" "$C_0" >&2; exit 2; }
+
+# Results (bash 3.2: parallel arrays, no associative arrays).
+R_NAME=(); R_STATUS=(); R_SECS=(); R_NOTE=()
+record() { R_NAME+=("$1"); R_STATUS+=("$2"); R_SECS+=("$3"); R_NOTE+=("${4:-}"); }
+
+# ---------------------------------------------------------------- helpers ---
+in_ci() { [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ] || [ -n "${GITLAB_CI:-}" ]; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+need() { # need <tool> <step>: a missing tool is a failure, never a silent skip
+  if ! have "$1"; then
+    printf '%s%s is not installed.%s Run `mise install` (tools are pinned in mise.toml) or see .va/README.md.\n' "$C_RED" "$1" "$C_0"
+    return 1
+  fi
+}
+
+skipped_by_env() { # skipped_by_env <step>
+  case ",${VA_SKIP:-}," in *",$1,"*) ;; *) return 1 ;; esac
+  if [ -z "${VA_SKIP_REASON:-}" ]; then die "VA_SKIP=$1 needs VA_SKIP_REASON=\"why\""; fi
+  if in_ci; then die "VA_SKIP is not honoured in CI; fix the step or record a baseline entry"; fi
+  mkdir -p "$VA_DIR/logs"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$(git rev-parse --short HEAD 2>/dev/null)" \
+    "$(git config user.email 2>/dev/null)" "$VA_SKIP_REASON" >> "$VA_DIR/logs/skips.tsv"
+  return 0
+}
+
+default_branch() {
+  if [ -n "$MAIN_BRANCH" ]; then echo "$MAIN_BRANCH"; return; fi
+  local ref
+  ref=$(git symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null) && { echo "${ref#origin/}"; return; }
+  for b in main master trunk; do git show-ref -q --verify "refs/remotes/origin/$b" && { echo "$b"; return; }; done
+  echo main
+}
+
+resolve_base() { # prints a commit to diff against, or nothing (= scan everything)
+  local b=""
+  if [ -n "${VA_BASE:-}" ]; then b="$VA_BASE"
+  elif [ -n "${GITHUB_BASE_REF:-}" ]; then b="origin/$GITHUB_BASE_REF"
+  elif [ -n "${CI_MERGE_REQUEST_DIFF_BASE_SHA:-}" ]; then b="$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+  elif git rev-parse -q --verify '@{upstream}' >/dev/null 2>&1; then b='@{upstream}'
+  else b="origin/$(default_branch)"
+  fi
+  git rev-parse -q --verify "$b^{commit}" >/dev/null 2>&1 || return 0
+  git merge-base "$b" HEAD 2>/dev/null || true
+}
+
+changed_files() { # changed files since BASE (push) or staged (fast); one per line
+  if [ "$PROFILE" = fast ]; then git diff --cached --name-only --diff-filter=ACMR
+  elif [ -n "$BASE" ]; then git diff --name-only --diff-filter=ACMR "$BASE" HEAD
+  else git ls-files
+  fi
+}
+
+changed_match() { # changed_match <extended-regex>: true if any changed file matches
+  [ "$SCOPE" = all ] && return 0
+  changed_files | grep -Eq "$1"
+}
+
+run_cmd() { # run_cmd <shell command string>: runs bare in a subshell, returns its status
+  bash -c "$1"
+}
+
+step() { # step <name> <function>: time and record a step
+  local name="$1" fn="$2" start end rc
+  if skipped_by_env "$name"; then record "$name" skip 0 "VA_SKIP: $VA_SKIP_REASON"; return; fi
+  head_ "$name"
+  start=$(date +%s)
+  STEP_NOTE=""
+  "$fn"; rc=$?
+  end=$(date +%s)
+  case $rc in
+    0) record "$name" pass $((end - start)) "$STEP_NOTE" ;;
+    3) record "$name" "n/a" $((end - start)) "$STEP_NOTE"; say "${C_DIM}not applicable: $STEP_NOTE${C_0}" ;;
+    *) record "$name" FAIL $((end - start)) "$STEP_NOTE" ;;
+  esac
+}
+NA=3  # return $NA from a step when it does not apply
+
+# ------------------------------------------------------------------ steps ---
+s_env_files() {
+  local bad rc=0
+  bad=$(git ls-files | grep -E '(^|/)\.env(\.[^/]+)?$' | grep -Ev '\.env\.(example|sample|template|defaults)$')
+  if [ -n "$bad" ]; then say "${C_RED}Tracked env files (secrets belong in your platform's secret store):${C_0}"; say "$bad"; rc=1; fi
+  bad=$(git ls-files | grep -E '(^|/)(claude_desktop_config\.json|\.claude/settings\.local\.json)$')
+  if [ -n "$bad" ]; then say "${C_RED}Tracked AI-tool local config (may hold keys):${C_0}"; say "$bad"; rc=1; fi
+  if ! git check-ignore -q .env 2>/dev/null; then say "${C_RED}.env is not gitignored.${C_0} Add it to .gitignore before creating one."; rc=1; fi
+  return $rc
+}
+
+s_secrets() {
+  need gitleaks || return 1
+  local cfg=() base=()
+  [ -f .gitleaks.toml ] && cfg=(--config .gitleaks.toml)
+  [ -f "$VA_DIR/baselines/gitleaks.json" ] && base=(--baseline-path "$VA_DIR/baselines/gitleaks.json")
+  case "$PROFILE" in
+    fast) gitleaks git --pre-commit --staged --redact --no-banner ${cfg[@]+"${cfg[@]}"} ${base[@]+"${base[@]}"} ;;
+    push)
+      if [ -n "$BASE" ] && [ "$SCOPE" != all ]; then
+        gitleaks git --log-opts="$BASE..HEAD" --redact --no-banner ${cfg[@]+"${cfg[@]}"} ${base[@]+"${base[@]}"}
+      else
+        gitleaks git --redact --no-banner ${cfg[@]+"${cfg[@]}"} ${base[@]+"${base[@]}"}
+      fi ;;
+    *) gitleaks git --redact --no-banner ${cfg[@]+"${cfg[@]}"} ${base[@]+"${base[@]}"} ;;
+  esac
+}
+
+MANIFEST_RE='(^|/)(package\.json|pyproject\.toml|requirements[^/]*\.txt|Pipfile|Cargo\.toml|go\.mod|Gemfile|composer\.json|pubspec\.yaml|build\.gradle(\.kts)?|pom\.xml)$'
+LOCK_RE='(^|/)(package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|pdm\.lock|Pipfile\.lock|Cargo\.lock|go\.sum|Gemfile\.lock|composer\.lock|pubspec\.lock|gradle\.lockfile)$'
+
+locks_for() { # locks_for <manifest basename>: lockfile names that satisfy it
+  case "$1" in
+    package.json)   echo 'package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?' ;;
+    pyproject.toml) echo 'poetry\.lock|uv\.lock|pdm\.lock|Pipfile\.lock|requirements[^/]*\.txt' ;;
+    Cargo.toml)     echo 'Cargo\.lock' ;;
+    Gemfile)        echo 'Gemfile\.lock' ;;
+    composer.json)  echo 'composer\.lock' ;;
+    pubspec.yaml)   echo 'pubspec\.lock' ;;
+  esac
+}
+
+lockfile_missing() { # manifests with no same-ecosystem lockfile in their directory or a parent (workspaces)
+  local files m d found re
+  files=$(git ls-files)
+  printf '%s\n' "$files" | grep -E '(^|/)(package\.json|pyproject\.toml|Cargo\.toml|Gemfile|composer\.json|pubspec\.yaml)$' \
+    | grep -v 'node_modules/' | while read -r m; do
+    case " $LOCKFILE_EXEMPT " in *" $m "*) continue ;; esac
+    re=$(locks_for "$(basename "$m")")
+    d=$(dirname "$m"); found=""
+    while :; do
+      if [ "$d" = "." ]; then printf '%s\n' "$files" | grep -Eq "^($re)$" && found=1
+      else printf '%s\n' "$files" | grep -Eq "^$d/($re)$" && found=1; fi
+      [ -n "$found" ] || [ "$d" = "." ] && break
+      d=$(dirname "$d")
+    done
+    [ -z "$found" ] && echo "$m"
+  done
+}
+
+s_deps() {
+  if ! git ls-files | grep -Eq "$MANIFEST_RE"; then STEP_NOTE="no package manifests"; return $NA; fi
+  if [ "$PROFILE" = push ] && ! changed_match "$MANIFEST_RE|$LOCK_RE|(^|/)osv-scanner\.toml$"; then
+    STEP_NOTE="no manifest or lockfile changed (CI and the weekly run still audit everything)"; return $NA
+  fi
+  local rc=0 missing
+  missing=$(lockfile_missing)
+  if [ -n "$missing" ]; then say "${C_RED}Manifest without a committed lockfile:${C_0}"; say "$missing"; rc=1; fi
+  need osv-scanner || return 1
+  local cfg=()
+  [ -f osv-scanner.toml ] && cfg=(--config osv-scanner.toml)
+  osv-scanner scan source -r ${cfg[@]+"${cfg[@]}"} .
+  case $? in
+    0) ;;
+    128) say "osv-scanner found no lockfiles it understands." ;;
+    129) say "${C_RED}osv-scanner could not reach osv.dev.${C_0} Offline? Push again when online, or skip with VA_SKIP=deps VA_SKIP_REASON=\"offline\"."; rc=1 ;;
+    *) rc=1; say "Fix by upgrading, or add an [[IgnoredVulns]] entry with reason and ignoreUntil to osv-scanner.toml." ;;
+  esac
+  return $rc
+}
+
+s_va_rules() {
+  [ -d "$VA_DIR/semgrep" ] || { say "${C_RED}.va/semgrep is missing.${C_0} Run vibeArchitecture/checks/install.sh."; return 1; }
+  need semgrep || return 1
+  need python3 || return 1
+  local out="$VA_DIR/logs/semgrep-$PROFILE.json" args=() c
+  mkdir -p "$VA_DIR/logs"
+  args=(--config "$VA_DIR/semgrep")
+  for c in $SEMGREP_EXTRA_CONFIG; do args+=(--config "$c"); done
+  local diff=()
+  rm -f "$out.diff-scan"
+  if [ "$PROFILE" != full ] && [ "$PROFILE" != release ] && [ -n "$BASE" ] && [ "$SCOPE" != all ]; then
+    args+=(--baseline-commit "$BASE")
+    diff=(--diff-scan)
+    : > "$out.diff-scan"   # marks the results as new-code-only, so `prune` refuses them
+  fi
+  semgrep scan --metrics=off --disable-version-check --quiet --json-output="$out" "${args[@]}" . >/dev/null
+  local rc=$?
+  if [ $rc -ne 0 ] && [ $rc -ne 1 ]; then say "${C_RED}semgrep failed (exit $rc).${C_0} Run it by hand to see why."; return 1; fi
+  python3 "$VA_DIR/baseline.py" check "$out" --baseline "$VA_DIR/baselines/semgrep.json" ${diff[@]+"${diff[@]}"}
+}
+
+s_lint() {
+  if [ "$PROFILE" = fast ]; then
+    [ -n "$FORMAT_CHECK_CMD" ] || { STEP_NOTE="FORMAT_CHECK_CMD not set in .va/config.sh"; return $NA; }
+    run_cmd "$FORMAT_CHECK_CMD"
+  else
+    [ -n "$LINT_CMD" ] || { STEP_NOTE="LINT_CMD not set in .va/config.sh"; return $NA; }
+    run_cmd "$LINT_CMD"
+  fi
+}
+
+s_tests() {
+  [ -n "$TEST_CMD" ] || { STEP_NOTE="TEST_CMD not set in .va/config.sh"; return $NA; }
+  run_cmd "$TEST_CMD"
+}
+
+s_tests_db() {
+  [ -n "$TEST_DB_CMD" ] || { STEP_NOTE="TEST_DB_CMD not set in .va/config.sh"; return $NA; }
+  VA_REQUIRE_DB=1 run_cmd "$TEST_DB_CMD"
+}
+
+s_migrate_twice() {
+  [ -n "$MIGRATE_CMD" ] || { STEP_NOTE="MIGRATE_CMD not set in .va/config.sh"; return $NA; }
+  say "first run"; run_cmd "$MIGRATE_CMD" || return 1
+  say "second run (must be a clean no-op)"; run_cmd "$MIGRATE_CMD"
+}
+
+migrations_dir() {
+  if [ -n "$MIGRATIONS_DIR" ]; then echo "$MIGRATIONS_DIR"; return; fi
+  local d
+  for d in migrations db/migrations db/migrate prisma/migrations supabase/migrations alembic/versions drizzle; do
+    [ -d "$d" ] && { echo "$d"; return; }
+  done
+}
+
+s_migrations() {
+  local dir rc=0 edited files
+  dir=$(migrations_dir)
+  [ -n "$dir" ] || { STEP_NOTE="no migrations directory"; return $NA; }
+  if [ -n "$BASE" ]; then
+    edited=$(git diff --name-status --diff-filter=MDR "$BASE" HEAD -- "$dir")
+    if [ -n "$edited" ]; then
+      say "${C_RED}Applied migrations were edited, renamed or deleted (write a new migration instead):${C_0}"; say "$edited"; rc=1
+    fi
+  else
+    say "${C_DIM}no base commit: immutability not checked${C_0}"
+  fi
+  if [ "$MIGRATION_LINT" = squawk ]; then
+    need squawk || return 1
+    if [ "$PROFILE" = push ] && [ -n "$BASE" ] && [ "$SCOPE" != all ]; then
+      files=$(git diff --name-only --diff-filter=AM "$BASE" HEAD -- "$dir" | grep -E '\.sql$')
+    else
+      files=$(git ls-files "$dir" | grep -E '\.sql$')
+    fi
+    if [ -n "$files" ]; then
+      # shellcheck disable=SC2086
+      squawk $files || rc=1
+    fi
+  fi
+  return $rc
+}
+
+s_workflows() {
+  [ -d .github/workflows ] || { STEP_NOTE="no .github/workflows"; return $NA; }
+  if [ "$PROFILE" = push ] && ! changed_match '^\.github/(workflows|actions)/'; then STEP_NOTE="no workflow changes"; return $NA; fi
+  need actionlint || return 1
+  need zizmor || return 1
+  local rc=0
+  actionlint || rc=1
+  zizmor --offline --min-severity medium .github/workflows || rc=1
+  return $rc
+}
+
+s_codegen() {
+  [ -n "$CODEGEN_CMD" ] || { STEP_NOTE="CODEGEN_CMD not set"; return $NA; }
+  if [ "$PROFILE" = push ] && [ -z "$CODEGEN_ON_PUSH" ]; then STEP_NOTE="runs in full (set CODEGEN_ON_PUSH=1 to run at push)"; return $NA; fi
+  local before after
+  before=$(git status --porcelain=v1 --untracked-files=all)
+  run_cmd "$CODEGEN_CMD" || return 1
+  after=$(git status --porcelain=v1 --untracked-files=all)
+  if [ "$before" != "$after" ]; then
+    say "${C_RED}Generated code is out of date. Commit the regenerated files with their source:${C_0}"
+    diff <(printf '%s\n' "$before") <(printf '%s\n' "$after") | grep '^>' | sed 's/^> //'
+    return 1
+  fi
+}
+
+s_extra_push() { [ -n "$EXTRA_PUSH_CMD" ] || { STEP_NOTE="EXTRA_PUSH_CMD not set"; return $NA; }; run_cmd "$EXTRA_PUSH_CMD"; }
+s_extra_full() { [ -n "$EXTRA_FULL_CMD" ] || { STEP_NOTE="EXTRA_FULL_CMD not set"; return $NA; }; run_cmd "$EXTRA_FULL_CMD"; }
+s_release()    { [ -n "$RELEASE_CMD" ] || { STEP_NOTE="RELEASE_CMD not set"; return 1; }; run_cmd "$RELEASE_CMD"; }
+
+# --------------------------------------------------------------- profiles ---
+steps_for() {
+  case "$1" in
+    fast)    echo "env-files:s_env_files secrets:s_secrets format:s_lint" ;;
+    push)    echo "env-files:s_env_files secrets:s_secrets deps:s_deps va-rules:s_va_rules lint:s_lint tests:s_tests migrations:s_migrations workflows:s_workflows codegen:s_codegen extra:s_extra_push" ;;
+    full)    echo "env-files:s_env_files secrets:s_secrets deps:s_deps va-rules:s_va_rules lint:s_lint tests:s_tests tests-db:s_tests_db migrate-twice:s_migrate_twice migrations:s_migrations workflows:s_workflows codegen:s_codegen extra:s_extra_full" ;;
+    release) echo "$(steps_for full) release:s_release" ;;
+  esac
+}
+
+summary() {
+  local i failed=0 line
+  printf '\n%s%-14s %-6s %5s  %s%s\n' "$C_B" "step" "result" "secs" "note" "$C_0"
+  for i in "${!R_NAME[@]}"; do
+    case "${R_STATUS[$i]}" in
+      pass) c=$C_GRN ;; FAIL) c=$C_RED; failed=1 ;; *) c=$C_DIM ;;
+    esac
+    printf '%-14s %s%-6s%s %5s  %s\n' "${R_NAME[$i]}" "$c" "${R_STATUS[$i]}" "$C_0" "${R_SECS[$i]}" "${R_NOTE[$i]}"
+  done
+  mkdir -p "$VA_DIR/logs"
+  line=$(printf '%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$PROFILE" "$(git rev-parse --short HEAD 2>/dev/null)" \
+    "$([ $failed = 0 ] && echo pass || echo FAIL)")
+  for i in "${!R_NAME[@]}"; do line="$line	${R_NAME[$i]}=${R_STATUS[$i]}"; done
+  printf '%s\n' "$line" >> "$VA_DIR/logs/runs.tsv"
+  if [ $failed = 0 ]; then say "${C_GRN}va: $PROFILE checks passed${C_0}"; return 0; fi
+  say "${C_RED}va: $PROFILE checks failed.${C_0} Fix the cause. Don't bypass the hook, skip tests, or loosen the configuration."
+  return 1
+}
+
+# ----------------------------------------------------------------- doctor ---
+pinned_version() { # pinned_version <tool> from mise.toml
+  [ -f mise.toml ] || return 0
+  sed -n "s/^[\"']\{0,1\}$1[\"']\{0,1\}[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\1/p" mise.toml | head -1
+}
+
+doctor() {
+  local rc=0 t v pin hp
+  head_ "tools"
+  for t in gitleaks osv-scanner semgrep actionlint zizmor python3; do
+    if have "$t"; then
+      v=$("$t" --version 2>/dev/null | head -1); pin=$(pinned_version "$t")
+      printf '  %-12s %s%s\n' "$t" "$v" "${pin:+  (pinned $pin)}"
+    else
+      printf '  %-12s %sMISSING%s\n' "$t" "$C_RED" "$C_0"; rc=1
+    fi
+  done
+  [ "$MIGRATION_LINT" = squawk ] && { have squawk || { say "  squawk       ${C_RED}MISSING${C_0}"; rc=1; }; }
+  head_ "git hooks"
+  hp=$(git config core.hooksPath || true)
+  if [ "$hp" = ".githooks" ] && [ -x .githooks/pre-push ] && [ -x .githooks/pre-commit ]; then say "  installed (.githooks)"
+  elif [ -n "$hp" ]; then say "  core.hooksPath is '$hp'. Make sure it calls .va/check fast/push."
+  else say "  ${C_RED}not installed${C_0}: run .va/check install-hooks"; rc=1; fi
+  head_ "agent hooks"
+  if grep -qs '.va/hooks/guard.sh' .claude/settings.json; then say "  Claude Code: installed"; else say "  Claude Code: not configured (.claude/settings.json)"; fi
+  if grep -qs '.va/hooks/guard.sh' .cursor/hooks.json; then say "  Cursor: installed"; else say "  Cursor: not configured (.cursor/hooks.json)"; fi
+  head_ "config (.va/config.sh, tier: $VA_TIER)"
+  for v in FORMAT_CHECK_CMD LINT_CMD TEST_CMD TEST_DB_CMD MIGRATE_CMD CODEGEN_CMD RELEASE_CMD; do
+    printf '  %-17s %s\n' "$v" "${!v:-${C_DIM}(not set)${C_0}}"
+  done
+  head_ "server-side enforcement"
+  if have gh && gh auth status >/dev/null 2>&1; then
+    local br rules
+    br=$(default_branch)
+    rules=$(gh api "repos/{owner}/{repo}/rules/branches/$br" --jq '[.[].type] | join(",")' 2>/dev/null || true)
+    case ",$rules," in
+      *,required_status_checks,*) say "  $br: required status checks on ($rules)" ;;
+      *) say "  ${C_YLW}$br has no required status checks.${C_0} Hooks can be bypassed; see .va/README.md (branch protection)."
+         case "$VA_TIER" in business|regulated) rc=1 ;; esac ;;
+    esac
+  else
+    say "  gh not available/authenticated: check branch protection by hand (required status check 'check')."
+  fi
+  return $rc
+}
+
+install_hooks() {
+  [ -d .githooks ] || die ".githooks/ is missing; run vibeArchitecture/checks/install.sh"
+  chmod +x .githooks/* .va/check .va/hooks/*.sh 2>/dev/null
+  git config core.hooksPath .githooks
+  say "git hooks installed: pre-commit runs '.va/check fast', pre-push runs '.va/check push'"
+}
+
+# ------------------------------------------------------------------- main ---
+PROFILE="push"; SCOPE="changed"; BASE_ARG=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    fast|push|full|release|doctor|baseline|list|install-hooks) PROFILE="$1" ;;
+    --all) SCOPE=all ;;
+    --base) shift; BASE_ARG="${1:-}" ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown argument: $1 (try --help)" ;;
+  esac
+  shift
+done
+
+case "$PROFILE" in
+  doctor) doctor; exit $? ;;
+  install-hooks) install_hooks; exit 0 ;;
+  list) for p in fast push full release; do printf '%-8s %s\n' "$p" "$(steps_for $p | sed 's/:[a-z_]*//g')"; done; exit 0 ;;
+  baseline)
+    need semgrep || exit 1
+    mkdir -p "$VA_DIR/logs" "$VA_DIR/baselines"
+    semgrep scan --metrics=off --disable-version-check --quiet --json-output="$VA_DIR/logs/semgrep-baseline.json" --config "$VA_DIR/semgrep" . >/dev/null
+    python3 "$VA_DIR/baseline.py" record "$VA_DIR/logs/semgrep-baseline.json" --baseline "$VA_DIR/baselines/semgrep.json"
+    exit $? ;;
+esac
+
+[ -n "$BASE_ARG" ] && VA_BASE="$BASE_ARG"
+case "$PROFILE" in full|release) SCOPE=all ;; esac
+BASE=$(resolve_base)
+say "${C_B}va: $PROFILE${C_0}  tier=$VA_TIER  scope=$SCOPE  base=${BASE:-(none: all files)}"
+
+for s in $(steps_for "$PROFILE"); do step "${s%%:*}" "${s##*:}"; done
+summary

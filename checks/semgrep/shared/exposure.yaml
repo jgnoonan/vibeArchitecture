@@ -1,0 +1,77 @@
+rules:
+  # ---------------------------------------------------------------------------
+  # SEC-079 secrets behind client-exposed env prefixes
+  # ---------------------------------------------------------------------------
+  - id: va-secret-in-public-env
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A secret-looking variable uses a client-exposed prefix (NEXT_PUBLIC_,
+      VITE_, EXPO_PUBLIC_, REACT_APP_...). Everything behind these prefixes is
+      shipped to every browser or app bundle. Move it server-side.
+      [VA SEC-079, rules/security.md "Secrets Management"]
+    metadata:
+      va_rules: [SEC-079, MOB-023]
+      cwe: "CWE-200: Exposure of Sensitive Information"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: process.env.$V
+          - pattern: import.meta.env.$V
+          - pattern: process.env["$V"]
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^(NEXT_PUBLIC|VITE|EXPO_PUBLIC|REACT_APP|NUXT_PUBLIC|GATSBY|PUBLIC|STORYBOOK)_\w*(SECRET|PRIVATE|PASSWORD|PASSWD|SERVICE_ROLE|ADMIN_KEY|DATABASE_URL|DB_URL|DB_PASS|SIGNING|WEBHOOK_SECRET|AUTH_TOKEN)\w*$
+
+  # ---------------------------------------------------------------------------
+  # DATA-031 / OBS-006 sensitive values in logs
+  # ---------------------------------------------------------------------------
+  - id: va-sensitive-value-logged-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A password, token, secret, or payment/identity number is written to a
+      log. Logs are copied, retained and shared widely. Log an identifier or a
+      redacted form instead. [VA DATA-031/OBS-006]
+    metadata:
+      va_rules: [DATA-031, OBS-006]
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $LOG.$LEVEL(..., $X, ...)
+          - pattern: $LOG.$LEVEL(..., `...${$X}...`, ...)
+          - pattern: '$LOG.$LEVEL(..., {..., $K: $X, ...}, ...)'
+          - pattern: $LOG.$LEVEL(..., "..." + $X, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(console|logger|log|this\.logger|this\.log|pino|winston|bunyan|fastify\.log|req\.log|app\.log)$
+      - metavariable-regex:
+          metavariable: $LEVEL
+          regex: ^(log|info|warn|error|debug|trace|fatal)$
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^([\w$]+\.)*(password|passwd|pwd|secret|client_?secret|token|access_?token|refresh_?token|id_?token|api_?key|apikey|authorization|ssn|card_?number|cardnumber|pan|cvv|cvc)$
+
+  - id: va-sensitive-value-logged-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A password, token, secret, or payment/identity number is written to a
+      log. Logs are copied, retained and shared widely. Log an identifier or a
+      redacted form instead. [VA DATA-031/OBS-006]
+    metadata:
+      va_rules: [DATA-031, OBS-006]
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $LOG.$LEVEL(..., <... $X ...>, ...)
+              - metavariable-regex:
+                  metavariable: $LOG
+                  regex: ^(logging|logger|log|_logger|LOGGER|self\.logger|self\.log|current_app\.logger|app\.logger|structlog\.get_logger\(\))$
+          - pattern: print(..., <... $X ...>, ...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^([\w]+\.)*(password|passwd|pwd|secret|client_secret|token|access_token|refresh_token|id_token|api_key|apikey|authorization|ssn|card_number|pan|cvv|cvc)$

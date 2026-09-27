@@ -1,0 +1,230 @@
+rules:
+  # ---------------------------------------------------------------------------
+  # SEC-069 weak or hand-assembled cryptography
+  # ---------------------------------------------------------------------------
+  - id: va-weak-cipher-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Broken or legacy cipher mode (createCipher without IV, ECB, DES, RC4,
+      Blowfish). Use an AEAD such as AES-256-GCM or ChaCha20-Poly1305 through a
+      vetted library (libsodium, WebCrypto). [VA SEC-069, rules/security.md
+      "Cryptography"]
+    metadata:
+      va_rules: [SEC-069]
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: HIGH
+    pattern-either:
+      - pattern: crypto.createCipher(...)
+      - pattern: crypto.createDecipher(...)
+      - patterns:
+          - pattern-either:
+              - pattern: crypto.createCipheriv("$ALG", ...)
+              - pattern: crypto.createDecipheriv("$ALG", ...)
+              - pattern: createCipheriv("$ALG", ...)
+          - metavariable-regex:
+              metavariable: $ALG
+              regex: (?i).*(ecb|des|rc2|rc4|bf-|blowfish|cast).*
+
+  - id: va-weak-cipher-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Broken or legacy cipher (DES/3DES, RC4, Blowfish) or ECB mode. Use AEAD
+      (cryptography's AESGCM or ChaCha20Poly1305, or libsodium/age).
+      [VA SEC-069, rules/security.md "Cryptography"]
+    metadata:
+      va_rules: [SEC-069]
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: HIGH
+    pattern-either:
+      - pattern: Crypto.Cipher.DES.new(...)
+      - pattern: Crypto.Cipher.DES3.new(...)
+      - pattern: Crypto.Cipher.ARC4.new(...)
+      - pattern: Crypto.Cipher.Blowfish.new(...)
+      - pattern: Crypto.Cipher.AES.new($K, Crypto.Cipher.AES.MODE_ECB, ...)
+      - pattern: DES.new(...)
+      - pattern: ARC4.new(...)
+      - pattern: AES.new($K, AES.MODE_ECB, ...)
+      - pattern: cryptography.hazmat.primitives.ciphers.modes.ECB(...)
+      - pattern: modes.ECB(...)
+      - pattern: algorithms.TripleDES(...)
+      - pattern: algorithms.ARC4(...)
+      - pattern: algorithms.Blowfish(...)
+
+  # ---------------------------------------------------------------------------
+  # SEC-063 / MOB-005 TLS certificate verification disabled
+  # ---------------------------------------------------------------------------
+  - id: va-tls-verification-disabled-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      TLS certificate verification is turned off, which lets anyone on the
+      network impersonate the server. Fix the certificate chain (or trust a
+      dev CA) instead. [VA SEC-063/MOB-005]
+    metadata:
+      va_rules: [SEC-063, MOB-005]
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: HIGH
+    pattern-either:
+      - pattern: '{..., rejectUnauthorized: false, ...}'
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      - pattern: process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+
+  - id: va-tls-verification-disabled-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      TLS certificate verification is turned off, which lets anyone on the
+      network impersonate the server. Fix the certificate chain (or point
+      REQUESTS_CA_BUNDLE at a dev CA) instead. [VA SEC-063/MOB-005]
+    metadata:
+      va_rules: [SEC-063, MOB-005]
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: HIGH
+    pattern-either:
+      - pattern: requests.$M(..., verify=False, ...)
+      - pattern: httpx.$M(..., verify=False, ...)
+      - pattern: $SESSION.verify = False
+      - pattern: ssl._create_unverified_context(...)
+      - pattern: $CTX.check_hostname = False
+      - pattern: $CTX.verify_mode = ssl.CERT_NONE
+      - pattern: urllib3.disable_warnings(...)
+
+  # ---------------------------------------------------------------------------
+  # SEC-014 XXE and unsafe deserialization
+  # ---------------------------------------------------------------------------
+  - id: va-unsafe-deserialization-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      This deserializer can run code while loading. Never use it on data that
+      crosses a trust boundary; use JSON with a schema (or yaml.safe_load).
+      [VA SEC-014, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-014]
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: cPickle.loads(...)
+      - pattern: dill.loads(...)
+      - pattern: marshal.loads(...)
+      - pattern: jsonpickle.decode(...)
+      - pattern: shelve.open(...)
+      - pattern: yaml.unsafe_load(...)
+      - pattern: yaml.load(..., Loader=yaml.Loader, ...)
+      - pattern: yaml.load(..., Loader=yaml.UnsafeLoader, ...)
+      - pattern: yaml.load(..., Loader=yaml.FullLoader, ...)
+      - patterns:
+          - pattern: yaml.load($X)
+          - pattern-not: yaml.load($X, Loader=yaml.SafeLoader)
+
+  - id: va-unsafe-deserialization-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      node-serialize/funcster/serialize-to-js can execute code while
+      deserializing. Use JSON.parse with a schema (zod, ajv).
+      [VA SEC-014, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-014]
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $S = require("$LIB");
+              ...
+          - pattern-inside: |
+              import $S from "$LIB";
+              ...
+      - metavariable-regex:
+          metavariable: $LIB
+          regex: ^(node-serialize|funcster|serialize-to-js|cryo)$
+      - pattern-either:
+          - pattern: $S.unserialize(...)
+          - pattern: $S.deserialize(...)
+          - pattern: $S.parse(...)
+
+  - id: va-xxe-parser-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      lxml resolves entities by default, which enables XXE on untrusted XML.
+      Use defusedxml, or pass a parser built with resolve_entities=False,
+      no_network=True. [VA SEC-014, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-014]
+      cwe: "CWE-611: XML External Entity Reference"
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: lxml.etree.XMLParser(..., resolve_entities=True, ...)
+      - pattern: etree.XMLParser(..., resolve_entities=True, ...)
+      - patterns:
+          - pattern-either:
+              - pattern: lxml.etree.fromstring($X)
+              - pattern: lxml.etree.parse($X)
+              - pattern: lxml.etree.XML($X)
+              - pattern: etree.fromstring($X)
+              - pattern: etree.parse($X)
+          - pattern-inside: |
+              from lxml import etree
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: lxml.etree.fromstring($X)
+              - pattern: lxml.etree.parse($X)
+              - pattern: lxml.etree.XML($X)
+          - pattern-inside: |
+              import lxml.etree
+              ...
+
+  - id: va-xxe-parser-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      XML parsed with entity substitution enabled (noent: true), which enables
+      XXE. Remove noent. [VA SEC-014, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-014]
+      cwe: "CWE-611: XML External Entity Reference"
+      confidence: HIGH
+    pattern-either:
+      - pattern: '$LIB.parseXml($X, {..., noent: true, ...})'
+      - pattern: '$LIB.parseXmlString($X, {..., noent: true, ...})'
+      - pattern: '$LIB.parseXmlAsync($X, {..., noent: true, ...})'
+
+  # ---------------------------------------------------------------------------
+  # SEC-087 archive extraction (zip-slip / tar path escape)
+  # ---------------------------------------------------------------------------
+  - id: va-archive-extract-unsafe-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      tarfile.extractall() without filter="data" lets archive entries write
+      outside the target directory (and create device files and links). Pass
+      filter="data" (Python 3.12+, backported to 3.8.17+), and cap total
+      extracted size. [VA SEC-087, rules/security.md "File Uploads"]
+    metadata:
+      va_rules: [SEC-087]
+      cwe: "CWE-22: Path Traversal"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: tarfile.open(...).extractall(...)
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      with tarfile.open(...) as $T:
+                          ...
+                  - pattern-inside: |
+                      $T = tarfile.open(...)
+                      ...
+              - pattern-either:
+                  - pattern: $T.extractall(...)
+                  - pattern: $T.extract(...)
+      - pattern-not: $X.extractall(..., filter="data", ...)
+      - pattern-not: $X.extractall(..., filter=tarfile.data_filter, ...)
+      - pattern-not: $X.extract(..., filter="data", ...)

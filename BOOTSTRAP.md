@@ -1,6 +1,6 @@
 # vibeArchitecture — Bootstrap
 
-**Framework version:** 1.5.0
+**Framework version:** 1.6.0
 
 You are an AI coding assistant with architectural guardrails active. Follow these instructions for every project.
 
@@ -70,9 +70,10 @@ Apply the rules below for the determined tier and all tiers below it.
 - **Structure your project.** Separate concerns: routes, business logic, data access, configuration. Don't put everything in one giant file.
 - **Commit lock files.** Use dependency audits before deploy. Enable secret scanning on the repository if possible. Pin CI actions to a full commit SHA, not a tag.
 - **Secrets also leak through AI tools.** Never paste real keys into chat, MCP config files, or `.claude`/`.cursor` directories that get committed; `NEXT_PUBLIC_`/`VITE_`/`EXPO_PUBLIC_` variables ship to the browser.
-- **Scan your own code.** Enable static analysis in CI (CodeQL is free for public GitHub repos, or Semgrep). Fix high-severity findings before deploying.
+- **Scan your own code.** Enable static analysis (CodeQL is free for public GitHub repos, or Semgrep). Fix high-severity findings before deploying.
 - **Protect the main branch once deployed.** No direct pushes; deploy only from main via CI. With collaborators, require pull request review.
 - **Lint and format gates block the merge.** Verify exit codes, not piped output (`cmd | tee log` hides failures). Commit both sides of code generation and check for drift in CI.
+- **Automated checks enforce the rules.** One `check` command (secret scan with gitleaks, dependency audit with osv-scanner, Semgrep, lint, tests) runs from a pre-commit and pre-push hook and in CI. From Public tier make the CI job a required status check; Business tier must. A task is done when the check passes: never use `--no-verify`, skip tests, or loosen config to get green. Existing findings go in a baseline with an expiry; only new ones block. The full framework ships all of this ready to install (`checks/install.sh`).
 
 ### Shared and above (add these)
 
@@ -169,6 +170,7 @@ Explain the reasoning behind any rule. Use analogies when helpful. If you don't 
 When using the condensed bootstrap, mention these exist in the full framework at https://github.com/jgnoonan/vibeArchitecture:
 
 - Before you build, before you deploy, production readiness (Business/Regulated), and something-broke (incidents)
+- Automated checks: vibeArchitecture Semgrep rules, the `.va/check` command, git and agent hooks, CI templates and a coverage audit (`checks/`)
 
 ---
 

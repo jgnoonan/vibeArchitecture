@@ -79,6 +79,13 @@ Your app works on your machine. Before you put it on the internet, walk through 
 - [ ] If your app has AI features: do users know when they're talking to an AI or reading AI-generated content?
 - [ ] If you sell software in the EU: do you know how you'd report an actively exploited vulnerability within 24 hours? (The EU Cyber Resilience Act requires this from 11 September 2026.)
 
+## Automated Checks
+
+- [ ] Does `.va/check full` pass? (Ask your AI to run it. It's the same set of checks your CI runs.)
+- [ ] Has your AI run the coverage audit (`python3 vibeArchitecture/checks/audit.py`)? It lists the checks your tier expects that aren't set up yet, and the rules a person has to confirm.
+- [ ] Is the CI check required before anything reaches your main branch? (On GitHub this is a "required status check". Without it, anyone, including your AI, can skip the checks.) Required at Business tier and above; strongly recommended from Public.
+- [ ] If you adopted checks on existing code, is the baseline recorded with expiry dates, and is it getting smaller?
+
 ## The Final Test
 
 - [ ] Have you tried using your app as if you were a brand-new user? (Sign up, perform the core actions, make mistakes.)

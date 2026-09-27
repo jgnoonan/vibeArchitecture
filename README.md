@@ -138,6 +138,18 @@ Not sure how to run these commands? Ask your AI: *"Copy the vibeArchitecture int
 
 The AI handles everything from there.
 
+#### Step 4: Turn on the automated checks
+
+After intake, the AI offers to install vibeArchitecture's checks. They run when you commit, when you push, and in CI: a secret scan, a dependency audit, vibeArchitecture's own code rules, your linter and your tests. To do it yourself:
+
+```bash
+vibeArchitecture/checks/install.sh   # reads your tier from PROJECT_PROFILE.md
+mise install                         # installs the pinned scanners (https://mise.jdx.dev)
+.va/check doctor
+```
+
+See [checks/README.md](checks/README.md) for how it works and [guides/testing/automated-checks.md](guides/testing/automated-checks.md) for why.
+
 </details>
 
 ---
@@ -158,6 +170,10 @@ vibeArchitecture is versioned — see [CHANGELOG.md](CHANGELOG.md) for what's ne
 Releases are tagged on GitHub (`v1.5.0`, etc.) — see the [Releases](https://github.com/jgnoonan/vibeArchitecture/releases) page or `git tag` to pin a specific version. Each release also carries a ready-made `vibe-architecture.zip` for the Claude Skill.
 
 Integration files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`) are thin pointers into the framework folder — you don't need to re-copy them unless the CHANGELOG says so.
+
+### Coming from 1.5.0? Turn on the checks
+
+1.6.0 adds automated checks (`checks/`). Nothing breaks if you skip them, but they're the part that catches what the AI misses. After replacing the framework folder, ask your AI: *"Install the vibeArchitecture checks for this project"* (or run `vibeArchitecture/checks/install.sh`). On later updates, `vibeArchitecture/checks/install.sh --update` refreshes the rules and scripts without touching your configuration.
 
 ### Coming from 1.4.0 or earlier? Four one-time steps
 
@@ -194,6 +210,9 @@ Your AI follows rules that experienced engineers learned the hard way — proper
 
 **3. Catches problems before they matter.**
 Missing input validation? The AI won't skip it. Hardcoded API keys? The AI will use environment variables instead. No error handling? The AI adds it. The same mistakes that take down real apps are prevented before they start.
+
+**4. Checks what actually gets committed.**
+Rules in a conversation can be forgotten. Automated checks run every time code is committed and pushed, and again in CI: leaked keys, vulnerable packages, and 80+ code patterns that break vibeArchitecture's rules (SQL built from user input, tokens in localStorage, passwords hashed with SHA-256, money stored as floats). Agent hooks stop Claude Code and Cursor from switching them off to get to green, and once CI is a required check, nobody can merge around them.
 
 ---
 
@@ -234,30 +253,31 @@ Each level builds on the one below it.
 
 ### How It Works Under the Hood
 
-vibeArchitecture is a set of Markdown files your AI agent reads. No dependencies, no build step, no lock-in.
+vibeArchitecture is a set of Markdown files your AI agent reads, plus optional automated checks built on standard open-source scanners. No build step, no lock-in.
 
-- **Rules layer** (~50–150 lines per file): Compact rules loaded into the AI's context every session. Uses roughly 1–13% of a 200K context window depending on tier.
+- **Rules layer** (~50–150 lines per file): Compact rules loaded into the AI's context every session. Uses roughly 1 to 14% of a 200K context window depending on tier.
 - **Guides layer** (50+ files): Detailed explanations loaded only when the AI or user needs deeper context. Never loaded preemptively.
 - **Intake system**: Adaptive questionnaire that determines project tier and generates a `PROJECT_PROFILE.md`.
 - **Integration files**: Drop-in configs for Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Xcode, and Android Studio.
+- **Checks layer** (`checks/`): one `.va/check` command run by git hooks, CI, and the AI, using gitleaks, osv-scanner, Semgrep (with vibeArchitecture's own rules), actionlint, and zizmor at pinned versions. `rules/verification.toml` records how every rule is verified: by a tool, a code pattern, a test, a runtime check, review, or attestation.
 
 ### Token Usage
 
-Measured from file sizes (bytes ÷ 4) at release 1.5.0; base rule sets only.
+Measured from file sizes (bytes ÷ 4) at release 1.6.0; base rule sets only.
 
 | Tier | Est. tokens | % of 200K window |
 |------|-------------|-------------------|
-| Personal | ~1,800 | ~0.9% |
-| Shared | ~9,200 | ~4.6% |
-| Public | ~13,200 | ~6.6% |
-| Business | ~19,900 | ~9.9% |
-| Regulated | ~26,800 | ~13.4% |
+| Personal | ~2,100 | ~1.1% |
+| Shared | ~9,600 | ~4.8% |
+| Public | ~13,600 | ~6.8% |
+| Business | ~20,300 | ~10.2% |
+| Regulated | ~27,300 | ~13.6% |
 
-Conditional rule sets add to these when they apply: privacy overlay ~2,100, multi-agent ~2,300, mobile ~1,300, system-design ~1,800, compliance ~3,000. Guides average ~2,900 tokens each and are loaded on demand; a typical session pulls one or two at most.
+Conditional rule sets add to these when they apply: privacy overlay ~2,100, multi-agent ~2,300, mobile ~1,300, system-design ~1,800, compliance ~3,000. The checks (`checks/`, `rules/verification.toml`) run outside the AI's context and cost no tokens. Guides average ~2,900 tokens each and are loaded on demand; a typical session pulls one or two at most.
 
 ### What's Covered
 
-Rules and guides exist for: security (including SSRF, CSRF, MFA, auth with passkeys/OAuth, fail-closed guards, device-scoped authorization, abuse/bot controls, threat modeling, secrets management, input validation, and client state management), cryptography and end-to-end encryption (including hybrid post-quantum key agreement against harvest-now-decrypt-later), data integrity, schema design and data lifecycle, data privacy (GDPR/CCPA data-subject rights, plus metadata-plane auditing for privacy-marketed products), testing (unit/integration strategy, testing AI systems, and adversarial review of AI-built codebases with an assurance register), API design and versioning, payment/webhook integration, accessibility (web and native mobile), reliability (failure modes, resilience patterns, high availability, concurrency, incident response), infrastructure (cloud fundamentals, containers, deployment, serverless/edge realities, regulated deployment), local-first and peer-to-peer architectures, real-time patterns, async patterns, observability (logging, monitoring), performance (caching, database performance, scaling, search architecture), system design and architecture styles, multi-agent/LLM systems (including the OWASP LLM Top 10 2026 and Agentic Top 10, MCP patterns, orchestration, agent observability, agent sandboxing, and agentic security — `guides/multi-agent/agentic-security.md`), mobile-native apps (including app-store review and push-payload privacy), day-2 operations (cost management, runbooks, email deliverability, internationalization), supply chain security (including SBOM and SAST), and compliance (GDPR, EU AI Act, EU Cyber Resilience Act, HIPAA, PCI-DSS, SOC 2). See `appendices/standards-mapping.md` for how the rules line up with OWASP (Top 10 2025, LLM 2026, Agentic 2026), ASVS 5, MASVS 2, NIST SSDF, NIST AI RMF, SLSA, and CIS Controls.
+Rules and guides exist for: security (including SSRF, CSRF, MFA, auth with passkeys/OAuth, fail-closed guards, device-scoped authorization, abuse/bot controls, threat modeling, secrets management, input validation, and client state management), cryptography and end-to-end encryption (including hybrid post-quantum key agreement against harvest-now-decrypt-later), data integrity, schema design and data lifecycle, data privacy (GDPR/CCPA data-subject rights, plus metadata-plane auditing for privacy-marketed products), testing (unit/integration strategy, testing AI systems, and adversarial review of AI-built codebases with an assurance register), API design and versioning, payment/webhook integration, accessibility (web and native mobile), reliability (failure modes, resilience patterns, high availability, concurrency, incident response), infrastructure (cloud fundamentals, containers, deployment, serverless/edge realities, regulated deployment), local-first and peer-to-peer architectures, real-time patterns, async patterns, observability (logging, monitoring), performance (caching, database performance, scaling, search architecture), system design and architecture styles, multi-agent/LLM systems (including the OWASP LLM Top 10 2026 and Agentic Top 10, MCP patterns, orchestration, agent observability, agent sandboxing, and agentic security — `guides/multi-agent/agentic-security.md`), mobile-native apps (including app-store review and push-payload privacy), day-2 operations (cost management, runbooks, email deliverability, internationalization), supply chain security (including SBOM and SAST), automated checks (secret scanning, dependency audit, vibeArchitecture Semgrep rules, git and agent hooks, CI templates, baselines, and a verification matrix for every rule), and compliance (GDPR, EU AI Act, EU Cyber Resilience Act, HIPAA, PCI-DSS, SOC 2). See `appendices/standards-mapping.md` for how the rules line up with OWASP (Top 10 2025, LLM 2026, Agentic 2026), ASVS 5, MASVS 2, NIST SSDF, NIST AI RMF, SLSA, and CIS Controls.
 
 ### File Structure
 
@@ -272,6 +292,8 @@ vibeArchitecture/
 ├── PROJECT_PROFILE.template.md   # Template for intake (saved as PROJECT_PROFILE.md in projects)
 ├── intake/                       # Adaptive intake questionnaire + tier definitions
 ├── rules/                        # Compact rules by tier (canonical source; includes privacy overlay)
+│   └── verification.toml         #   How each rule is verified (tool, pattern, test, runtime, review, attest)
+├── checks/                       # Automated checks: Semgrep rules, .va/check, hooks, CI templates, audit
 ├── guides/                       # Detailed explanations (on demand)
 ├── checklists/                   # Human-readable action items
 ├── appendices/                   # Anti-patterns, glossary, standards mapping, further reading,
@@ -282,8 +304,10 @@ vibeArchitecture/
 ├── CursorSkill/vibe-architecture/  # Installable Cursor Agent Skill (generated from ClaudeSkill)
 ├── CodeGuardian/                 # Config for the Vibe Code Guardian ChatGPT GPT
 ├── scripts/sync.sh               # Keeps skill packages + integration files in sync
+├── scripts/test-semgrep-rules.py # Proves every Semgrep rule fires and stays quiet on its fixtures
+├── scripts/verify-matrix.py      # Keeps rules/verification.toml in step with rules/*.md
 ├── docs/history/                 # Historical design notes (reference only)
-└── .github/                      # CI (sync check, link check, markdownlint), templates
+└── .github/                      # CI (sync, markdownlint, links, rule tests, matrix, secrets, workflows), templates
 ```
 
 </details>

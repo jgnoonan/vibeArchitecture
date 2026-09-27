@@ -52,15 +52,30 @@ To require verified commits on the default branch, a repo admin can enable **Bra
 
 ## Local Checks
 
-CI runs three jobs on every push and pull request (`.github/workflows/validate.yml`). Run the same checks locally before opening a PR:
+CI runs six jobs on every push and pull request (`.github/workflows/validate.yml`): sync, markdown lint, links, rules (matrix, Semgrep rule tests, agent guard, shellcheck), checks-e2e (installs the checks into a scratch project and plants violations), and security (gitleaks, actionlint, zizmor on this repo). `scripts/check.sh` runs all but the link check and the end-to-end test locally, and is what the pre-push hook runs (`git config core.hooksPath .githooks`). Individually:
 
 | Check | Command | Notes |
 |-------|---------|-------|
 | Sync + version stamps + GPT length | `./scripts/sync.sh --check` | Bash 3.2 compatible; no dependencies |
+| Verification matrix | `python3 scripts/verify-matrix.py` | Python 3.11+, stdlib only. Every rule bullet must be classified; `--summary` prints coverage per tier |
+| Semgrep rules | `python3 scripts/test-semgrep-rules.py` | Needs `semgrep` (`mise install`). Every rule must fire on a `ruleid:` fixture and stay quiet on an `ok:` fixture |
+| Secrets, workflows | `gitleaks git --redact`, `actionlint`, `zizmor --offline .github/workflows` | Installed by `mise install` (versions in `mise.toml`) |
+| Everything above | `scripts/check.sh` | What the pre-push hook runs; enable with `git config core.hooksPath .githooks` |
 | Markdown lint | `npx markdownlint-cli2 "**/*.md" "#node_modules"` | Uses `.markdownlint.json`; needs Node (`npx` fetches the tool on first run) |
 | Link check (optional) | `lychee --no-progress --exclude-loopback --exclude 'mailto:*' '**/*.md'` | Only if [lychee](https://github.com/lycheeverse/lychee) is installed (`brew install lychee`); `.lycheeignore` lists URLs CI can't verify. CI also runs this weekly to catch link rot |
 
 All GitHub Actions in the workflow are pinned to a full commit SHA (with the version tag in a trailing comment). Dependabot (`.github/dependabot.yml`) opens a weekly PR when a pinned action has a newer release — review the diff and merge; don't hand-edit the SHA.
+
+## Adding or Changing a Rule
+
+Rules and their verification move together, so a rule is never assumed to be enforced when it isn't:
+
+1. **Edit the rule** in `rules/*.md` (one to three lines, per the writing standards below).
+2. **Classify it** in `rules/verification.toml`: give a new bullet the next free id for its file (never renumber), a `match` that is the start of the bullet text, and a `verify` list (`tool`, `pattern`, `test`, `runtime`, `review`, `attest`, `guidance`). `tool`, `test` and `runtime` entries name their checks from `checks/catalog.toml`. If you reword the start of an existing bullet, update its `match`.
+3. **If a code pattern can catch it, write the Semgrep rule** in `checks/semgrep/<tier>/`: cite the rule id in `metadata.va_rules`, say how to fix it in the message, and add fixtures next to it with at least one `ruleid:` line (it fires) and one `ok:` line (it stays quiet). Use ERROR only when a match is almost always a real problem; use WARNING for judgment calls.
+4. Run `python3 scripts/verify-matrix.py` and `python3 scripts/test-semgrep-rules.py`.
+
+The bar for a new Semgrep rule: generic (not tied to one project), low false-positive rate on real code, a fix the message can state in a sentence, and fixtures that prove it can fail.
 
 ## Release Procedure (maintainers)
 

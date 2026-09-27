@@ -1,0 +1,10 @@
+<!-- Fixtures for mobile-ios.yaml -->
+<dict>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <!-- ruleid: va-ios-arbitrary-loads -->
+    <key>NSAllowsArbitraryLoads</key><true/>
+    <!-- ok: va-ios-arbitrary-loads -->
+    <key>NSAllowsLocalNetworking</key><true/>
+  </dict>
+</dict>

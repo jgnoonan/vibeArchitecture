@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      { "command": ".va/hooks/guard.sh cursor" }
+    ]
+  }
+}

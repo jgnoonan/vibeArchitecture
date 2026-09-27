@@ -1,0 +1,15 @@
+rules:
+  - id: va-third-party-script-without-sri
+    languages: [generic]
+    paths:
+      include: ["*.html", "*.htm", "*.jsx", "*.tsx", "*.vue", "*.svelte", "*.astro", "*.hbs", "*.ejs", "*.jinja", "*.j2"]
+    severity: WARNING
+    message: >-
+      A third-party script is loaded from an absolute URL without an integrity
+      attribute. Pin it with Subresource Integrity (integrity + crossorigin),
+      or self-host it. [VA SEC-066, rules/security.md "HTTPS and Transport
+      Security"; PCI DSS 6.4.3 for payment pages]
+    metadata:
+      va_rules: [SEC-066, COMP-028]
+      confidence: MEDIUM
+    pattern-regex: (?i)<script(?![^>]*\bintegrity\s*=)[^>]*\bsrc\s*=\s*["']https?://[^"']+["'][^>]*>

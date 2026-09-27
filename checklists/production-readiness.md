@@ -24,6 +24,8 @@ You don't need to complete everything in one session. This is a roadmap, not a g
 - [ ] **Input is validated.** Every piece of user input is validated on the server before use. SQL injection, XSS, and command injection are prevented.
 - [ ] **Dependencies are checked for vulnerabilities.** Run `npm audit`, `pip-audit`, or equivalent. Address critical and high vulnerabilities.
 - [ ] **Static analysis (SAST) runs in CI.** CodeQL or Semgrep scans your own code on every pull request. New high-severity findings block the merge.
+- [ ] **The checks can't be skipped.** CI runs `.va/check full` on every pull request, and the `check` job is a required status check on the default branch, so no one (including an AI agent) can merge around it. `.va/check doctor` confirms it.
+- [ ] **Check coverage is audited.** `python3 vibeArchitecture/checks/audit.py` reports no missing or unconfigured checks for your tier. Every rule it lists as review or attest is covered by a review pass or recorded in the assurance register.
 - [ ] **Security headers are configured.** Content-Security-Policy (with `frame-ancestors`), X-Content-Type-Options, Referrer-Policy, Permissions-Policy at minimum.
 - [ ] **Admin and debug endpoints are protected or removed.** No debug routes, status pages, or admin tools exposed without authentication.
 

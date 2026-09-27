@@ -1,6 +1,6 @@
 # vibeArchitecture
 
-**Framework version:** 1.5.0
+**Framework version:** 1.6.0
 
 Architectural guidance for AI-assisted development. This file is the entry point — read it first, follow the instructions below.
 
@@ -45,16 +45,31 @@ Once the rules are loaded, state it back to the user in two or three lines **bef
 
 This is a self-check, not busywork: if you can't name the loaded rules, you haven't loaded them. Re-confirm whenever the project's scope changes materially — a new data type (payments, health), a wider audience, or a new platform can change the tier or trigger the overlay.
 
+### Set up automated checks
+
+Rules you follow in conversation decay; checks that run on every commit don't. Once the profile exists and before the first feature, look for `.va/check` in the project root. If it isn't there:
+
+- Tell the user in a line or two what you're adding (plain language for beginners): *"I'll add automated checks that run when you commit, when you push, and in CI: a secret scan, a dependency audit, vibeArchitecture's code rules, your linter and your tests."*
+- With their agreement, run `vibeArchitecture/checks/install.sh` from the project root, then `mise install` and `.va/check doctor`. Put the project's real format, lint and test commands in `.va/config.sh`.
+- For an existing codebase, run `.va/check full`, then `.va/check baseline` so today's findings are recorded (with an expiry) and only new ones block.
+- Record the result in the profile's **Checks** section: where the gate runs, whether the `check` job is a required status check on the default branch, and any accepted gaps. At Business tier and above the required status check is mandatory; walk the user through enabling it (`.va/README.md`, "Branch protection").
+- If the user declines, record that as an accepted gap. Never install checks without agreement.
+
+`rules/verification.toml` says how each rule is verified (tool, pattern, test, runtime, review, attest); `checks/README.md` explains the tooling; `guides/testing/automated-checks.md` explains the layers and what each tier requires.
+
 ## Step 4: Build with the Rules Active
 
 As you help the user build their project:
 
 - Follow the loaded rules for every piece of code you write or suggest
+- **A task is done when `.va/check push` exits 0** (once checks are installed). Report the real result, not a summary of it. If a check fails, fix the cause. Never use `--no-verify`, skip variables, skipped or deleted tests, loosened thresholds, or edits to check configuration to get to green; if you believe a check is wrong, stop and explain why to the user.
+- **When a change introduces something a check covers, wire the check in the same change.** First migration: set `MIGRATE_CMD` and `TEST_DB_CMD`. First code generation: `CODEGEN_CMD`. First release build: `RELEASE_CMD` with an SBOM and the release-artifact test. First user-facing UI at Public tier: accessibility lint. First push notification, email, SMS or webhook to a third party: the payload-allowlist test (`checks/invariant-tests/`). Say in one sentence what the check protects; if the user declines, record the gap in the profile.
+- **When you fix a bug, add the test or check that fails on the broken version** and passes on the fix.
 - When a rule prevents something the user asks for, explain WHY in plain language
 - When you're unsure about an architectural decision, say so — don't guess
 - Surface the relevant checklist at the right time:
   - `checklists/before-you-build.md` when starting a new project
-  - `checklists/before-you-deploy.md` when deployment or "going live" is discussed
+  - `checklists/before-you-deploy.md` when deployment or "going live" is discussed (it includes running `python3 vibeArchitecture/checks/audit.py` to list missing checks)
   - `checklists/production-readiness.md` for Business or Regulated tier projects approaching launch
   - `checklists/something-broke.md` when the user reports a bug, error, outage, or something not working as expected
 - When a significant architectural decision is made (database choice, hosting platform, auth provider, architecture style), suggest recording it as an Architecture Decision Record. See `appendices/adr-template.md` for the template.
@@ -108,5 +123,7 @@ These apply to EVERY project, regardless of tier:
 | `guides/multi-agent/agentic-security.md` | Securing agents that hold tools and credentials | Any project where `ai_usage` is `multi-agent`, or agents can act on the user's behalf |
 | `guides/testing/adversarial-review.md` | Structured adversarial review of an AI-built codebase | Business tier and above, before launch |
 | `checklists/` | Plain-English action items | At project milestones (start, pre-deploy, production launch, incidents) |
+| `checks/` | Automated checks: vibeArchitecture Semgrep rules, the `.va/check` command, git and agent hooks, CI templates, coverage audit | After intake (install), when a check fails, and at deploy milestones (audit) |
+| `rules/verification.toml` | How each rule is verified: tool, pattern, test, runtime, review, or attest | When deciding what a check must cover, or what goes in the assurance register |
 | `appendices/` | Anti-patterns, glossary, ADR template, assurance register template, standards mapping, further reading | Reference material as needed; `assurance-register-template.md` at Business tier and above |
 | `examples/` | Walkthrough, sample profile, before/after code | When the user wants to see what a finished intake or guarded code looks like |

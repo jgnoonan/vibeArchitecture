@@ -1,0 +1,25 @@
+# vibeArchitecture checks for GitLab CI: include this file from .gitlab-ci.yml
+#   include: { local: ".va/va-checks.gitlab-ci.yml" }
+# and mark the pipeline as required: Settings > Merge requests > "Pipelines must succeed".
+va-checks:
+  stage: test
+  image: debian:bookworm-slim
+  variables:
+    GIT_DEPTH: "0" # full history for the secret scan and the diff base
+    MISE_VERSION: "v2026.9.15"
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends ca-certificates curl git python3 bash >/dev/null
+    - curl -fsSL https://mise.run | sh
+    - export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+    - mise install
+    # Install your project's dependencies here so lint and tests can run.
+  script:
+    - .va/check full
+  artifacts:
+    when: always
+    paths: [.va/logs/]
+    expire_in: 90 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"

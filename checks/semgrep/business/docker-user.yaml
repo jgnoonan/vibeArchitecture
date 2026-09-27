@@ -1,0 +1,51 @@
+rules:
+  - id: va-docker-runs-as-root
+    languages: [dockerfile]
+    severity: ERROR
+    message: >-
+      The final image runs as root. Create an unprivileged user and switch to
+      it with USER before CMD/ENTRYPOINT. [VA INFRA-027]
+    metadata:
+      va_rules: [INFRA-027]
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: CMD ...
+          - pattern: ENTRYPOINT ...
+      - pattern-not-inside: |
+          USER $U
+          ...
+      - pattern-not-inside: |
+          USER $U
+          ...
+          USER root
+          ...
+
+  - id: va-docker-explicit-root-user
+    languages: [dockerfile]
+    severity: ERROR
+    message: >-
+      USER root (or 0) right before the container starts. Switch back to an
+      unprivileged user before CMD/ENTRYPOINT. [VA INFRA-027]
+    metadata:
+      va_rules: [INFRA-027]
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: |
+              USER root
+              ...
+              CMD ...
+          - pattern: |
+              USER 0
+              ...
+              CMD ...
+      - pattern-not: |
+          USER root
+          ...
+          USER $U
+          ...
+          CMD ...
+

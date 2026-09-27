@@ -1,0 +1,9 @@
+# gitleaks: the built-in rules plus project allowlists. Project-owned.
+# To accept a known, already-rotated leak in history, add its fingerprint to
+# .gitleaksignore with a comment saying when it was rotated.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "vibeArchitecture framework copy and local check logs"
+paths = ['''^vibeArchitecture/''', '''^\.va/logs/''']

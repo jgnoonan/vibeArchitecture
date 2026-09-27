@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Verify skill packages, integrations, and version stamps
         run: bash scripts/sync.sh --check
 
@@ -30,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Lint markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:
@@ -41,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check markdown links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
@@ -55,3 +61,69 @@ jobs:
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Rules and the checks that enforce them stay consistent: every rule bullet is
+  # classified, every Semgrep rule fires on its fixtures and stays quiet on its
+  # controls, the agent guard makes the right call, and the scripts lint clean.
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Verification matrix
+        run: python3 scripts/verify-matrix.py --summary
+      - name: Semgrep rules
+        run: python3 scripts/test-semgrep-rules.py
+      - name: Agent guard
+        run: bash scripts/test-guard.sh
+      - name: Shell scripts
+        run: >
+          shellcheck -S warning scripts/*.sh checks/install.sh
+          checks/templates/.va/check checks/templates/.va/hooks/guard.sh
+          checks/templates/.githooks/pre-commit checks/templates/.githooks/pre-push
+          checks/templates/smoke-headers.sh
+
+  # The agent guard runs under macOS's BSD sed and /bin/sh too.
+  guard-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Agent guard (BSD userland)
+        run: bash scripts/test-guard.sh
+
+  # The check templates work end to end with the real pinned tools: clean pushes
+  # pass and each planted violation is rejected by the hooks.
+  checks-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Install and exercise the checks in a scratch project
+        run: bash scripts/test-install.sh
+
+  # This repository holds itself to the same checks it ships.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Secret scan (full history)
+        run: |
+          rc=0
+          gitleaks git --redact --no-banner --report-format json --report-path "$RUNNER_TEMP/gitleaks.json" || rc=$?
+          # Surface each finding as an annotation on the PR (file, line, rule, commit).
+          python3 -c 'import json,sys; [print("::error file=%s,line=%s::gitleaks %s in commit %s (fingerprint %s)" % (f["File"], f["StartLine"], f["RuleID"], f["Commit"][:10], f["Fingerprint"])) for f in json.load(open(sys.argv[1]))]' "$RUNNER_TEMP/gitleaks.json" || true
+          exit "$rc"
+      - name: Workflow lint
+        run: actionlint
+      - name: Workflow security
+        run: zizmor --offline --min-severity medium .github/workflows

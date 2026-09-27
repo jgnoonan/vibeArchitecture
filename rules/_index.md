@@ -67,6 +67,7 @@ Read the project tier from `PROJECT_PROFILE.md`. Load ALL rule files listed for 
 
 ## Enforcement
 
+- Rules are enforced by automated checks where they can be (`rules/verification.toml` says how each rule is verified; `checks/` holds the tooling). Set up checks at intake with `checks/install.sh`, and run `check push` before reporting a task done.
 - When a rule conflicts with what the user asks for, explain the rule and the consequence of ignoring it in plain language.
 - If the user insists on overriding a rule after understanding the risk, document the decision and the accepted risk in a code comment or project note.
 - For detailed explanations of any rule, consult the corresponding file in `guides/`.

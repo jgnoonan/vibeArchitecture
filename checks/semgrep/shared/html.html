@@ -1,0 +1,7 @@
+<!-- Fixtures for html.yaml -->
+<!-- ruleid: va-third-party-script-without-sri -->
+<script src="https://cdn.example.com/lib@1.2.3/lib.min.js"></script>
+<!-- ok: va-third-party-script-without-sri -->
+<script src="https://cdn.example.com/lib@1.2.3/lib.min.js" integrity="sha384-abc" crossorigin="anonymous"></script>
+<!-- ok: va-third-party-script-without-sri -->
+<script src="/static/app.js"></script>

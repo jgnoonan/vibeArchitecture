@@ -1,0 +1,54 @@
+rules:
+  - id: va-docker-unpinned-base-image
+    languages: [dockerfile]
+    severity: ERROR
+    message: >-
+      Base image is unpinned (no tag, or :latest), so builds change underneath
+      you. Pin a version tag, ideally with an @sha256 digest. [VA INFRA-028/UNI-021]
+    metadata:
+      va_rules: [INFRA-028, UNI-021]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: FROM $IMAGE:latest
+          - pattern: FROM $IMAGE:latest AS $NAME
+          - patterns:
+              - pattern-either:
+                  - pattern: FROM $IMAGE
+                  - pattern: FROM $IMAGE AS $NAME
+              - pattern-not: FROM $IMAGE:$TAG
+              - pattern-not: FROM $IMAGE:$TAG AS $NAME
+              - pattern-not: FROM $IMAGE@$DIGEST
+              - pattern-not: FROM $IMAGE@$DIGEST AS $NAME
+              - pattern-not: FROM $IMAGE:$TAG@$DIGEST
+              - pattern-not: FROM $IMAGE:$TAG@$DIGEST AS $NAME
+              - pattern-not: FROM scratch
+              - pattern-not-inside: |
+                  FROM $BASE AS $IMAGE
+                  ...
+                  FROM $IMAGE
+              - pattern-not-inside: |
+                  FROM $BASE AS $IMAGE
+                  ...
+                  FROM $IMAGE AS $NAME
+
+  - id: va-docker-secret-in-build
+    languages: [dockerfile]
+    severity: ERROR
+    message: >-
+      A secret-looking value is passed as a build ARG/ENV, which is stored in
+      the image history. Use BuildKit secret mounts
+      (RUN --mount=type=secret,id=...). [VA UNI-002]
+    metadata:
+      va_rules: [UNI-002]
+      cwe: "CWE-538: Insertion of Sensitive Information into Externally-Accessible File"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: ARG $NAME
+          - pattern: ARG $NAME=$V
+          - pattern: ENV $NAME=$V
+          - pattern: ENV $NAME $V
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(secret|password|passwd|token|api_?key|private_?key|credentials).*

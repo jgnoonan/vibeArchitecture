@@ -266,6 +266,11 @@ Scan the project and look for the following. Summarize findings for the user in 
 - Test coverage (if measurable)
 - Types of tests present (unit, integration, e2e)
 
+**Automated checks:**
+- Git hooks (`.githooks/`, `.husky/`, `lefthook.yml`, `.pre-commit-config.yaml`), CI workflows, and which scanners they run (secret scan, dependency audit, SAST, lint)
+- Whether any check pipes its output (`cmd | tail`) or would pass when its tool is missing or its suite skips itself
+- Whether `.va/check` is already installed
+
 **AI and agent usage (signals for multi-agent rules):**
 - AI/LLM SDK packages in dependencies (`openai`, `openai-agents`, `anthropic`, `@anthropic-ai/sdk`, `@anthropic-ai/claude-agent-sdk`, `langchain`, `langgraph`, `crewai`, `autogen`, `llamaindex`, `ai` and `@ai-sdk/*` (Vercel AI SDK), `mastra`, `@google/genai` (and the deprecated `google-generativeai`), `cohere`, `replicate`)
 - Multiple LLM client instantiations or multiple agent class definitions
@@ -330,6 +335,8 @@ After determining the tier, compare the existing codebase against the tier's rul
 3. **Recommended improvements** — missing tests, no monitoring, no deployment automation. Address as part of ongoing development.
 
 Note these gaps in the PROJECT_PROFILE.md under "Warnings and Flags."
+
+Then offer to install the checks (`vibeArchitecture/checks/install.sh`, see `ARCHITECT.md` Step 3), and run `.va/check full` and `python3 vibeArchitecture/checks/audit.py`. The scanners turn the prose gap list into concrete findings with file and line. Record today's Semgrep findings with `.va/check baseline` so new code is held to the rules while the backlog is worked down. If the project already has hosted CI that you're replacing, treat it as a migration: every existing job either moves into `.va/check` or is recorded as a gap.
 
 Do NOT try to fix everything at once. Work through gaps incrementally, starting with critical items, alongside the user's feature work.
 

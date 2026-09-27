@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# vibeArchitecture: checks on what is being pushed. Installed by `.va/check install-hooks`.
+# git passes "<local ref> <local sha> <remote ref> <remote sha>" lines on stdin.
+# The checks scan the checked-out files, so every pushed commit must be the one
+# checked out; the remote sha (what the remote already has) is the diff base.
+zero=0000000000000000000000000000000000000000
+head=$(git rev-parse HEAD 2>/dev/null)
+base=""; pushing=""; other=""
+while read -r local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue                      # deleting a remote ref
+  pushing=1
+  commit=$(git rev-parse -q --verify "$local_sha^{commit}" 2>/dev/null)
+  if [ "$commit" != "$head" ]; then other="$local_ref"; continue; fi
+  if [ "$remote_sha" != "$zero" ] && git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  fi
+done
+[ -z "$pushing" ] && exit 0                                    # only deletions
+if [ -n "$other" ]; then
+  echo "va: you are pushing $other, but $(git rev-parse --abbrev-ref HEAD) is checked out." >&2
+  echo "    The checks scan the checked-out files. Check out $other and push from there." >&2
+  exit 1
+fi
+if ! git diff --quiet HEAD -- 2>/dev/null; then
+  echo "va: note: uncommitted changes are part of this scan; CI checks exactly what you pushed." >&2
+fi
+if [ -n "$base" ]; then export VA_BASE="$base"; fi
+exec "$(git rev-parse --show-toplevel)/.va/check" push

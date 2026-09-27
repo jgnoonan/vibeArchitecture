@@ -42,7 +42,7 @@ Apply the determined tier's rules AND all tiers below it.
 - Validate all user input on the server. Never trust the browser.
 - Parameterized queries or an ORM. Never concatenate user input into SQL.
 - Graceful errors: message to users, details to logs. Separate concerns.
-- Once deployed: protect the main branch (no direct pushes; deploy from main via CI), run static analysis in CI (CodeQL or Semgrep), pin CI actions to a commit SHA. Lint/format gates block merges; check exit codes, not piped output.
+- One check command (gitleaks, osv-scanner, Semgrep, lint, tests) runs in pre-push hooks and CI (full framework: checks/). Once deployed: PRs only, CI a required check, actions pinned to a SHA. Never bypass a failing check; check exit codes, not pipes.
 
 ### SHARED AND ABOVE
 - Hash passwords with argon2id (or bcrypt). Min 8 chars, 15+ recommended, no forced rotation, screen against breached lists.

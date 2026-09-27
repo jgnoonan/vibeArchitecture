@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# vibeArchitecture: fast checks on staged changes. Installed by `.va/check install-hooks`.
+exec "$(git rev-parse --show-toplevel)/.va/check" fast

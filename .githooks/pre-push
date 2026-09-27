@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# vibeArchitecture repository: run the repo's checks before pushing.
+exec "$(git rev-parse --show-toplevel)/scripts/check.sh"

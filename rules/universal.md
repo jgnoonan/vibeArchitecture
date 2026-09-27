@@ -25,6 +25,7 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Never show raw error details to users. Stack traces, database errors, and file paths help attackers and confuse users. Show a friendly message; log the details.
 - Handle errors explicitly. Don't let the app crash silently or show a blank screen.
 - Catch errors at boundaries (API endpoints, event handlers, background jobs) so one failure doesn't take down the whole application.
+- Release builds run in production mode: no debug flags, developer-only endpoints, test accounts, or verbose error pages. Assert it on the built artifact, not only in config.
 
 ## Data Safety
 
@@ -38,13 +39,23 @@ These apply to EVERY project regardless of tier. No exceptions.
 - Keep dependencies updated. Outdated packages are the most common source of known security vulnerabilities.
 - Evaluate before adding. Is it maintained? Does it have known vulnerabilities? Could you write it in a few lines instead of adding a dependency?
 - Run dependency audits before deploy (`npm audit`, `pip-audit`, `cargo audit`). Fix critical and high severity issues.
-- Enable secret scanning on the repository (GitHub secret scanning, gitleaks, or truffleHog in CI). A committed API key is compromised even if removed in the next commit.
+- Enable secret scanning on the repository (GitHub secret scanning, plus gitleaks in the `check` command). A committed API key is compromised even if removed in the next commit.
 - Pin CI action and base image versions. Pin GitHub Actions to a full commit SHA (`uses: actions/checkout@<40-char-sha> # v5.0.0`), not a mutable tag — tags can be moved to malicious code. Never use `latest` tags in production pipelines.
 
 ## Code Scanning
 
-- Run static analysis (SAST) on your own code in CI: CodeQL (free for public GitHub repos) or Semgrep. Dependency scanning checks other people's code for known vulnerabilities; SAST checks yours for vulnerable patterns.
+- Run static analysis (SAST) on your own code in the `check` command: the vibeArchitecture Semgrep rules, plus CodeQL (free for public GitHub repos) or Semgrep's own rules. Dependency scanning checks other people's code for known vulnerabilities; SAST checks yours for vulnerable patterns.
 - At Public tier and above, treat new high-severity findings as merge blockers. This matters more for AI-generated code, not less — AI repeats the same plausible-looking mistakes, and SAST rules catch exactly those patterns.
+
+## Automated Checks
+
+See `guides/testing/automated-checks.md`. Set up with `vibeArchitecture/checks/install.sh`.
+
+- One `check` command runs every automated check for the project's tier (secret scan, dependency audit, vibeArchitecture Semgrep rules, lint, tests). Git hooks, CI and the AI agent all call it; nothing re-implements it.
+- Checks run in layers: pre-commit (seconds: secrets, formatting), pre-push (about a minute: lint, rules and tests on what changed), and before merge (everything). Only a server-side required check can't be skipped; Business tier and above must have one. Below that, a blocking pre-push hook is an acceptable gate.
+- A task is done when `check push` exits 0. Never bypass or weaken a check to get there: no `--no-verify`, no skipped or deleted tests, no lowered thresholds, no edits to check config to make a failure pass. Fix the cause, or stop and ask.
+- Existing findings go in a baseline with a reason and an expiry date; only new findings block, and the baseline only shrinks. Suppress a single finding inline with the rule id and a reason.
+- Every fixed bug gets a test or check that fails on the broken version. Removing hosted CI is a migration: move each job into the local check or record the gap.
 
 ## Code Quality
 

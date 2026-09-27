@@ -27,6 +27,18 @@ reproduce are discarded and counted below.
 | 3 | Privacy & metadata — YYYY-MM-DD | … | … | … |
 | 4 | Accessibility — YYYY-MM-DD, code pass + device pass | … | … | … |
 
+## Checks
+
+Automated checks and the rules they enforce (`rules/verification.toml` ids; `checks/audit.py` lists what your tier expects). A rule that has no check and no review pass is a gap: list it here too.
+
+| Check | Enforces | Runs in | Blocks | Evidence |
+|-------|----------|---------|--------|----------|
+| secrets (gitleaks) | UNI-002, UNI-020 | pre-commit, pre-push, CI | yes | CI run logs (va-check-logs artifact) |
+| va-rules (Semgrep) | 70+ pattern rules for this tier | pre-push, CI | yes (new findings) | baseline: N entries, expires YYYY-MM-DD |
+| deps (osv-scanner) | UNI-016, UNI-019, SEC-082 | pre-push, CI, weekly | yes | osv-scanner.toml exceptions: N, each with ignoreUntil |
+| tests-db | TEST-021, DATA-013, SEC-053 | CI | yes | fails if the database is unavailable |
+| house rule: no raw debug print | none | n/a | n/a | **no check yet: gap** |
+
 ## Other verification
 
 | What | Date | Result | Evidence |

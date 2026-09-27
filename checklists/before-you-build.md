@@ -35,6 +35,7 @@ Things to decide before you (or your AI) write the first line of code. You don't
 - [ ] Is the project in a git repository? (If you're not sure what this is, ask your AI to set one up.)
 - [ ] Do you have a `.gitignore` file? (This keeps private files from being uploaded to the internet.)
 - [ ] If you have any API keys or passwords, are they in a `.env` file that's listed in `.gitignore`?
+- [ ] Are automated checks set up? (Ask your AI to install vibeArchitecture's checks. They scan for leaked keys, risky code and vulnerable packages every time you commit and push.)
 
 ## Legal and Privacy (If Others Will Use Your App)
 

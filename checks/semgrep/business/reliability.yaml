@@ -1,0 +1,36 @@
+rules:
+  - id: va-http-call-without-timeout-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      requests has no default timeout, so this call can hang forever and pin
+      a worker. Pass timeout=(connect, read). [VA REL-004/REL-005,
+      rules/reliability.md "Timeouts"]
+    metadata:
+      va_rules: [REL-004, REL-005, SEC-024]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: requests.$M(...)
+          - pattern: requests.Session().$M(...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(get|post|put|patch|delete|head|options|request)$
+      - pattern-not: requests.$M(..., timeout=$T, ...)
+      - pattern-not: requests.Session().$M(..., timeout=$T, ...)
+      - pattern-not: requests.$M(..., **$KW)
+
+  - id: va-http-client-timeout-disabled
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Timeout explicitly disabled on an HTTP client. Set bounded connect and
+      read timeouts. [VA REL-004, rules/reliability.md "Timeouts"]
+    metadata:
+      va_rules: [REL-004]
+      confidence: HIGH
+    pattern-either:
+      - pattern: httpx.$M(..., timeout=None, ...)
+      - pattern: httpx.Client(..., timeout=None, ...)
+      - pattern: httpx.AsyncClient(..., timeout=None, ...)
+      - pattern: requests.$M(..., timeout=None, ...)

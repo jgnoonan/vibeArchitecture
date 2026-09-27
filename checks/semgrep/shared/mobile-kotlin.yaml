@@ -1,0 +1,37 @@
+rules:
+  - id: va-android-token-in-shared-preferences
+    languages: [kotlin, java]
+    severity: ERROR
+    message: >-
+      An auth token or secret is written to SharedPreferences in plain text.
+      Store it in the Android Keystore (e.g. via androidx.security or a
+      Keystore-wrapped key). [VA MOB-001/MOB-024, rules/mobile.md
+      "Secure Storage"]
+    metadata:
+      va_rules: [MOB-001, MOB-024]
+      cwe: "CWE-312: Cleartext Storage of Sensitive Information"
+      confidence: MEDIUM
+    patterns:
+      - pattern: $E.putString("$KEY", $V)
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(token|jwt|secret|password|session|api_?key|credential).*
+
+  - id: va-android-webview-file-access
+    languages: [kotlin, java]
+    severity: ERROR
+    message: >-
+      WebView file-URL access lets loaded content read local files. Keep it
+      off, and never expose JavaScript bridges to arbitrary URLs.
+      [VA MOB-010, rules/mobile.md "Authentication"]
+    metadata:
+      va_rules: [MOB-010]
+      cwe: "CWE-200: Exposure of Sensitive Information"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $S.setAllowFileAccessFromFileURLs(true)
+      - pattern: $S.setAllowUniversalAccessFromFileURLs(true)
+      - pattern: $S.allowFileAccessFromFileURLs = true
+      - pattern: $S.allowUniversalAccessFromFileURLs = true
+      - pattern: $S.setAllowFileAccess(true)
+      - pattern: $S.allowFileAccess = true
