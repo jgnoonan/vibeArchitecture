@@ -1,0 +1,58 @@
+rules:
+  - id: va-money-as-float-sql
+    languages: [generic]
+    paths:
+      include: ["*.sql"]
+    severity: ERROR
+    message: >-
+      A money-like column uses a floating-point type. Use NUMERIC(p,s) or an
+      integer count of minor units plus a currency code. [VA DATA-012,
+      rules/data.md "Schema Design"]
+    metadata:
+      va_rules: [DATA-012]
+      confidence: MEDIUM
+    pattern-regex: (?i)\b\w*(price|amount|balance|total|cost|fee|subtotal|salary|payout|refund)\w*\s+(float|float4|float8|real|double\s+precision|double)\b
+
+  - id: va-timestamp-without-time-zone
+    languages: [generic]
+    paths:
+      include: ["*.sql"]
+    severity: ERROR
+    message: >-
+      TIMESTAMP without time zone. Store instants as timestamptz (UTC) and
+      convert at display time; keep local wall-clock only for future local
+      events, stored with their IANA zone. [VA DATA-011, rules/data.md
+      "Schema Design"]
+    metadata:
+      va_rules: [DATA-011]
+      confidence: HIGH
+    pattern-regex: '(?im)(^\s*"?\w+"?\s+|\badd\s+column\s+(if\s+not\s+exists\s+)?"?\w+"?\s+|\btype\s+)timestamp\b(?!\s*(\(\d\))?\s*with\s+time\s+zone)'
+
+  - id: va-migration-blocking-index
+    languages: [generic]
+    paths:
+      include: ["*.sql"]
+    severity: WARNING
+    message: >-
+      CREATE INDEX without CONCURRENTLY locks writes on the table for the
+      whole build. On existing, populated tables use CREATE INDEX
+      CONCURRENTLY (outside a transaction). [VA DATA-038, rules/data.md
+      "Migrations"]
+    metadata:
+      va_rules: [DATA-038]
+      confidence: MEDIUM
+    pattern-regex: (?i)\bcreate\s+(unique\s+)?index\s+(?!concurrently\b)
+
+  - id: va-migration-destructive-ddl
+    languages: [generic]
+    paths:
+      include: ["*.sql"]
+    severity: WARNING
+    message: >-
+      Destructive DDL in a migration. Confirm a tested backup exists and that
+      this is the "contract" step of expand-and-contract (no running code
+      still reads the column/table). [VA DATA-035/DATA-036, UNI-015]
+    metadata:
+      va_rules: [DATA-036, UNI-015]
+      confidence: MEDIUM
+    pattern-regex: (?i)\b(drop\s+table|drop\s+column|truncate\s+table|alter\s+table\s+\w+\s+rename\s+column)\b

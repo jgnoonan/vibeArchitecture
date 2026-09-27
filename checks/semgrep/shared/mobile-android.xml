@@ -1,0 +1,12 @@
+<!-- Fixtures for mobile-android.yaml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- ruleid: va-android-cleartext-traffic -->
+  <application android:usesCleartextTraffic="true"
+  <!-- ruleid: va-android-debuggable-release -->
+      android:debuggable="true"
+  <!-- ok: va-android-cleartext-traffic -->
+      android:usesCleartextTraffic="false"
+  <!-- ok: va-android-debuggable-release -->
+      android:label="@string/app_name">
+  </application>
+</manifest>

@@ -1,0 +1,149 @@
+rules:
+  # ---------------------------------------------------------------------------
+  # MAI-017 max_tokens on every LLM call
+  # ---------------------------------------------------------------------------
+  - id: va-llm-call-without-max-tokens-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      LLM call without an output token cap. Set max_tokens /
+      max_completion_tokens / max_output_tokens (maxOutputTokens in the AI SDK)
+      sized to the expected output. [VA MAI-017, rules/multi-agent.md
+      "LLM Call Hygiene"]
+    metadata:
+      va_rules: [MAI-017, MAI-031]
+      confidence: HIGH
+    pattern-either:
+      - patterns:
+          - pattern: $C.chat.completions.create({...}, ...)
+          - pattern-not: '$C.chat.completions.create({..., max_tokens: $N, ...}, ...)'
+          - pattern-not: '$C.chat.completions.create({..., max_completion_tokens: $N, ...}, ...)'
+      - patterns:
+          - pattern: $C.responses.create({...}, ...)
+          - pattern-not: '$C.responses.create({..., max_output_tokens: $N, ...}, ...)'
+      - patterns:
+          - pattern-either:
+              - pattern: generateText({...})
+              - pattern: streamText({...})
+              - pattern: generateObject({...})
+              - pattern: streamObject({...})
+          - pattern-not: '$F({..., maxTokens: $N, ...})'
+          - pattern-not: '$F({..., maxOutputTokens: $N, ...})'
+
+  - id: va-llm-call-without-max-tokens-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      LLM call without an output token cap. Set max_tokens /
+      max_completion_tokens / max_output_tokens sized to the expected output.
+      [VA MAI-017, rules/multi-agent.md "LLM Call Hygiene"]
+    metadata:
+      va_rules: [MAI-017, MAI-031]
+      confidence: HIGH
+    pattern-either:
+      - patterns:
+          - pattern: $C.chat.completions.create(...)
+          - pattern-not: $C.chat.completions.create(..., max_tokens=$N, ...)
+          - pattern-not: $C.chat.completions.create(..., max_completion_tokens=$N, ...)
+      - patterns:
+          - pattern: $C.responses.create(...)
+          - pattern-not: $C.responses.create(..., max_output_tokens=$N, ...)
+
+  # ---------------------------------------------------------------------------
+  # MAI-018 / MAI-021 values interpolated into the system prompt
+  # ---------------------------------------------------------------------------
+  - id: va-llm-system-prompt-interpolation-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A value is interpolated into the system prompt. That is fine for
+      trusted configuration (date, product name), never for user- or
+      tool-supplied text: put that in a user message. [VA MAI-018/MAI-021,
+      rules/multi-agent.md]
+    metadata:
+      va_rules: [MAI-018, MAI-021]
+      confidence: LOW
+    pattern-either:
+      - pattern: '{role: "system", content: `...${$X}...`}'
+      - pattern: '{role: "system", content: "..." + $X}'
+      - pattern: '{role: "system", content: $X + "..."}'
+      - pattern: '$C.messages.create({..., system: `...${$X}...`, ...})'
+      - pattern: '$F({..., system: `...${$X}...`, ...})'
+
+  - id: va-llm-system-prompt-interpolation-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A value is interpolated into the system prompt. That is fine for
+      trusted configuration (date, product name), never for user- or
+      tool-supplied text: put that in a user message. [VA MAI-018/MAI-021,
+      rules/multi-agent.md]
+    metadata:
+      va_rules: [MAI-018, MAI-021]
+      confidence: LOW
+    pattern-either:
+      - pattern: '{"role": "system", "content": f"..."}'
+      - pattern: '{"role": "system", "content": "..." + $X}'
+      - pattern: '{"role": "system", "content": "...".format(...)}'
+      - pattern: '{"role": "system", "content": "..." % $X}'
+      - pattern: $C.messages.create(..., system=f"...", ...)
+
+  # ---------------------------------------------------------------------------
+  # MAI-024 / MAI-027 LLM output reaching code execution or queries
+  # ---------------------------------------------------------------------------
+  - id: va-llm-output-to-dangerous-sink-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Model output flows into code execution, a shell, or a raw query. Treat
+      LLM output as untrusted input: parse it into a validated structure and
+      dispatch through an allowlist. [VA MAI-024/MAI-027, rules/multi-agent.md
+      "Output Validation"]
+    metadata:
+      va_rules: [MAI-024, MAI-027, MAI-039]
+      cwe: "CWE-94: Code Injection"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $C.chat.completions.create(...)
+          - pattern: $C.responses.create(...)
+          - pattern: $C.messages.create(...)
+          - pattern: $M.generate_content(...)
+          - pattern: $CHAIN.invoke(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: exec(...)
+          - pattern: os.system(...)
+          - pattern: subprocess.$F(..., shell=True, ...)
+          - pattern: $CUR.execute(...)
+          - pattern: $CUR.executescript(...)
+
+  - id: va-llm-output-to-dangerous-sink-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Model output flows into code execution, a shell, or a raw query. Treat
+      LLM output as untrusted input: parse it into a validated structure and
+      dispatch through an allowlist. [VA MAI-024/MAI-027, rules/multi-agent.md
+      "Output Validation"]
+    metadata:
+      va_rules: [MAI-024, MAI-027, MAI-039]
+      cwe: "CWE-94: Code Injection"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $C.chat.completions.create(...)
+          - pattern: $C.responses.create(...)
+          - pattern: $C.messages.create(...)
+          - pattern: generateText(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+          - pattern: exec(...)
+          - pattern: execSync(...)
+          - pattern: $DB.query(...)
+          - pattern: $DB.$queryRawUnsafe(...)

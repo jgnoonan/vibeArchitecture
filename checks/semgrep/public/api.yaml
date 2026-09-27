@@ -1,0 +1,100 @@
+rules:
+  - id: va-error-with-200-status-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      An error payload is sent with status 200. Clients (and retries, caches,
+      monitors) read the status code: use the correct 4xx/5xx and an RFC 9457
+      problem+json body. [VA API-006, rules/api.md "HTTP Status Codes"]
+    metadata:
+      va_rules: [API-006, API-003]
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: '$RES.status(200).json({..., error: $E, ...})'
+      - pattern: '$RES.status(200).send({..., error: $E, ...})'
+      - patterns:
+          - pattern-either:
+              - pattern: '$RES.json({..., error: $E, ...})'
+              - pattern: '$RES.send({..., error: $E, ...})'
+              - pattern: 'Response.json({..., error: $E, ...})'
+              - pattern: 'NextResponse.json({..., error: $E, ...})'
+          - pattern-not: '$R.status($C).json(...)'
+          - pattern-not: '$R.status($C).send(...)'
+          - pattern-not: 'Response.json($B, $INIT)'
+          - pattern-not: 'NextResponse.json($B, $INIT)'
+
+  - id: va-error-with-200-status-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      An error payload is returned with the default 200 status. Return the
+      correct 4xx/5xx (and an RFC 9457 problem+json body). [VA API-006,
+      rules/api.md "HTTP Status Codes"]
+    metadata:
+      va_rules: [API-006, API-003]
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: return jsonify(..., error=$E, ...)
+      - pattern: 'return jsonify({..., "error": $E, ...})'
+      - pattern: 'return {..., "error": $E, ...}'
+      - pattern: 'return JsonResponse({..., "error": $E, ...})'
+
+  - id: va-in-memory-rate-limit-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Rate limiter without a shared store keeps counters in process memory,
+      which resets on every cold start and isn't shared across instances. Pass
+      a Redis/Valkey (or platform) store. [VA API-020, rules/api.md
+      "Rate Limiting"]
+    metadata:
+      va_rules: [API-020, SEC-028]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: rateLimit({...})
+          - pattern: RateLimit({...})
+          - pattern: slowDown({...})
+      - pattern-not: 'rateLimit({..., store: $S, ...})'
+      - pattern-not: 'RateLimit({..., store: $S, ...})'
+      - pattern-not: 'slowDown({..., store: $S, ...})'
+
+  - id: va-in-memory-rate-limit-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Limiter without storage_uri keeps counters in process memory, which
+      resets on restart and isn't shared across workers. Point it at
+      Redis/Valkey. [VA API-020, rules/api.md "Rate Limiting"]
+    metadata:
+      va_rules: [API-020, SEC-028]
+      confidence: MEDIUM
+    patterns:
+      - pattern: Limiter(...)
+      - pattern-not: Limiter(..., storage_uri=$S, ...)
+
+  - id: va-graphql-introspection-enabled
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      GraphQL introspection is forced on. Disable it in production (or gate
+      it behind auth) and enforce depth/complexity limits. [VA API-010,
+      rules/api.md "Input Validation"]
+    metadata:
+      va_rules: [API-010]
+      confidence: MEDIUM
+    pattern: 'new ApolloServer({..., introspection: true, ...})'
+
+  - id: va-secret-in-query-string
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A credential is placed in a URL query string, where it lands in server
+      logs, browser history and Referer headers. Send it in a header.
+      [VA API-012, rules/api.md "Authentication and Authorization"]
+    metadata:
+      va_rules: [API-012]
+      confidence: MEDIUM
+    pattern-either:
+      - pattern-regex: '[`"''][^`"''\n]*[?&](api[_-]?key|apikey|access_token|auth_token|token|secret|client_secret|password)=\$\{'
+      - pattern-regex: '[`"''][^`"''\n]*[?&](api[_-]?key|apikey|access_token|auth_token|client_secret|password)=[`"'']\s*\+'

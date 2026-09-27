@@ -1,0 +1,51 @@
+rules:
+  - id: va-img-missing-alt
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      <img> without an alt attribute. Describe what the image conveys, or use
+      alt="" for decorative images. [VA A11Y-010/A11Y-011]
+    metadata:
+      va_rules: [A11Y-010, A11Y-011, A11Y-046]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: <img ... />
+          - pattern: <img ...>...</img>
+      - pattern-not: <img ... alt=$A ... />
+      - pattern-not: <img ... alt=$A ...>...</img>
+      - pattern-not: <img ... {...$P} ... />
+
+  - id: va-click-handler-on-non-interactive
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      onClick on a <div>/<span> without a role and keyboard handler is
+      unreachable by keyboard and invisible to screen readers. Use <button>
+      (or <a href> for navigation). [VA A11Y-006/A11Y-014/A11Y-052]
+    metadata:
+      va_rules: [A11Y-006, A11Y-014, A11Y-047, A11Y-052]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: <div ... onClick=$H ...>...</div>
+          - pattern: <span ... onClick=$H ...>...</span>
+          - pattern: <div ... onClick=$H ... />
+          - pattern: <span ... onClick=$H ... />
+      - pattern-not: <$T ... role=$R ... onKeyDown=$K ...>...</$T>
+      - pattern-not: <$T ... onKeyDown=$K ... role=$R ...>...</$T>
+      - pattern-not: <$T ... role=$R ... onKeyUp=$K ...>...</$T>
+      - pattern-not: <$T ... onKeyUp=$K ... role=$R ...>...</$T>
+
+  - id: va-zoom-disabled
+    languages: [generic]
+    paths:
+      include: ["*.html", "*.htm", "*.jsx", "*.tsx", "*.js", "*.ts", "*.vue", "*.svelte", "*.astro"]
+    severity: ERROR
+    message: >-
+      The viewport disables pinch-to-zoom. Remove user-scalable=no and
+      maximum-scale=1. [VA A11Y-035, rules/accessibility.md]
+    metadata:
+      va_rules: [A11Y-035]
+      confidence: HIGH
+    pattern-regex: (?i)(user-scalable\s*=\s*(no|0)|maximum-scale\s*=\s*1(\.0)?\b)

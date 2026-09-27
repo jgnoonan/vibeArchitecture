@@ -1,0 +1,15 @@
+rules:
+  - id: va-ios-arbitrary-loads
+    languages: [generic]
+    paths:
+      include: ["*.plist"]
+    severity: ERROR
+    message: >-
+      NSAllowsArbitraryLoads disables App Transport Security for every host.
+      Keep ATS on; add a narrow NSExceptionDomains entry only if a specific
+      host truly cannot do TLS. [VA MOB-005/MOB-016, rules/mobile.md]
+    metadata:
+      va_rules: [MOB-005, MOB-016]
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      confidence: HIGH
+    pattern-regex: <key>NSAllowsArbitraryLoads(InWebContent|ForMedia)?</key>\s*<true\s*/>

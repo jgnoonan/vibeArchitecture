@@ -1,0 +1,32 @@
+rules:
+  - id: va-android-cleartext-traffic
+    languages: [generic]
+    paths:
+      include: ["*.xml"]
+    severity: ERROR
+    message: >-
+      Cleartext (HTTP) traffic is allowed. Use HTTPS for every call, including
+      development (local TLS proxy or staging certs). [VA MOB-005/MOB-016,
+      rules/mobile.md "Network Security"]
+    metadata:
+      va_rules: [MOB-005, MOB-016]
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      confidence: HIGH
+    pattern-either:
+      - pattern-regex: android:usesCleartextTraffic\s*=\s*"true"
+      - pattern-regex: cleartextTrafficPermitted\s*=\s*"true"
+
+  - id: va-android-debuggable-release
+    languages: [generic]
+    paths:
+      include: ["*.xml"]
+    severity: ERROR
+    message: >-
+      android:debuggable="true" in a manifest ships a debuggable app. Let the
+      build type control it and never hard-code it. [VA UNI-039,
+      rules/universal.md "Error Handling"]
+    metadata:
+      va_rules: [UNI-039]
+      cwe: "CWE-489: Active Debug Code"
+      confidence: HIGH
+    pattern-regex: android:debuggable\s*=\s*"true"

@@ -1,0 +1,14 @@
+rules:
+  - id: va-money-as-float-prisma
+    languages: [generic]
+    paths:
+      include: ["*.prisma"]
+    severity: ERROR
+    message: >-
+      A money-like field is a Float. Use Decimal (with @db.Decimal(p,s)) or an
+      Int count of minor units plus a currency field. [VA DATA-012,
+      rules/data.md "Schema Design"]
+    metadata:
+      va_rules: [DATA-012]
+      confidence: MEDIUM
+    pattern-regex: (?im)^\s*\w*(price|amount|balance|total|cost|fee|subtotal|salary|payout|refund)\w*\s+Float\b

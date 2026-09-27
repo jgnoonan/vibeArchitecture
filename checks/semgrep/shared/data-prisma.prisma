@@ -1,0 +1,10 @@
+// Fixtures for data.yaml (Prisma schema).
+model Order {
+  id        String  @id
+  // ruleid: va-money-as-float-prisma
+  amount    Float
+  // ok: va-money-as-float-prisma
+  amountMinor Int
+  // ok: va-money-as-float-prisma
+  rating    Float
+}

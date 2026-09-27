@@ -1,0 +1,79 @@
+rules:
+  - id: va-debug-mode-enabled-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Debug mode is switched on in code. Flask/Werkzeug debug mode exposes an
+      interactive console (remote code execution) and Django DEBUG leaks
+      settings and stack traces. Drive it from an environment variable that
+      defaults to off. [VA UNI-010/UNI-039, rules/universal.md "Error Handling"]
+    metadata:
+      va_rules: [UNI-010, UNI-039]
+      cwe: "CWE-489: Active Debug Code"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: uvicorn.run(..., debug=True, ...)
+      - pattern: $APP.debug = True
+      - pattern: $APP.config["DEBUG"] = True
+      - pattern: FastAPI(..., debug=True, ...)
+      - patterns:
+          - pattern: DEBUG = True
+          - pattern-inside: |
+              ALLOWED_HOSTS = ...
+              ...
+
+  - id: va-error-details-in-response-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A raw error (or its stack) is sent to the client. Log the details
+      server-side with a request ID and return a generic message.
+      [VA UNI-010/API-029, rules/universal.md "Error Handling"]
+    metadata:
+      va_rules: [UNI-010, API-029]
+      cwe: "CWE-209: Information Exposure Through an Error Message"
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: $RES.$SEND(<... $E.stack ...>)
+      - patterns:
+          - pattern-inside: |
+              try { ... } catch ($E) { ... }
+          - pattern-either:
+              - pattern: $RES.send($E)
+              - pattern: $RES.json($E)
+              - pattern: $RES.status($C).send($E)
+              - pattern: $RES.status($C).json($E)
+              - pattern: '$RES.status($C).json({..., error: $E, ...})'
+              - pattern: '$RES.json({..., error: $E, ...})'
+      - patterns:
+          - pattern-inside: |
+              function ($ERR, $REQ, $RES, $NEXT) { ... }
+          - pattern-either:
+              - pattern: $RES.send($ERR)
+              - pattern: $RES.status($C).send($ERR)
+              - pattern: $RES.status($C).json($ERR)
+      - patterns:
+          - pattern-inside: |
+              ($ERR, $REQ, $RES, $NEXT) => { ... }
+          - pattern-either:
+              - pattern: $RES.send($ERR)
+              - pattern: $RES.status($C).send($ERR)
+              - pattern: $RES.status($C).json($ERR)
+
+  - id: va-error-details-in-response-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A traceback is returned to the client. Log it server-side with a request
+      ID and return a generic message. [VA UNI-010/API-029,
+      rules/universal.md "Error Handling"]
+    metadata:
+      va_rules: [UNI-010, API-029]
+      cwe: "CWE-209: Information Exposure Through an Error Message"
+      confidence: HIGH
+    pattern-either:
+      - pattern: return <... traceback.format_exc() ...>
+      - pattern: 'return {..., $K: traceback.format_exc(), ...}'
+      - pattern: jsonify(..., traceback=$X, ...)
+      - pattern: HTTPException(..., detail=traceback.format_exc(), ...)

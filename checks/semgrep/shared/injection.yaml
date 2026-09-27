@@ -1,0 +1,553 @@
+rules:
+  # ---------------------------------------------------------------------------
+  # SEC-004 SQL injection: queries built by string interpolation/concatenation
+  # ---------------------------------------------------------------------------
+  - id: va-sql-string-building-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      SQL built by string interpolation or concatenation. Pass values as
+      parameters (placeholders, a tagged `sql` template, or your ORM's query
+      builder). [VA SEC-004, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-004]
+      cwe: "CWE-89: SQL Injection"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $OBJ.$METHOD(`...${$X}...`, ...)
+          - pattern: $OBJ.$METHOD("..." + $X, ...)
+          - pattern: $OBJ.$METHOD($X + "...", ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(query|execute|raw|prepare|\$queryRawUnsafe|\$executeRawUnsafe|unsafe)$
+
+  - id: va-sql-string-building-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      SQL built by f-string, %-formatting, .format() or concatenation. Pass
+      values as query parameters or use your ORM. [VA SEC-004,
+      rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-004]
+      cwe: "CWE-89: SQL Injection"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $OBJ.$METHOD(f"...", ...)
+          - pattern: $OBJ.$METHOD("..." % $X, ...)
+          - pattern: $OBJ.$METHOD("...".format(...), ...)
+          - pattern: $OBJ.$METHOD("..." + $X, ...)
+          - pattern: text(f"...", ...)
+          - pattern: text("..." % $X, ...)
+          - pattern: text("...".format(...), ...)
+          - pattern: text("..." + $X, ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(execute|executemany|executescript|raw|extra|read_sql|read_sql_query|text|mogrify)$
+
+  # ---------------------------------------------------------------------------
+  # SEC-005 XSS: raw HTML sinks fed with non-literal content
+  # ---------------------------------------------------------------------------
+  - id: va-raw-html-sink-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Non-literal content written to a raw HTML sink. Render text through the
+      framework (JSX text, textContent) or sanitize with DOMPurify first.
+      [VA SEC-005, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-005]
+      cwe: "CWE-79: Cross-site Scripting"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: '<$EL dangerouslySetInnerHTML={{__html: $X}} />'
+          - pattern: '<$EL dangerouslySetInnerHTML={{__html: $X}}>...</$EL>'
+          - pattern: $E.innerHTML = $X
+          - pattern: $E.outerHTML = $X
+          - pattern: $E.insertAdjacentHTML($P, $X)
+          - pattern: document.write($X)
+          - pattern: document.writeln($X)
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: "..."}} />'
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: "..."}}>...</$EL>'
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(...)}} />'
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(...)}}>...</$EL>'
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: sanitize(...)}} />'
+      - pattern-not: $E.innerHTML = "..."
+      - pattern-not: $E.innerHTML = DOMPurify.sanitize(...)
+      - pattern-not: $E.outerHTML = "..."
+      - pattern-not: $E.insertAdjacentHTML($P, "...")
+      - pattern-not: document.write("...")
+
+  - id: va-raw-html-sink-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Non-literal content marked safe or rendered as a template string. Let the
+      template engine escape it, or sanitize with bleach/nh3 first.
+      [VA SEC-005, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-005]
+      cwe: "CWE-79: Cross-site Scripting"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: Markup($X)
+          - pattern: markupsafe.Markup($X)
+          - pattern: mark_safe($X)
+          - pattern: django.utils.safestring.mark_safe($X)
+          - pattern: render_template_string($X, ...)
+          - pattern: flask.render_template_string($X, ...)
+      - pattern-not: Markup("...")
+      - pattern-not: markupsafe.Markup("...")
+      - pattern-not: mark_safe("...")
+      - pattern-not: render_template_string("...", ...)
+
+  # ---------------------------------------------------------------------------
+  # SEC-006 command injection and dynamic code execution
+  # ---------------------------------------------------------------------------
+  - id: va-shell-command-building-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Shell command built from a non-literal string. Use execFile/spawn with an
+      argument array and no shell. [VA SEC-006, rules/security.md
+      "Input Validation"]
+    metadata:
+      va_rules: [SEC-006]
+      cwe: "CWE-78: OS Command Injection"
+      confidence: MEDIUM
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $F(`...${$X}...`, ...)
+              - patterns:
+                  - pattern: $F($X, ...)
+                  - pattern-not: $F("...", ...)
+                  - pattern-not: $F(`...`, ...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^((child_process|cp|childProcess)\.)?(exec|execSync)$
+      - patterns:
+          - pattern: '$SPAWN($CMD, $ARGS, {..., shell: true, ...})'
+          - metavariable-regex:
+              metavariable: $SPAWN
+              regex: ^((child_process|cp|childProcess)\.)?(spawn|spawnSync|execFile|execFileSync)$
+
+  - id: va-shell-command-building-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Shell command built from a non-literal string. Pass an argument list to
+      subprocess.run() without shell=True. [VA SEC-006, rules/security.md
+      "Input Validation"]
+    metadata:
+      va_rules: [SEC-006]
+      cwe: "CWE-78: OS Command Injection"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: os.system($X)
+          - pattern: os.popen($X, ...)
+          - pattern: subprocess.$F($X, ..., shell=True, ...)
+          - pattern: commands.getoutput($X)
+      - pattern-not: os.system("...")
+      - pattern-not: os.popen("...", ...)
+      - pattern-not: subprocess.$F("...", ..., shell=True, ...)
+      - pattern-not: subprocess.$F([...], ..., shell=True, ...)
+
+  - id: va-dynamic-code-execution-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Dynamic code execution on a non-literal value. Parse data with
+      JSON.parse and dispatch through an explicit allowlist instead.
+      [VA SEC-006, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-006, MAI-027]
+      cwe: "CWE-95: Eval Injection"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(..., $X)
+          - pattern: Function(..., $X)
+          - pattern: setTimeout($X, ...)
+          - pattern: setInterval($X, ...)
+          - pattern: vm.runInThisContext($X, ...)
+          - pattern: vm.runInNewContext($X, ...)
+      - pattern-not: eval("...")
+      - pattern-not: new Function(..., "...")
+      - pattern-not: Function(..., "...")
+      - pattern-not: setTimeout(function(...) {...}, ...)
+      - pattern-not: setTimeout((...) => $B, ...)
+      - pattern-not: setInterval(function(...) {...}, ...)
+      - pattern-not: setInterval((...) => $B, ...)
+      - pattern-not: setTimeout($FN, ...)
+      - pattern-not: setInterval($FN, ...)
+    # setTimeout/setInterval with an identifier is almost always a function
+    # reference; only string arguments are dangerous and those are caught by
+    # the string-concatenation variants below.
+
+  - id: va-dynamic-code-execution-string
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      setTimeout/setInterval given a built string evaluates it as code. Pass a
+      function instead. [VA SEC-006, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-006]
+      cwe: "CWE-95: Eval Injection"
+      confidence: HIGH
+    pattern-either:
+      - pattern: setTimeout(`...${$X}...`, ...)
+      - pattern: setTimeout("..." + $X, ...)
+      - pattern: setTimeout($X + "...", ...)
+      - pattern: setInterval(`...${$X}...`, ...)
+      - pattern: setInterval("..." + $X, ...)
+      - pattern: setInterval($X + "...", ...)
+
+  - id: va-dynamic-code-execution-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      eval()/exec() on a non-literal value runs arbitrary code. Use
+      ast.literal_eval or json.loads for data, and an explicit dispatch table
+      for behaviour. [VA SEC-006, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-006, MAI-027]
+      cwe: "CWE-95: Eval Injection"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: eval($X, ...)
+          - pattern: exec($X, ...)
+      - pattern-not: eval("...", ...)
+      - pattern-not: exec("...", ...)
+
+  # ---------------------------------------------------------------------------
+  # SEC-006 / SEC-091 path traversal (taint: request input -> filesystem)
+  # ---------------------------------------------------------------------------
+  - id: va-path-from-request-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A filesystem path is built from request input. Map the input to a known
+      file (lookup table or generated ID), or resolve it and verify it stays
+      inside the intended directory. [VA SEC-006/SEC-091, rules/security.md]
+    metadata:
+      va_rules: [SEC-006, SEC-091]
+      cwe: "CWE-22: Path Traversal"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.params
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          - pattern: $REQ.headers
+          - pattern: $REQ.cookies
+    pattern-sanitizers:
+      - pattern: path.basename(...)
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|sanitiz|basename).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fs.$M($P, ...)
+              - pattern: fsp.$M($P, ...)
+              - pattern: fs.promises.$M($P, ...)
+              - pattern: $RES.sendFile($P, ...)
+              - pattern: $RES.download($P, ...)
+              - pattern: readFile($P, ...)
+              - pattern: readFileSync($P, ...)
+              - pattern: createReadStream($P, ...)
+              - pattern: writeFile($P, ...)
+              - pattern: unlink($P, ...)
+          - focus-metavariable: $P
+
+  - id: va-path-from-request-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A filesystem path is built from request input. Use
+      werkzeug.utils.secure_filename / a generated name, or resolve the path and
+      verify it stays inside the intended directory. [VA SEC-006/SEC-091,
+      rules/security.md]
+    metadata:
+      va_rules: [SEC-006, SEC-091]
+      cwe: "CWE-22: Path Traversal"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.files
+          - pattern: request.json
+          - pattern: request.get_json(...)
+          - pattern: request.GET
+          - pattern: request.POST
+          - pattern: request.query_params
+          - pattern: request.path_params
+    pattern-sanitizers:
+      - pattern: secure_filename(...)
+      - pattern: os.path.basename(...)
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|sanitiz).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: open($P, ...)
+              - pattern: send_file($P, ...)
+              - pattern: flask.send_file($P, ...)
+              - pattern: FileResponse($P, ...)
+              - pattern: os.remove($P)
+              - pattern: os.unlink($P)
+              - pattern: shutil.rmtree($P, ...)
+              - pattern: pathlib.Path($P, ...)
+              - pattern: Path($P, ...)
+          - focus-metavariable: $P
+
+  # ---------------------------------------------------------------------------
+  # SEC-017 SSRF (taint: request input -> outbound HTTP)
+  # ---------------------------------------------------------------------------
+  - id: va-ssrf-request-url-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      An outbound request URL comes from request input. Validate scheme and
+      host against an allowlist, resolve and reject private ranges, and connect
+      to the validated IP. [VA SEC-017..SEC-022, rules/security.md "SSRF"]
+    metadata:
+      va_rules: [SEC-017]
+      cwe: "CWE-918: Server-Side Request Forgery"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.params
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          - pattern: $REQ.headers
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|assert).*url.*|(?i).*url.*(safe|allow|valid).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($U, ...)
+              - pattern: axios($U, ...)
+              - pattern: axios.$M($U, ...)
+              - pattern: got($U, ...)
+              - pattern: got.$M($U, ...)
+              - pattern: http.get($U, ...)
+              - pattern: https.get($U, ...)
+              - pattern: http.request($U, ...)
+              - pattern: https.request($U, ...)
+              - pattern: ky($U, ...)
+              - pattern: ky.$M($U, ...)
+          - focus-metavariable: $U
+
+  - id: va-ssrf-request-url-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      An outbound request URL comes from request input. Validate scheme and
+      host against an allowlist, resolve and reject private ranges, and connect
+      to the validated IP. [VA SEC-017..SEC-022, rules/security.md "SSRF"]
+    metadata:
+      va_rules: [SEC-017]
+      cwe: "CWE-918: Server-Side Request Forgery"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.json
+          - pattern: request.get_json(...)
+          - pattern: request.GET
+          - pattern: request.POST
+          - pattern: request.query_params
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|assert).*url.*|(?i).*url.*(safe|allow|valid).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: requests.$M($U, ...)
+              - pattern: httpx.$M($U, ...)
+              - pattern: urllib.request.urlopen($U, ...)
+              - pattern: urlopen($U, ...)
+              - pattern: $SESSION.get($U, ...)
+              - pattern: $SESSION.post($U, ...)
+          - focus-metavariable: $U
+
+  # ---------------------------------------------------------------------------
+  # SEC-011 open redirect
+  # ---------------------------------------------------------------------------
+  - id: va-open-redirect-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Redirect target comes from request input. Only redirect to relative paths
+      you validate or hosts on an allowlist. [VA SEC-011, rules/security.md
+      "Input Validation"]
+    metadata:
+      va_rules: [SEC-011]
+      cwe: "CWE-601: Open Redirect"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.params
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          - pattern: $REQ.headers
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|relative).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($U)
+              - pattern: $RES.redirect($STATUS, $U)
+              - pattern: redirect($U, ...)
+          - focus-metavariable: $U
+
+  - id: va-open-redirect-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Redirect target comes from request input. Validate it with
+      url_has_allowed_host_and_scheme (Django) or an allowlist first.
+      [VA SEC-011, rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-011]
+      cwe: "CWE-601: Open Redirect"
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.GET
+          - pattern: request.POST
+          - pattern: request.query_params
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(safe|allow|valid|relative).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: redirect($U, ...)
+              - pattern: flask.redirect($U, ...)
+              - pattern: HttpResponseRedirect($U)
+              - pattern: RedirectResponse($U, ...)
+          - focus-metavariable: $U
+
+  # ---------------------------------------------------------------------------
+  # SEC-009 / SEC-010 mass assignment
+  # ---------------------------------------------------------------------------
+  - id: va-mass-assignment-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      The request body is bound directly to a model. Pick the settable fields
+      explicitly (or validate with a schema that strips unknown keys) so
+      role/owner/balance can't be set by the client. [VA SEC-009/SEC-010,
+      rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-009, SEC-010]
+      cwe: "CWE-915: Mass Assignment"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $M.create($REQ.body, ...)
+      - pattern: $M.create({..., ...$REQ.body, ...}, ...)
+      - pattern: $M.build($REQ.body, ...)
+      - pattern: new $M($REQ.body)
+      - pattern: $M.update($REQ.body, ...)
+      - pattern: $M.findByIdAndUpdate($ID, $REQ.body, ...)
+      - pattern: $M.findOneAndUpdate($Q, $REQ.body, ...)
+      - pattern: $M.updateOne($Q, $REQ.body, ...)
+      - pattern: $M.updateMany($Q, $REQ.body, ...)
+      - pattern: Object.assign($OBJ, $REQ.body)
+      - pattern: '$P.$M.create({..., data: $REQ.body, ...})'
+      - pattern: '$P.$M.update({..., data: $REQ.body, ...})'
+      - pattern: '$P.$M.upsert({..., create: $REQ.body, ...})'
+      - pattern: '$P.$M.create({..., data: {..., ...$REQ.body, ...}, ...})'
+      - pattern: '$P.$M.update({..., data: {..., ...$REQ.body, ...}, ...})'
+
+  - id: va-mass-assignment-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data is unpacked straight into a model. Validate with a schema
+      that allowlists fields (pydantic model, DRF serializer with explicit
+      fields, Django form) before saving. [VA SEC-009/SEC-010,
+      rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-009, SEC-010]
+      cwe: "CWE-915: Mass Assignment"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $M(**request.json)
+      - pattern: $M(**request.get_json(...))
+      - pattern: $M(**request.form)
+      - pattern: $M(**request.data)
+      - pattern: $M(**request.POST)
+      - pattern: $M(**request.POST.dict())
+      - pattern: $M.objects.create(**request.data)
+      - pattern: $M.objects.create(**request.POST)
+      - pattern: $M.objects.create(**request.POST.dict())
+      - pattern: $Q.update(**request.data)
+      - pattern: $Q.update(**request.POST)
+      - pattern: $Q.update(**request.json)
+      - pattern: $Q.update(**request.get_json(...))
+      - pattern: $M.objects.create(**$BODY.dict())
+      - pattern: $M.objects.create(**$BODY.model_dump())
+
+  - id: va-mass-assignment-setattr
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Every key from request data is copied onto an object with setattr. Copy
+      an explicit allowlist of fields instead. [VA SEC-009/SEC-010,
+      rules/security.md "Input Validation"]
+    metadata:
+      va_rules: [SEC-009, SEC-010]
+      cwe: "CWE-915: Mass Assignment"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: |
+              for $K, $V in $DATA.items():
+                  ...
+                  setattr($OBJ, $K, $V)
+      - metavariable-regex:
+          metavariable: $DATA
+          regex: ^(request\.(json|form|data|POST|get_json\(\))|data|payload|body)$

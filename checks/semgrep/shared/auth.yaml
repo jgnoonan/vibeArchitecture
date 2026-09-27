@@ -1,0 +1,450 @@
+rules:
+  # ---------------------------------------------------------------------------
+  # SEC-032 / SEC-043 JWT validation
+  # ---------------------------------------------------------------------------
+  - id: va-jwt-verify-without-algorithms-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      jsonwebtoken.verify() without an `algorithms` allowlist lets the token
+      choose its own algorithm. Pin it, e.g. { algorithms: ["RS256"] }, and
+      check iss/aud. [VA SEC-032/SEC-043, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-032, SEC-043]
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import $JWT from "jsonwebtoken";
+              ...
+          - pattern-inside: |
+              import * as $JWT from "jsonwebtoken";
+              ...
+          - pattern-inside: |
+              const $JWT = require("jsonwebtoken");
+              ...
+      - pattern-either:
+          - pattern: $JWT.verify($TOKEN, $KEY)
+          - pattern: $JWT.verify($TOKEN, $KEY, function (...) {...})
+          - pattern: $JWT.verify($TOKEN, $KEY, (...) => $BODY)
+          - patterns:
+              - pattern: $JWT.verify($TOKEN, $KEY, $OPTS, ...)
+              - pattern-not: '$JWT.verify($TOKEN, $KEY, {..., algorithms: $A, ...}, ...)'
+              - pattern-not: $JWT.verify($TOKEN, $KEY, function (...) {...})
+              - pattern-not: $JWT.verify($TOKEN, $KEY, (...) => $BODY)
+
+  - id: va-jwt-decode-is-not-verify-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      jsonwebtoken.decode() does not check the signature. Never use its result
+      for an authorization decision; call verify() with pinned algorithms.
+      [VA SEC-043, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-043]
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import $JWT from "jsonwebtoken";
+              ...
+          - pattern-inside: |
+              const $JWT = require("jsonwebtoken");
+              ...
+      - pattern: $JWT.decode(...)
+
+  - id: va-jwt-none-algorithm-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      The "none" JWT algorithm accepts unsigned tokens. Remove it.
+      [VA SEC-032, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-032]
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: HIGH
+    pattern-either:
+      - pattern: '{..., algorithms: [..., "none", ...], ...}'
+      - pattern: '{..., algorithm: "none", ...}'
+
+  - id: va-jwt-unverified-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      JWT decoded with signature verification disabled or with the "none"
+      algorithm allowed. Verify the signature and pin `algorithms=[...]`.
+      [VA SEC-032/SEC-043, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-032, SEC-043]
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: HIGH
+    pattern-either:
+      - pattern: 'jwt.decode(..., options={..., "verify_signature": False, ...}, ...)'
+      - pattern: jwt.decode(..., verify=False, ...)
+      - pattern: jwt.decode(..., algorithms=[..., "none", ...], ...)
+      - pattern: jwt.encode(..., algorithm="none", ...)
+
+  # ---------------------------------------------------------------------------
+  # SEC-033 / MOB-024 tokens in web or unencrypted device storage
+  # ---------------------------------------------------------------------------
+  - id: va-token-in-web-storage
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      An auth token is written to localStorage/sessionStorage/AsyncStorage,
+      where any script (or any app with device access) can read it. Use an
+      httpOnly cookie on the web and Keychain/Keystore (expo-secure-store,
+      react-native-keychain) on mobile. [VA SEC-033, MOB-024]
+    metadata:
+      va_rules: [SEC-033, MOB-001, MOB-024]
+      cwe: "CWE-922: Insecure Storage of Sensitive Information"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $STORE.setItem($KEY, $VAL)
+          - pattern: $STORE[$KEY] = $VAL
+          - pattern: $STORE.$KEY = $VAL
+      - metavariable-regex:
+          metavariable: $STORE
+          regex: ^(window\.)?(localStorage|sessionStorage|AsyncStorage)$
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(token|jwt|session|bearer|auth|refresh|credential).*
+
+  # ---------------------------------------------------------------------------
+  # SEC-040 constant-time comparison of secrets
+  # ---------------------------------------------------------------------------
+  - id: va-timing-unsafe-compare-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A secret (signature, HMAC, token, API key, OTP) is compared with ==/===,
+      which leaks how many leading characters match. Use
+      crypto.timingSafeEqual on equal-length Buffers. [VA SEC-040,
+      rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-040, API-022]
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $A === $B
+                  - pattern: $A == $B
+                  - pattern: $A !== $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: (?i)^[\w$.\[\]"']*(signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["'\]]?$
+          - patterns:
+              - pattern-either:
+                  - pattern: $A === $B
+                  - pattern: $A == $B
+                  - pattern: $A !== $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (?i)^[\w$.\[\]"']*(signature|sig|hmac|digest|token|apikey|api_key|secret|otp|mac)["'\]]?$
+      - pattern-not: $A === undefined
+      - pattern-not: $A === null
+      - pattern-not: $A == null
+      - pattern-not: $A !== undefined
+      - pattern-not: $A !== null
+      - pattern-not: $A != null
+      - pattern-not: $A === "..."
+      - pattern-not: $A !== "..."
+      - pattern-not: $A === true
+      - pattern-not: $A === false
+      - pattern-not: undefined === $B
+      - pattern-not: null === $B
+      - pattern-not: '"..." === $B'
+      - pattern-not: typeof $X === $B
+      - pattern-not: $A === typeof $X
+      - pattern-not: $A.length === $B
+      - pattern-not: $A === $B.length
+
+  - id: va-timing-unsafe-compare-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A secret (signature, HMAC, token, API key, OTP) is compared with ==,
+      which leaks how many leading characters match. Use
+      hmac.compare_digest(). [VA SEC-040, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-040, API-022]
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $A == $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $A
+                  regex: (?i)^[\w.\[\]"']*(signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["'\]]?$
+          - patterns:
+              - pattern-either:
+                  - pattern: $A == $B
+                  - pattern: $A != $B
+              - metavariable-regex:
+                  metavariable: $B
+                  regex: (?i)^[\w.\[\]"']*(signature|sig|hmac|digest|hexdigest\(\)|token|api_key|apikey|secret|otp|mac)["'\]]?$
+      - pattern-not: $A == None
+      - pattern-not: $A != None
+      - pattern-not: $A == "..."
+      - pattern-not: $A != "..."
+      - pattern-not: '"..." == $B'
+      - pattern-not: $A == True
+      - pattern-not: $A == False
+      - pattern-not: len($A) == $B
+      - pattern-not: $A == len($B)
+
+  # ---------------------------------------------------------------------------
+  # SEC-026 password hashing
+  # ---------------------------------------------------------------------------
+  - id: va-password-fast-hash-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A password is hashed with a fast general-purpose hash. Use argon2id
+      (argon2 package), scrypt, or bcrypt. [VA SEC-026, rules/security.md
+      "Authentication"]
+    metadata:
+      va_rules: [SEC-026]
+      cwe: "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: $C.createHash(...).update(<... $P ...>, ...)
+          - pattern: createHash(...).update(<... $P ...>, ...)
+          - pattern: $C.createHmac(...).update(<... $P ...>, ...)
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?i)^([\w$]+\.)*(password|passwd|pwd|pass|newPassword|new_password|plainPassword)$
+
+  - id: va-password-fast-hash-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A password is hashed with a fast general-purpose hash. Use argon2id
+      (argon2-cffi), scrypt, or bcrypt (or your framework's password hasher).
+      [VA SEC-026, rules/security.md "Authentication"]
+    metadata:
+      va_rules: [SEC-026]
+      cwe: "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.$H(<... $P ...>, ...)
+          - pattern: hashlib.new($ALG, <... $P ...>, ...)
+          - pattern: $HASHER.update(<... $P ...>)
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?i)^([\w]+\.)*(password|passwd|pwd|new_password|raw_password|plain_password)$
+      - metavariable-regex:
+          metavariable: $H
+          regex: ^(md5|sha1|sha224|sha256|sha384|sha512|sha3_256|sha3_512|blake2b|blake2s)$
+
+  # ---------------------------------------------------------------------------
+  # SEC-030 / SEC-038 insecure randomness for security values
+  # ---------------------------------------------------------------------------
+  - id: va-insecure-random-secret-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Math.random() is predictable and must not produce tokens, session IDs,
+      codes or salts. Use crypto.randomBytes / crypto.randomUUID /
+      crypto.getRandomValues. [VA SEC-030/SEC-038, rules/security.md]
+    metadata:
+      va_rules: [SEC-030, SEC-038]
+      cwe: "CWE-338: Use of Cryptographically Weak PRNG"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: const $V = <... Math.random() ...>;
+          - pattern: let $V = <... Math.random() ...>;
+          - pattern: var $V = <... Math.random() ...>;
+          - pattern: $V = <... Math.random() ...>
+          - pattern: '{..., $V: <... Math.random() ...>, ...}'
+          - patterns:
+              - pattern-inside: function $V(...) {...}
+              - pattern: return <... Math.random() ...>;
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i).*(token|secret|nonce|otp|salt|password|passwd|session|apikey|api_key|reset|verification|verify|csrf|invite).*
+
+  - id: va-insecure-random-secret-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      The random module is predictable and must not produce tokens, session
+      IDs, codes or salts. Use the secrets module (secrets.token_urlsafe,
+      secrets.randbelow). [VA SEC-030/SEC-038, rules/security.md]
+    metadata:
+      va_rules: [SEC-030, SEC-038]
+      cwe: "CWE-338: Use of Cryptographically Weak PRNG"
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: $V = <... random.$F(...) ...>
+          - patterns:
+              - pattern-inside: |
+                  def $V(...):
+                      ...
+              - pattern: return <... random.$F(...) ...>
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(random|randint|randrange|choice|choices|sample|getrandbits|uniform|shuffle)$
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i).*(token|secret|nonce|otp|salt|password|passwd|session|api_key|apikey|reset|verification|verify|csrf|invite).*
+
+  # ---------------------------------------------------------------------------
+  # SEC-056 session cookie flags
+  # ---------------------------------------------------------------------------
+  - id: va-cookie-flags-disabled-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A cookie is set with HttpOnly or Secure explicitly turned off. Session
+      cookies need HttpOnly, Secure and SameSite=Lax|Strict. [VA SEC-056,
+      rules/security.md "CSRF"]
+    metadata:
+      va_rules: [SEC-056]
+      cwe: "CWE-1004: Sensitive Cookie Without HttpOnly Flag"
+      confidence: HIGH
+    pattern-either:
+      - pattern: '$RES.cookie($N, $V, {..., httpOnly: false, ...})'
+      - pattern: '$RES.cookie($N, $V, {..., secure: false, ...})'
+      - pattern: 'session({..., cookie: {..., httpOnly: false, ...}, ...})'
+      - pattern: 'session({..., cookie: {..., secure: false, ...}, ...})'
+      - pattern: '$COOKIES.set($N, $V, {..., httpOnly: false, ...})'
+      - pattern: '$COOKIES.set($N, $V, {..., secure: false, ...})'
+
+  - id: va-cookie-flags-disabled-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A cookie or session setting turns off HttpOnly or Secure (or sets
+      SameSite=None). Session cookies need HttpOnly, Secure and
+      SameSite=Lax|Strict. [VA SEC-056, rules/security.md "CSRF"]
+    metadata:
+      va_rules: [SEC-056]
+      cwe: "CWE-1004: Sensitive Cookie Without HttpOnly Flag"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $R.set_cookie(..., httponly=False, ...)
+      - pattern: $R.set_cookie(..., secure=False, ...)
+      - pattern: SESSION_COOKIE_HTTPONLY = False
+      - pattern: SESSION_COOKIE_SECURE = False
+      - pattern: CSRF_COOKIE_SECURE = False
+      - pattern: SESSION_COOKIE_SAMESITE = None
+      - pattern: $APP.config["SESSION_COOKIE_HTTPONLY"] = False
+      - pattern: $APP.config["SESSION_COOKIE_SECURE"] = False
+
+  # ---------------------------------------------------------------------------
+  # SEC-055 / SEC-057 CSRF protection switched off
+  # ---------------------------------------------------------------------------
+  - id: va-csrf-disabled-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      CSRF protection is disabled for this view or app. Cookie-authenticated
+      state-changing requests need it. If this is a signature-verified webhook,
+      suppress with `# nosemgrep: va-csrf-disabled-py` and say why.
+      [VA SEC-055/SEC-057, rules/security.md "CSRF"]
+    metadata:
+      va_rules: [SEC-055, SEC-057]
+      cwe: "CWE-352: Cross-Site Request Forgery"
+      confidence: HIGH
+    pattern-either:
+      - pattern: |
+          @csrf_exempt
+          def $F(...):
+              ...
+      - pattern: |
+          @$CSRF.exempt
+          def $F(...):
+              ...
+      - pattern: WTF_CSRF_ENABLED = False
+      - pattern: $APP.config["WTF_CSRF_ENABLED"] = False
+
+  - id: va-csrf-disabled-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      CSRF protection is switched off. Cookie-authenticated state-changing
+      requests need it. [VA SEC-055/SEC-057, rules/security.md "CSRF"]
+    metadata:
+      va_rules: [SEC-055, SEC-057]
+      cwe: "CWE-352: Cross-Site Request Forgery"
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: '{..., csrf: false, ...}'
+      - pattern: '{..., csrfProtection: false, ...}'
+
+  # ---------------------------------------------------------------------------
+  # SEC-067 / API-036 CORS: reflected or wildcard origin with credentials
+  # ---------------------------------------------------------------------------
+  - id: va-cors-reflect-origin-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      CORS reflects any request Origin (or allows every origin) with
+      credentials, so any website can make authenticated requests and read the
+      responses. Use a fixed origin allowlist. [VA SEC-067/API-036]
+    metadata:
+      va_rules: [SEC-067, API-036]
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      confidence: HIGH
+    pattern-either:
+      - pattern: 'cors({..., origin: true, ..., credentials: true, ...})'
+      - pattern: 'cors({..., credentials: true, ..., origin: true, ...})'
+      - pattern: 'cors({..., origin: "*", ..., credentials: true, ...})'
+      - pattern: 'cors({..., credentials: true, ..., origin: "*", ...})'
+      - pattern: '{..., origin: ($O, $CB) => $CB(null, true), ..., credentials: true, ...}'
+      - pattern: '{..., credentials: true, ..., origin: ($O, $CB) => $CB(null, true), ...}'
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.setHeader("Access-Control-Allow-Origin", $ORIGIN)
+              - pattern: $RES.header("Access-Control-Allow-Origin", $ORIGIN)
+              - pattern: $RES.set("Access-Control-Allow-Origin", $ORIGIN)
+              - pattern: $RES.headers.set("Access-Control-Allow-Origin", $ORIGIN)
+          - metavariable-pattern:
+              metavariable: $ORIGIN
+              pattern-either:
+                - pattern: $REQ.headers.origin
+                - pattern: $REQ.headers["origin"]
+                - pattern: $REQ.get("origin")
+                - pattern: $REQ.header("origin")
+                - pattern: $REQ.headers.get("origin")
+          - pattern-not-inside: |
+              if (<... $LIST.includes($ORIGIN) ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $LIST.has($ORIGIN) ...>) { ... }
+
+  - id: va-cors-reflect-origin-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      CORS allows every origin together with credentials, so any website can
+      make authenticated requests and read the responses. Use an explicit
+      origin allowlist. [VA SEC-067/API-036]
+    metadata:
+      va_rules: [SEC-067, API-036]
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      confidence: HIGH
+    pattern-either:
+      - pattern: $APP.add_middleware(CORSMiddleware, ..., allow_origins=["*"], ..., allow_credentials=True, ...)
+      - pattern: $APP.add_middleware(CORSMiddleware, ..., allow_credentials=True, ..., allow_origins=["*"], ...)
+      - pattern: $APP.add_middleware(CORSMiddleware, ..., allow_origin_regex=".*", ..., allow_credentials=True, ...)
+      - patterns:
+          - pattern: CORS($APP, ..., supports_credentials=True, ...)
+          - pattern-not: CORS($APP, ..., origins=[...], ...)
+          - pattern-not: 'CORS($APP, ..., resources={..., $P: {..., "origins": [...], ...}, ...}, ...)'
+      - pattern: CORS_ALLOW_ALL_ORIGINS = True
+      - pattern: CORS_ORIGIN_ALLOW_ALL = True

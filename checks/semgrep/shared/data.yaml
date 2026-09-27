@@ -1,0 +1,22 @@
+rules:
+  - id: va-money-as-float-py
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A money-like column is a float. Use DecimalField / Numeric or integer
+      minor units plus a currency code. [VA DATA-012, rules/data.md
+      "Schema Design"]
+    metadata:
+      va_rules: [DATA-012]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $NAME = models.FloatField(...)
+          - pattern: $NAME = Column(Float, ...)
+          - pattern: $NAME = Column(Float(...), ...)
+          - pattern: $NAME = sa.Column(sa.Float, ...)
+          - pattern: 'self.$NAME: Mapped[float] = mapped_column(...)'
+          - pattern: '$NAME: Mapped[float] = mapped_column(...)'
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(price|amount|balance|total|cost|fee|subtotal|salary|payout|refund).*
